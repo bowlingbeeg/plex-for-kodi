@@ -55,7 +55,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         self.trigger('changed.watchstatus')
 
     def onNotification(self, sender, method, data):
-        if sender == 'script.plexmod' and method.endswith('RESTORE'):
+        if sender == 'script.zidooplexmod' and method.endswith('RESTORE'):
             from .windows import kodigui
             getAdvancedSettings()
             populateTimeFormat()

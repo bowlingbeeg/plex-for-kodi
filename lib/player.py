@@ -1001,7 +1001,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
     def createTrackListItem(self, track, fanart=None, index=0):
         data = base64.urlsafe_b64encode(track.serialize().encode("utf8")).decode("utf8")
-        url = 'plugin://script.plexmod/play?{0}'.format(data)
+        url = 'plugin://script.zidooplexmod/play?{0}'.format(data)
         li = xbmcgui.ListItem(track.title, path=url)
         li.setInfo('music', {
             'artist': six.text_type(track.originalTitle or track.grandparentTitle),
@@ -1564,7 +1564,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
     def createTrackListItem(self, track, fanart=None, index=0):
         data = base64.urlsafe_b64encode(track.serialize().encode("utf8")).decode("utf8")
-        url = 'plugin://script.plexmod/play?{0}'.format(data)
+        url = 'plugin://script.zidooplexmod/play?{0}'.format(data)
         li = xbmcgui.ListItem(track.title, path=url)
         if float(xbmc.getInfoLabel('System.BuildVersionShort')) < 20.0:
             li.setInfo('music', {
