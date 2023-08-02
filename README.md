@@ -8,7 +8,7 @@ Follow the install instructions of PlexToZidoo but ignore all of the setup of th
 
 ## Installation
 
-* Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
+Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
 
 
 ## Help/Bug Reports
