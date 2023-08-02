@@ -360,9 +360,9 @@ class PlexPlayer(object):
 
         if not forceAC3:
             if directStream:
-                audioCodecs = "eac3,ac3,dca,aac,mp3,mp2,pcm,flac,alac,wmav2,wmapro,wmavoice,opus,vorbis,truehd"
+                audioCodecs = "eac3,ac3,dca,aac,mp3,mp2,pcm,flac,alac,wmav2,wmapro,wmavoice,truehd"
             else:
-                audioCodecs = "mp3,ac3,dca,aac,opus"
+                audioCodecs = "mp3,ac3,dca,aac"
         else:
             if dtsIsAC3:
                 audioCodecs = "ac3,dca"
@@ -411,7 +411,10 @@ class PlexPlayer(object):
                  .format(clampToOrig, useKodiAudio, forceAC3, dtsIsAC3))
 
         # limit audio channels to original stream's audio channel amount
-        numChannels = self.choice.audioStream.channels.asInt(8) if self.choice.audioStream.channels else 8
+        if self.choice.audioStream is not None:
+            numChannels = self.choice.audioStream.channels.asInt(8)
+        else:
+            numChannels = 8
 
         # limit OPUS to 334kbit
         if numChannels == 8:

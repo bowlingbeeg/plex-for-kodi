@@ -297,6 +297,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         'playlists.video': {'index': 6, 'text2lines': True, 'ar16x9': True, 'title': T(32053, 'Video')},
     }
 
+    CUSTOMIZED_SECTION_LAYOUT_ORDER = {
+#        'Movies': {'show': True},
+#        'Kids Movies': {'show': True},
+#        'TV Shows': {'show': True},
+#        'Kids TV Shows': {'show': True},
+#        'Recorded TV': {'show': True},
+#        'Playlists': {'show': False},
+#        'Music': {'show': False},
+#        'Calibration': {'show': False},
+#        'Misc Videos': {'show': True},
+    }
+
     THUMB_POSTER_DIM = (244, 361)
     THUMB_AR16X9_DIM = (532, 299)
     THUMB_SQUARE_DIM = (244, 244)
@@ -768,7 +780,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
             plli = kodigui.ManagedListItem('Playlists', thumbnailImage='script.plex/home/type/playlists.png', data_source=PlaylistsSection)
             plli.setProperty('is.playlists', '1')
             plli.setProperty('item', '1')
-            items.append(plli)
+            # Don't add it yet in case they customized things
 
         try:
             sections = plexapp.SERVERMANAGER.selectedServer.library.sections()
@@ -780,6 +792,27 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback) for s in [HomeSection, PlaylistsSection] + sections]
             backgroundthread.BGThreader.addTasks(self.tasks)
+
+        for customSection in self.CUSTOMIZED_SECTION_LAYOUT_ORDER:
+            show = self.CUSTOMIZED_SECTION_LAYOUT_ORDER[customSection]['show']
+            util.DEBUG_LOG(f'BJV CS - {customSection} - {show}')
+            if customSection == 'Playlists' and plli:
+                if self.CUSTOMIZED_SECTION_LAYOUT_ORDER[customSection]['show']:
+                    items.append(plli)
+                plli = None
+            else:
+                for index, section in enumerate(sections):
+                    if section.title == customSection:
+                        if self.CUSTOMIZED_SECTION_LAYOUT_ORDER[customSection]['show']:
+                            mli = kodigui.ManagedListItem(section.title, thumbnailImage='script.plex/home/type/{0}.png'.format(section.type), data_source=section)
+                            mli.setProperty('item', '1')
+                            items.append(mli)
+                        sections.remove(section)
+                        break
+
+        # Add anything else that the user didn't customize
+        if plli:
+            items.append(plli)
 
         for section in sections:
             mli = kodigui.ManagedListItem(section.title, thumbnailImage='script.plex/home/type/{0}.png'.format(section.type), data_source=section)

@@ -1,22 +1,18 @@
-# PlexMod (for Kodi)
+# ZidooPlexMod (for Kodi)
 
-This is a modification of the official open-source Plex client for Kodi "plex-for-kodi" (Plex4Kodi)  semi-maintained by me (pannal).
+This is a modification of the PlexMod script by pannal(https://github.com/pannal/plex-for-kodi) to work with the native zidoo player on zidoo machines.
 
-Contrary to how this repository was handled before, this client does _not_ claim to adhere to the Plex Inc. design guidelines, all the time.
-
-It implements features that are not implemented in other official Plex clients and may implement others in non-conform ways.
-
-It is still based off of the original P4K source and critical bugfixes will be PR'd back.
+It requires version 2.0+ of the PlexToZidoo app found here https://github.com/bowlingbeeg/PlexToZidoo/releases
+Follow the install instructions of PlexToZidoo but ignore all of the setup of the native Plex app since the ZidooPlexMod will be your interface to Plex.
 
 
 ## Installation
 
-* Add this Kodi repository to your Kodi installation: https://pannal.github.io/dontpanickodi/, or
-* Checkout any branch of this GitHub repository, rename to `script.plexmod` and use as an addon
+* Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
 
 
 ## Help/Bug Reports
-https://forums.plex.tv/t/plexmod-for-kodi-18-19-20/481208
+http://forum.zidoo.tv/index.php?threads/plextozidoo-an-external-player-for-plex-using-native-zidoo-player.94714/
 
 ## License
 [LICENSE](https://github.com/plexinc/plex-for-kodi/blob/master/LICENSE.txt)
