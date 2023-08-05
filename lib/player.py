@@ -1668,7 +1668,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     def _monitor(self):
         try:
             while not util.MONITOR.abortRequested() and not self._closed:
-                util.DEBUG_LOG('BJV - Monitor 0')
+                util.DEBUG_LOG('ZidooPlayer: Monitor 0')
                 if not self.started:
                     util.DEBUG_LOG('ZidooPlayer: Idling...')
 
@@ -1676,7 +1676,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 while (not self.started or not self.handler or not isinstance(self.handler, ZidooPlayerHandler)) and not util.MONITOR.abortRequested() and not self._closed:
                     util.MONITOR.waitForAbort(1.0)
 
-                util.DEBUG_LOG('BJV - Monitor 1')
+                util.DEBUG_LOG('ZidooPlayer: - Monitor 1')
                 # Wait for the zidoo player to get going
                 zidooStatusFull = None
                 consecutiveFailedCalls = 0
@@ -1694,7 +1694,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                             break
 
                 if consecutiveFailedCalls == 0:
-                    util.DEBUG_LOG('BJV - Monitor 2')
+                    util.DEBUG_LOG('ZidooPlayer - Monitor 2')
                     # Loop here while the movie is still being played
                     while self.started and not util.MONITOR.abortRequested() and not self._closed:
                         util.MONITOR.waitForAbort(1.0)
@@ -1730,7 +1730,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
                         self.handler.tick()
 
-                util.DEBUG_LOG('BJV - Monitor 3')
+                util.DEBUG_LOG('ZidooPlayer - Monitor 3')
                 if not util.MONITOR.abortRequested() and not self._closed:
                     self.onPlayBackStopped()
                     self.started = False

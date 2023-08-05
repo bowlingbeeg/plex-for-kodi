@@ -10,6 +10,10 @@ Follow the install instructions of PlexToZidoo but ignore all of the setup of th
 
 Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
 
+## Tips
+
+If you want a custom layout for your library list you can copy the file, customlayout.xml, from the <kodi_path>/addons/script.zidooplexmod directory to the <kodi_path>/userdata/addon_data/script.zidooplexmod/ directory.  Then edit it with the layout you want.  You can have unique layouts for each user, a default one that everyone shares, or a combination of both.  See the customlayout.xml file for details.
+
 
 ## Help/Bug Reports
 http://forum.zidoo.tv/index.php?threads/plextozidoo-an-external-player-for-plex-using-native-zidoo-player.94714/

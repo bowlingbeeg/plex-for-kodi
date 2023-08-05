@@ -3,7 +3,7 @@ import time
 import threading
 import re
 
-from kodi_six import xbmc
+from kodi_six import xbmc, xbmcvfs
 from kodi_six import xbmcgui
 
 from . import kodigui
@@ -24,6 +24,8 @@ from . import optionsdialog
 
 from lib.util import T
 from six.moves import range
+
+import xml.etree.ElementTree as ET
 
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
@@ -242,11 +244,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         # HOME
         'home.continue': {'index': 0, 'with_progress': True, 'with_art': True, 'do_updates': True, 'text2lines': True},
         'home.ondeck': {'index': 1, 'with_progress': True, 'do_updates': True, 'text2lines': True},
-        'home.television.recent': {'index': 2, 'text2lines': True, 'text2lines': True},
+        'home.television.recent': {'index': 2, 'text2lines': True},
         'home.movies.recent': {'index': 4, 'text2lines': True},
         'home.music.recent': {'index': 5, 'text2lines': True},
         'home.videos.recent': {'index': 6, 'ar16x9': True},
-        'home.playlists': {'index': 9},
+        #'home.playlists': {'index': 9}, # No other Plex home screen shows playlists so removing it from here
         'home.photos.recent': {'index': 10, 'text2lines': True},
         # SHOW
         'tv.ondeck': {'index': 1, 'with_progress': True, 'do_updates': True, 'text2lines': True},
@@ -264,8 +266,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         'movie.recentlyreleased': {'index': 1, 'text2lines': True},
         'movie.recentlyadded': {'index': 2, 'text2lines': True},
         'movie.genre': {'index': 3, 'text2lines': True},
-        'movie.director': {'index': 7, 'text2lines': True},
-        'movie.actor': {'index': 8, 'text2lines': True},
+        'movie.by.actor.or.director': {'index': 7, 'text2lines': True},
         'movie.topunwatched': {'index': 13, 'text2lines': True},
         'movie.recentlyviewed': {'index': 14, 'text2lines': True},
         # ARTIST
@@ -295,18 +296,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         # PLAYLISTS
         'playlists.audio': {'index': 5, 'text2lines': True, 'title': T(32048, 'Audio')},
         'playlists.video': {'index': 6, 'text2lines': True, 'ar16x9': True, 'title': T(32053, 'Video')},
-    }
-
-    CUSTOMIZED_SECTION_LAYOUT_ORDER = {
-#        'Movies': {'show': True},
-#        'Kids Movies': {'show': True},
-#        'TV Shows': {'show': True},
-#        'Kids TV Shows': {'show': True},
-#        'Recorded TV': {'show': True},
-#        'Playlists': {'show': False},
-#        'Music': {'show': False},
-#        'Calibration': {'show': False},
-#        'Misc Videos': {'show': True},
     }
 
     THUMB_POSTER_DIM = (244, 361)
@@ -365,6 +354,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         )
 
         self.hubFocusIndexes = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 17, 18, 19, 20, 21, 22, 13, 14, 15, 23)
+
+        try:
+            tree = ET.parse(xbmcvfs.translatePath(util.ADDON.getAddonInfo('profile') + 'customlayout.xml'))
+            self.customLayout = tree.getroot()
+            util.DEBUG_LOG(f'Zidoo: Custom layout found')
+        except:
+            self.customLayout = None
+            util.DEBUG_LOG(f'Zidoo: No custom layout')
 
         self.bottomItem = 0
         if self.serverRefresh():
@@ -794,22 +791,44 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback) for s in [HomeSection, PlaylistsSection] + sections]
             backgroundthread.BGThreader.addTasks(self.tasks)
 
-        for customSection in self.CUSTOMIZED_SECTION_LAYOUT_ORDER:
-            show = self.CUSTOMIZED_SECTION_LAYOUT_ORDER[customSection]['show']
-            util.DEBUG_LOG(f'BJV CS - {customSection} - {show}')
-            if customSection == 'Playlists' and plli:
-                if self.CUSTOMIZED_SECTION_LAYOUT_ORDER[customSection]['show']:
-                    items.append(plli)
-                plli = None
-            else:
-                for index, section in enumerate(sections):
-                    if section.title == customSection:
-                        if self.CUSTOMIZED_SECTION_LAYOUT_ORDER[customSection]['show']:
-                            mli = kodigui.ManagedListItem(section.title, thumbnailImage='script.plex/home/type/{0}.png'.format(section.type), data_source=section)
-                            mli.setProperty('item', '1')
-                            items.append(mli)
-                        sections.remove(section)
+        if self.customLayout:
+            serverName = (plexapp.SERVERMANAGER.selectedServer.name or ' ').lower()
+            selectedServer = None
+            for server in self.customLayout.findall('server'):
+                curServerName = (server.get('name') or ' ').lower()
+                if curServerName == serverName:
+                    selectedServer = server
+                    break
+
+            if selectedServer:
+                userName = (plexapp.ACCOUNT.title or plexapp.ACCOUNT.username or ' ').lower()
+                selectedUser = None
+                for user in selectedServer.findall('user'):
+                    curUserName = (user.get('name') or ' ').lower()
+                    if curUserName == 'default':
+                        selectedUser = user
+                        continue
+                    elif curUserName == userName:
+                        selectedUser = user
                         break
+
+                if selectedUser:
+                    for library in selectedUser.findall('library'):
+                        util.DEBUG_LOG(f"Zidoo: CL - {library.get('name')} - {library.text}")
+                        libraryName = (library.get('name') or ' ').lower()
+                        if libraryName == 'playlists' and plli:
+                            if not library.text or library.text.lower() != 'hide':
+                                items.append(plli)
+                            plli = None
+                        else:
+                            for index, section in enumerate(sections):
+                                if (section.title or ' ').lower() == libraryName:
+                                    if not library.text or library.text.lower() != 'hide':
+                                        mli = kodigui.ManagedListItem(section.title, thumbnailImage='script.plex/home/type/{0}.png'.format(section.type), data_source=section)
+                                        mli.setProperty('item', '1')
+                                        items.append(mli)
+                                    sections.remove(section)
+                                    break
 
         # Add anything else that the user didn't customize
         if plli:
