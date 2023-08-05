@@ -776,6 +776,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         items.append(homemli)
 
         pl = plexapp.SERVERMANAGER.selectedServer.playlists()
+        plli = None
         if pl:
             plli = kodigui.ManagedListItem('Playlists', thumbnailImage='script.plex/home/type/playlists.png', data_source=PlaylistsSection)
             plli.setProperty('is.playlists', '1')
