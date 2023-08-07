@@ -26,6 +26,9 @@ from lib import metadata
 from lib.util import T
 from lib.windows.home import MOVE_SET
 
+import time
+import re
+
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1)
 
 
@@ -546,11 +549,16 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         self.setProperty('unavailable', not self.video.media()[0].isAccessible() and '1' or '')
 
+        remainingTime = None
         if self.video.viewOffset.asInt():
             width = self.video.viewOffset.asInt() and (1 + int((self.video.viewOffset.asInt() / self.video.duration.asFloat()) * self.width)) or 1
             self.progressImageControl.setWidth(width)
+            remainingTime = time.strftime("%Hh %Mm left", time.gmtime((self.video.duration.asInt() - self.video.viewOffset.asInt()) / 1000))
+            remainingTime = re.sub(r'0(\d[hm])', r'\1', remainingTime).replace('0h ', '').replace(' 0m', '')
         else:
             self.progressImageControl.setWidth(1)
+
+        self.setProperty('remainingTime', remainingTime)
 
     def setAudioAndSubtitleInfo(self):
         sas = self.video.selectedAudioStream()

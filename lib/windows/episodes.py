@@ -26,6 +26,9 @@ from . import pagination
 from lib.util import T
 from six.moves import range
 
+import time
+import re
+
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1)
 
 
@@ -938,12 +941,16 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def setProgress(self, mli):
         video = mli.dataSource
-
+        remainingTime = None
         if video.viewOffset.asInt():
             width = video.viewOffset.asInt() and (1 + int((video.viewOffset.asInt() / video.duration.asFloat()) * self.width)) or 1
             self.progressImageControl.setWidth(width)
+            remainingTime = time.strftime("%Hh %Mm left", time.gmtime((video.duration.asInt() - video.viewOffset.asInt()) / 1000))
+            remainingTime = re.sub(r'0(\d[hm])', r'\1', remainingTime).replace('0h ', '').replace(' 0m', '')
         else:
             self.progressImageControl.setWidth(1)
+
+        mli.setProperty('remainingTime', remainingTime)
 
     def createListItem(self, episode):
         if episode.index:
