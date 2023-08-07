@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-import os
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -19,12 +18,10 @@ from . import pagination
 
 from plexnet import plexplayer, media
 
-from lib import colors
 from lib import util
 from lib import metadata
 
 from lib.util import T
-from lib.windows.home import MOVE_SET
 
 import time
 import re
@@ -487,6 +484,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.setProperty('title', self.video.title)
         self.setProperty('duration', util.durationToText(self.video.duration.asInt()))
         self.setProperty('summary', self.video.summary.strip().replace('\t', ' '))
+        self.setProperty('unwatched', not self.video.isWatched and '1' or '')
 
         directors = u' / '.join([d.tag for d in self.video.directors()][:5])
         directorsLabel = len(self.video.directors) > 1 and T(32401, u'DIRECTORS').upper() or T(32383, u'DIRECTOR').upper()
