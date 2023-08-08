@@ -5,6 +5,7 @@ import six
 import re
 import requests
 import os
+import time
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -1308,6 +1309,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
 
         # show post play if possible, if an item has been watched (90% by Plex standards)
         if self.trueTime * 1000 / float(self.duration) >= 0.90 and self.next(on_end=True):
+            self.player.video.markWatched()
             return
 
         self.sessionEnded()
@@ -1333,6 +1335,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
             return
         self.ended = True
         util.DEBUG_LOG('ZidooHandler: sessionEnded')
+        time.sleep(.5) # Give the Plex server some time to update before we start querying it
         self.player.trigger('session.ended', session_id=self.sessionID)
 
     __next__ = next
