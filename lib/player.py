@@ -1410,7 +1410,16 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             #    cmds += f' --ei subtitle_idx {subtitleTrack.typeIndex+1}' # subtitle tracks are 1 based in the zidoo player
             #cmds += f' -a android.intent.action.VIEW -t video/* --ez from_start false --ei position {self.handler.seekOnStart} -e title {self.video.title.translate(self.escape_table)} -d {url.translate(self.escape_table)}'
             #util.DEBUG_LOG(f'ZidooPlayer Cmd: {cmds}')
-            #retcode = os.system(cmds.encode('utf-8'))
+            # Unfortunately this always gives a security error about the shell not being owned by the uid.  Not sure why that is because I can run this just fine from termux
+            #import subprocess
+            #output = subprocess.run(cmds, shell=True, capture_output=True)
+            #util.DEBUG_LOG(f'ZidooPlayer Output: {output}')
+
+            # Unfortunately I can't get the "extras" to show up on the other side.  Not sure if this is a Kodi issue or something I'm doing wrong but looks like we'll always
+            # need PlexToZidoo :(
+            #xbmc.executebuiltin('StartAndroidActivity(com.hpn789.plextozidoo, android.intent.action.VIEW, video/*, {0}, , "[ {{ \"key\" : \"position\", \"value\" : \"{1}\", \"type\" : \"string\" }}, {{ \"key\" : \"title\", \"value\" : \"test\", \"type\" : \"string\" }} ]", , , com.hpn789.plextozidoo.Play)'.format(url, self.handler.seekOnStart))
+            #xbmc.executebuiltin('StartAndroidActivity(com.android.gallery3d, android.intent.action.VIEW, video/*, {0}, , "[ {{ \"key\" : \"position\", \"value\" : \"{1}\", \"type\" : \"string\" }}, {{ \"key\" : \"title\", \"value\" : \"test\", \"type\" : \"string\" }} ]", , , com.android.gallery3d.app.MovieActivity)'.format(url, self.handler.seekOnStart))
+
 
             url += f'&PlexToZidoo-ViewOffset={self.handler.seekOnStart}'
             #url += f'&PlexToZidoo-Title={self.video.title}'  --- Not sure I want to include this because then I'll have to deal with all of the special symbols

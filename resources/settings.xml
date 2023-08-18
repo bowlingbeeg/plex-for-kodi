@@ -21,6 +21,7 @@
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="auto_seek_delay" parent="auto_seek" type="number" label="32487">
                     <level>0</level>
@@ -36,16 +37,19 @@
                     <dependencies>
                         <dependency type="enable" setting="auto_seek">true</dependency>
                     </dependencies>
+                    <visible>false</visible>
                 </setting>
                 <setting id="kodi_skip_stepping" type="boolean" label="32465">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="dynamic_timeline_seek" type="boolean" label="32471">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="forced_subtitles_override" type="boolean" label="32493">
                     <level>0</level>
@@ -71,6 +75,7 @@
                         <heading>32524</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_credits_button_timeout" type="integer" label="32525" help="">
                     <level>0</level>
@@ -84,6 +89,7 @@
                         <heading>32528</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
             </group>
         </category>

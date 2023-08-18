@@ -10,7 +10,6 @@ from kodi_six import xbmc
 from kodi_six import xbmcgui
 from . import kodigui
 
-from lib import colors
 from lib import util
 from lib import backgroundthread
 from lib import player
@@ -30,7 +29,7 @@ from lib.util import T
 import six
 from six.moves import range
 
-CHUNK_SIZE = 200
+CHUNK_SIZE = 40
 # CHUNK_SIZE = 30
 
 KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -1726,6 +1725,8 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
                                     mli.setProperty('unwatched.count', str(obj.unViewedLeafCount))
                                 else:
                                     mli.setProperty('unwatched', '1')
+
+                        mli.setProperty('progress', util.getProgressImage(obj))
                     else:
                         mli.clear()
                         if obj is False:
@@ -1770,6 +1771,12 @@ class PostersWindow(kodigui.ControlledWindow):
     CUSTOM_SCOLLBAR_BUTTON_ID = 951
 
 
+class PostersSmallWindow(PostersWindow):
+    xmlFile = 'script-plex-posters-small.xml'
+    VIEWTYPE = 'panel2'
+    MULTI_WINDOW_ID = 1
+
+
 class PostersChunkedWindow(PostersWindow):
     xmlFile = 'script-plex-listview-16x9-chunked.xml'
     VIEWTYPE = 'list'
@@ -1779,7 +1786,7 @@ class PostersChunkedWindow(PostersWindow):
 class ListView16x9Window(PostersWindow):
     xmlFile = 'script-plex-listview-16x9.xml'
     VIEWTYPE = 'list'
-    MULTI_WINDOW_ID = 1
+    MULTI_WINDOW_ID = 2
 
 
 class ListView16x9ChunkedWindow(PostersWindow):
@@ -1814,8 +1821,9 @@ class ListViewSquareChunkedWindow(PostersWindow):
 
 VIEWS_POSTER = {
     'panel': PostersWindow,
+    'panel2': PostersSmallWindow,
     'list': ListView16x9Window,
-    'all': (PostersWindow, ListView16x9Window)
+    'all': (PostersWindow, PostersSmallWindow, ListView16x9Window)
 }
 
 VIEWS_POSTER_CHUNKED = {
