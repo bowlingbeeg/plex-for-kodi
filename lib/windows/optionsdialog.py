@@ -53,3 +53,7 @@ def show(header, info, button0=None, button1=None, button2=None):
     del w
     util.garbageCollect()
     return choice
+
+def create(header, info, button0=None, button1=None, button2=None, show=True):
+    w = OptionsDialog.create(header=header, info=info, button0=button0, button1=button1, button2=button2, show=show)
+    return w

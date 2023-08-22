@@ -1395,6 +1395,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.currentTime = 0
         self.duration = 0
         self.playState = self.STATE_STOPPED
+        self.zidooFailureDialog = None
 
     def currentTrack(self):
         if self.handler.media and self.handler.media.type == 'track':
@@ -1437,6 +1438,11 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             if subtitleTrack:
                 url += f'&PlexToZidoo-SubtitleIndex={subtitleTrack.typeIndex+1}' # subtitle tracks are 1 based in the zidoo player
             xbmc.executebuiltin(f'StartAndroidActivity(com.hpn789.plextozidoo, android.intent.action.VIEW, video/*, {url})')
+
+            # Put up this error message in the background in case we can't start the zidoo player.  If we actually get the player started we'll just kill this dialog
+            time.sleep(2)
+            from .windows import optionsdialog
+            self.zidooFailureDialog = optionsdialog.create(show=True, header="Error", info="Failed to start Zidoo player", button0="OK")
 
             self.handler.seekOnStart = 0
             self.onPrePlayStarted()
@@ -1620,7 +1626,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         return (url, li)
 
     def onPrePlayStarted(self):
-        util.DEBUG_LOG('ZidooPlayer - PRE-PLAY')
+        util.DEBUG_LOG('ZidooPlayer: PRE-PLAY')
         self.trigger('preplay.started')
         if not self.handler:
             return
@@ -1628,20 +1634,20 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
     def onPlayBackStarted(self):
         self.started = True
-        util.DEBUG_LOG('ZidooPlayer - STARTED')
+        util.DEBUG_LOG('ZidooPlayer: STARTED')
         self.trigger('playback.started')
         if not self.handler:
             return
         self.handler.onPlayBackStarted()
 
     def onPlayBackPaused(self):
-        util.DEBUG_LOG('ZidooPlayer - PAUSED')
+        util.DEBUG_LOG('ZidooPlayer: PAUSED')
         if not self.handler:
             return
         self.handler.onPlayBackPaused()
 
     def onPlayBackResumed(self):
-        util.DEBUG_LOG('ZidooPlayer - RESUMED')
+        util.DEBUG_LOG('ZidooPlayer: RESUMED')
         if not self.handler:
             return
 
@@ -1651,7 +1657,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if not self.started:
             self.onPlayBackFailed()
 
-        util.DEBUG_LOG('ZidooPlayer - STOPPED' + (not self.started and ': FAILED' or ''))
+        util.DEBUG_LOG('ZidooPlayer: STOPPED' + (not self.started and ': FAILED' or ''))
+        self.started = False
         if not self.handler:
             return
         self.handler.onPlayBackStopped()
@@ -1660,13 +1667,14 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if not self.started:
             self.onPlayBackFailed()
 
-        util.DEBUG_LOG('ZidooPlayer - ENDED' + (not self.started and ': FAILED' or ''))
+        util.DEBUG_LOG('ZidooPlayer: ENDED' + (not self.started and ': FAILED' or ''))
+        self.started = False
         if not self.handler:
             return
         self.handler.onPlayBackEnded()
 
     def onPlayBackFailed(self):
-        util.DEBUG_LOG('ZidooPlayer - FAILED')
+        util.DEBUG_LOG('ZidooPlayer: FAILED')
         if not self.handler:
             return
 
@@ -1698,25 +1706,20 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 while (not self.started or not self.handler or not isinstance(self.handler, ZidooPlayerHandler)) and not util.MONITOR.abortRequested() and not self._closed:
                     util.MONITOR.waitForAbort(1.0)
 
-                util.DEBUG_LOG('ZidooPlayer: - Monitor 1')
+                util.DEBUG_LOG('ZidooPlayer: Monitor 1')
                 # Wait for the zidoo player to get going
                 zidooStatusFull = None
-                consecutiveFailedCalls = 0
                 while((zidooStatusFull is None or zidooStatusFull['video']['duration'] <= 0) and not util.MONITOR.abortRequested() and not self._closed):
                     util.MONITOR.waitForAbort(1.0)
                     zidooStatusFull = self.getZidooPlayerStatus()
-                    if zidooStatusFull is not None:
-                        consecutiveFailedCalls = 0
-                    else:
-                        consecutiveFailedCalls += 1
-                        # If we get too many consecutive failures it could mean that the zidoo player couldn't play the movie
-                        # so stop things to bring back up the Kodi window
-                        if consecutiveFailedCalls > 5:
+                    if zidooStatusFull is None:
+                        # Check to see if the user cleared the error message, if so then we can stop monitoring
+                        if self.zidooFailureDialog is None or xbmcgui.getCurrentWindowDialogId() != self.zidooFailureDialog._winID:
                             self.playState = self.STATE_STOPPED
                             break
 
-                if consecutiveFailedCalls == 0:
-                    util.DEBUG_LOG('ZidooPlayer - Monitor 2')
+                if zidooStatusFull is not None:
+                    util.DEBUG_LOG('ZidooPlayer: Monitor 2')
                     # Loop here while the movie is still being played
                     while self.started and not util.MONITOR.abortRequested() and not self._closed:
                         util.MONITOR.waitForAbort(1.0)
@@ -1752,10 +1755,14 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
                         self.handler.tick()
 
-                util.DEBUG_LOG('ZidooPlayer - Monitor 3')
+                    if self.zidooFailureDialog is not None:
+                        self.zidooFailureDialog.doClose()
+                        del self.zidooFailureDialog
+                        self.zidooFailureDialog = None
+
+                util.DEBUG_LOG('ZidooPlayer: Monitor 3')
                 if not util.MONITOR.abortRequested() and not self._closed:
                     self.onPlayBackStopped()
-                    self.started = False
 
             self.handler.close()
             self.close()
