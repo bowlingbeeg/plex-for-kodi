@@ -136,7 +136,7 @@
                 </setting>
                 <setting id="playlist_visit_media" type="boolean" label="32505">
                     <level>0</level>
-                    <default>true</default>
+                    <default>false</default>
                     <control type="toggle"/>
                 </setting>
             </group>

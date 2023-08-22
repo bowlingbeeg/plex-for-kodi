@@ -223,7 +223,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         if not self.playlist:
             return False
 
-        self.player.playVideoPlaylist(self.playlist, handler=self)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
 
         return True
 
@@ -232,7 +232,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             return False
 
         self.seeking = self.SEEK_PLAYLIST
-        self.player.playVideoPlaylist(self.playlist, handler=self)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
 
         return True
 
@@ -241,7 +241,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             return False
 
         self.seeking = self.SEEK_PLAYLIST
-        self.player.playVideoPlaylist(self.playlist, handler=self)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
 
         return True
 
@@ -741,6 +741,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.thread = None
         if xbmc.getCondVisibility('Player.HasMedia'):
             self.started = True
+        self.resume = False
         self.open()
 
         return self
@@ -847,6 +848,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         self.handler = handler or SeekPlayerHandler(self, session_id)
         self.video = video
+        self.resume = resume
         self.open()
         self._playVideo(resume and video.viewOffset.asInt() or 0, force_update=force_update)
 
@@ -913,7 +915,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         self.play(url, li)
 
-    def playVideoPlaylist(self, playlist, resume=True, handler=None, session_id=None):
+    def playVideoPlaylist(self, playlist, resume=False, handler=None, session_id=None):
         if self.bgmPlaying:
             self.stopAndWait()
 
@@ -927,6 +929,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.handler.playQueue = playlist
         self.video = playlist.current()
         self.video.softReload()
+        self.resume = resume
         self.open()
         self._playVideo(resume and self.video.viewOffset.asInt() or 0, seeking=handler and handler.SEEK_PLAYLIST or 0, force_update=True)
 
@@ -1248,7 +1251,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         return self.player.currentTime + self.player.playerObject.startOffset
 
     def shouldShowPostPlay(self):
-        if self.playlist and self.playlist.TYPE == 'playlist':
+        if self.playlist and (self.playlist.TYPE == 'playlist' or self.playlist.TYPE == 'playqueue'):
             return False
 
         if (not util.advancedSettings.postplayAlways and self.player.video.duration.asInt() <= FIVE_MINUTES_MILLIS) \
@@ -1267,7 +1270,8 @@ class ZidooPlayerHandler(BasePlayerHandler):
 
     def next(self, on_end=False):
         if self.playlist:
-            next(self.playlist)
+            if not next(self.playlist):
+                return False
 
         if on_end:
             if self.showPostPlay():
@@ -1276,7 +1280,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.playlist:
             return False
 
-        self.player.playVideoPlaylist(self.playlist, handler=self)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
 
         return True
 
@@ -1284,7 +1288,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.playlist or not self.playlist.prev():
             return False
 
-        self.player.playVideoPlaylist(self.playlist, handler=self)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
 
         return True
 
@@ -1292,7 +1296,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.playlist or not self.playlist.setCurrent(pos):
             return False
 
-        self.player.playVideoPlaylist(self.playlist, handler=self)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
 
         return True
 
@@ -1308,9 +1312,10 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.updateNowPlaying()
 
         # show post play if possible, if an item has been watched (90% by Plex standards)
-        if self.trueTime * 1000 / float(self.duration) >= 0.90 and self.next(on_end=True):
+        if self.trueTime * 1000 / float(self.duration) >= 0.90:
             self.player.video.markWatched()
-            return
+            if self.next(on_end=True):
+                return
 
         self.sessionEnded()
 
@@ -1351,6 +1356,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     escape_table = str.maketrans(dict(zip(reserved_chars, replace)))
 
     def __init__(self, *args, **kwargs):
+        xbmc.Player.__init__(self, *args, **kwargs)
         signalsmixin.SignalsMixin.__init__(self)
 
     def init(self):
@@ -1367,6 +1373,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.duration = 0
         self.thread = None
         self.playState = self.STATE_STOPPED
+        self.resume = False
         self.reset()
         self.open()
 
@@ -1468,6 +1475,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         self.handler = handler or ZidooPlayerHandler(self, session_id)
         self.video = video
+        self.resume = resume
         self.open()
         self._playVideo(resume and video.viewOffset.asInt() or 0, force_update=force_update)
 
@@ -1508,7 +1516,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         self.play(url)
 
-    def playVideoPlaylist(self, playlist, resume=True, handler=None, session_id=None):
+    def playVideoPlaylist(self, playlist, resume=False, handler=None, session_id=None):
         if self.bgmPlaying:
             self.stopAndWait()
 
@@ -1522,6 +1530,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.handler.playQueue = playlist
         self.video = playlist.current()
         self.video.softReload()
+        self.resume = resume
+        self.currentTime = 0
         self.open()
         self._playVideo(resume and self.video.viewOffset.asInt() or 0, force_update=True)
 
