@@ -402,6 +402,9 @@ class Collection(media.MediaItem):
     def isVideoOrDirectoryItem(self):
         return self.container.viewGroup in ('movie', 'show', 'episode')
 
+    def isCollection(self):
+        return True
+
 
 @plexobjects.registerLibType
 class Generic(plexobjects.PlexObject):

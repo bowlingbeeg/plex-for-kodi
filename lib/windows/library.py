@@ -892,7 +892,7 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
             args['sourceType'] = '1'
         elif self.section.TYPE == 'show':
             args['sourceType'] = '2'
-        else:
+        elif self.section.TYPE != 'collection':
             args['sourceType'] = '8'
 
         # When the list is filtered by unwatched, play and shuffle button should only play unwatched videos
