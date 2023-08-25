@@ -154,7 +154,7 @@ class LibrarySection(plexobjects.PlexObject):
 
     def items(self, path, start, size, filter_, sort, unwatched, type_, tag_fallback):
 
-        args = {"includeCollections" : "0"}
+        args = {"includeCollections" : "1"}
 
         if size is not None:
             args['X-Plex-Container-Start'] = start
