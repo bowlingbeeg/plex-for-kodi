@@ -183,7 +183,7 @@ class LibrarySection(plexobjects.PlexObject):
         else:
             path = '/library/sections/{0}/firstCharacter'.format(self.key)
 
-        args = {}
+        args = {"includeCollections" : "1"}
 
         if filter_:
             args[filter_[0]] = filter_[1]
