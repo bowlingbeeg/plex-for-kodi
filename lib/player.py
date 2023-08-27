@@ -1376,6 +1376,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.playState = self.STATE_STOPPED
         self.resume = False
         self.currentMarker = None
+        self.zidooFailureDialog = None
         self.reset()
         self.open()
 
@@ -1402,6 +1403,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.playState = self.STATE_STOPPED
         self.zidooFailureDialog = None
         self.currentMarker = None
+        self.resume = False
 
     def currentTrack(self):
         if self.handler.media and self.handler.media.type == 'track':
@@ -1691,9 +1693,9 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if self.isPlaying():
             util.DEBUG_LOG('ZidooPlayer: Stopping and waiting...')
             self.stop()
-            while not util.MONITOR.waitForAbort(0.1) and self.isPlaying():
-                pass
-            util.MONITOR.waitForAbort(0.2)
+            while not util.MONITOR.abortRequested() and self.isPlaying():
+                time.sleep(0.1)
+            time.sleep(0.2)
             util.DEBUG_LOG('ZidooPlayer: Stopping and waiting...Done')
 
     def monitor(self):
@@ -1710,13 +1712,13 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
                 # Wait for something to start
                 while (not self.started or not self.handler or not isinstance(self.handler, ZidooPlayerHandler)) and not util.MONITOR.abortRequested() and not self._closed:
-                    util.MONITOR.waitForAbort(1.0)
+                    time.sleep(1)
 
                 util.DEBUG_LOG('ZidooPlayer: Monitor 1')
                 # Wait for the zidoo player to get going
                 zidooStatusFull = None
                 while((zidooStatusFull is None or zidooStatusFull['video']['duration'] <= 0) and not util.MONITOR.abortRequested() and not self._closed):
-                    util.MONITOR.waitForAbort(1.0)
+                    time.sleep(1)
                     zidooStatusFull = self.getZidooPlayerStatus()
                     if zidooStatusFull is None:
                         # Check to see if the user cleared the error message, if so then we can stop monitoring
@@ -1728,7 +1730,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                     util.DEBUG_LOG('ZidooPlayer: Monitor 2')
                     # Loop here while the movie is still being played
                     while self.started and not util.MONITOR.abortRequested() and not self._closed:
-                        util.MONITOR.waitForAbort(1.0)
+                        time.sleep(1)
                         zidooStatusFull = self.getZidooPlayerStatus()
                         if zidooStatusFull is not None:
                             if zidooStatusFull['video']['duration'] > 0:
