@@ -1725,7 +1725,6 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                         util.MONITOR.waitForAbort(1.0)
                         zidooStatusFull = self.getZidooPlayerStatus()
                         if zidooStatusFull is not None:
-                            consecutiveFailedCalls = 0
                             if zidooStatusFull['video']['duration'] > 0:
                                 zidooStatus = zidooStatusFull['video']['status']
                                 if zidooStatus == 0 or zidooStatus == 1:
@@ -1748,8 +1747,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                                 self.playState = self.STATE_STOPPED
                                 break
                         else:
-                            consecutiveFailedCalls += 1
-                            if consecutiveFailedCalls > 5:
+                            # Check to see if the user cleared the error message, if so then we can stop monitoring
+                            if self.zidooFailureDialog is None or xbmcgui.getCurrentWindowDialogId() != self.zidooFailureDialog._winID:
                                 self.playState = self.STATE_STOPPED
                                 break
 
