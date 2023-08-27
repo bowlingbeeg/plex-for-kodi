@@ -6,6 +6,7 @@ import re
 import requests
 import os
 import time
+import math
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -22,7 +23,7 @@ from plexnet import util as plexnetUtil
 from six.moves import range
 
 FIVE_MINUTES_MILLIS = 300000
-
+FINAL_MARKER_NEGOFF = 1000
 
 class BasePlayerHandler(object):
     def __init__(self, player, session_id=None):
@@ -1374,6 +1375,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.thread = None
         self.playState = self.STATE_STOPPED
         self.resume = False
+        self.currentMarker = None
         self.reset()
         self.open()
 
@@ -1381,6 +1383,9 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
     def open(self):
         self._closed = False
+        self.autoSkipIntro = util.getSetting('auto_skip_intro', False)
+        self.autoSkipCredits = util.getSetting('auto_skip_credits', False)
+        self.hasPlexPass = plexapp.ACCOUNT and plexapp.ACCOUNT.hasPlexPass() or False
         self.monitor()
 
     def close(self, shutdown=False):
@@ -1396,6 +1401,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.duration = 0
         self.playState = self.STATE_STOPPED
         self.zidooFailureDialog = None
+        self.currentMarker = None
 
     def currentTrack(self):
         if self.handler.media and self.handler.media.type == 'track':
@@ -1740,6 +1746,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                                     newTime = zidooStatusFull['video']['currentPosition']
                                     if newTime > 0:
                                         self.currentTime = newTime / 1000
+                                        if self.autoSkipIntro or self.autoSkipCredits:
+                                            self.checkAutoSkip()
                                 else:
                                     self.playState = self.STATE_STOPPED
                                     break
@@ -1761,6 +1769,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
                 util.DEBUG_LOG('ZidooPlayer: Monitor 3')
                 if not util.MONITOR.abortRequested() and not self._closed:
+                    self.currentMarker = None
                     self.onPlayBackStopped()
 
             self.handler.close()
@@ -1795,6 +1804,41 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return None
 
         return response_json
+
+    def getZidooPlayerSeek(self, position):
+        try:
+            url = f'http://127.0.0.1:9529/ZidooVideoPlay/seekTo?positon={position}'
+            response = requests.get(url, timeout=2)
+        except requests.exceptions.RequestException as e:
+            util.ERROR('Zidoo player seek failed')
+            return None
+
+        response_json = response.json()
+        util.DEBUG_LOG(response_json)
+        if response_json['status'] != 200:
+            return None
+
+        return response_json
+
+    def checkAutoSkip(self):
+        if not self.hasPlexPass or not self.video.markers:
+            return
+
+        for marker in self.video.markers:
+            if (marker.type == 'intro' and self.autoSkipIntro) or (marker.type == 'credits' and self.autoSkipCredits):
+                if int(marker.startTimeOffset) <= math.floor(self.currentTime*1000) < (math.ceil(float(marker.endTimeOffset)) - FINAL_MARKER_NEGOFF):
+                    # Make sure we don't re-trigger the same marker that way the user can seek back into the skip zone and it won't automatically jump out of it again
+                    if not self.currentMarker or self.currentMarker.startTimeOffset != marker.startTimeOffset:
+                        self.currentMarker = marker
+
+                        markerOff = 0
+                        if marker.type == "credits" and marker.final:
+                            # offset final marker seek so we can trigger postPlay
+                            markerOff = FINAL_MARKER_NEGOFF
+
+                        util.DEBUG_LOG(f'ZidooAutoSkip: Skipping to {math.ceil(float(marker.endTimeOffset)) - markerOff}')
+                        self.getZidooPlayerSeek(math.ceil(float(marker.endTimeOffset)) - markerOff)
+                    break
 
     def isPlaying(self):
         if not self.handler or not isinstance(self.handler, ZidooPlayerHandler):
