@@ -1265,6 +1265,9 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.shouldShowPostPlay():
             return False
 
+        if self.player.zidooFailureDialog:
+            self.player.zidooFailureDialog.doClose()
+
         self.player.trigger('post.play', video=self.player.video, playlist=self.playlist, handler=self)
 
         return True
@@ -1448,9 +1451,10 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             xbmc.executebuiltin(f'StartAndroidActivity(com.hpn789.plextozidoo, android.intent.action.VIEW, video/*, {url})')
 
             # Put up this error message in the background in case we can't start the zidoo player.  If we actually get the player started we'll just kill this dialog
-            time.sleep(2)
-            from .windows import optionsdialog
-            self.zidooFailureDialog = optionsdialog.create(show=True, header="Error", info="Failed to start Zidoo player", button0="OK")
+            if not self.zidooFailureDialog or self.zidooFailureDialog.closing():
+                time.sleep(2)
+                from .windows import optionsdialog
+                self.zidooFailureDialog = optionsdialog.create(show=True, header="Error", info="Failed to start Zidoo player", button0="OK")
 
             self.handler.seekOnStart = 0
             self.onPrePlayStarted()
@@ -1722,7 +1726,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                     zidooStatusFull = self.getZidooPlayerStatus()
                     if zidooStatusFull is None:
                         # Check to see if the user cleared the error message, if so then we can stop monitoring
-                        if self.zidooFailureDialog is None or xbmcgui.getCurrentWindowDialogId() != self.zidooFailureDialog._winID:
+                        if self.zidooFailureDialog is None or self.zidooFailureDialog.closing():
                             self.playState = self.STATE_STOPPED
                             break
 
@@ -1758,16 +1762,11 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                                 break
                         else:
                             # Check to see if the user cleared the error message, if so then we can stop monitoring
-                            if self.zidooFailureDialog is None or xbmcgui.getCurrentWindowDialogId() != self.zidooFailureDialog._winID:
+                            if self.zidooFailureDialog is None or self.zidooFailureDialog.closing():
                                 self.playState = self.STATE_STOPPED
                                 break
 
                         self.handler.tick()
-
-                    if self.zidooFailureDialog is not None:
-                        self.zidooFailureDialog.doClose()
-                        del self.zidooFailureDialog
-                        self.zidooFailureDialog = None
 
                 util.DEBUG_LOG('ZidooPlayer: Monitor 3')
                 if not util.MONITOR.abortRequested() and not self._closed:

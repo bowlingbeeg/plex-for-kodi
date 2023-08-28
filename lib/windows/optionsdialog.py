@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from . import kodigui
 
 from lib import util
+import traceback
+from kodi_six import xbmcgui
 
 
 class OptionsDialog(kodigui.BaseDialog):
@@ -45,6 +47,16 @@ class OptionsDialog(kodigui.BaseDialog):
         if controlID in self.BUTTON_IDS:
             self.buttonChoice = self.BUTTON_IDS.index(controlID)
             self.doClose()
+
+    def onAction(self, action):
+        try:
+            if action in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK):
+                self.doClose()
+                return
+        except:
+            traceback.print_exc()
+
+        kodigui.BaseDialog.onAction(self, action)
 
 
 def show(header, info, button0=None, button1=None, button2=None):
