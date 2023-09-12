@@ -665,17 +665,22 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         resume = False
         if episode.viewOffset.asInt():
-            button = optionsdialog.show(
-                T(32314, 'In Progress'),
-                T(32315, 'Resume playback?'),
-                T(32316, 'Resume'),
-                T(32317, 'Play From Beginning')
+            choice = dropdown.showDropdown(
+                options=[
+                    {'key': 'resume', 'display': T(32429, 'Resume from {0}').format(util.timeDisplay(episode.viewOffset.asInt()).lstrip('0').lstrip(':'))},
+                    {'key': 'play', 'display': T(32317, 'Play from beginning')}
+                ],
+                pos=(660, 441),
+                close_direction='none',
+                set_dropdown_prop=False,
+                header=T(32314, 'In Progress')
             )
 
-            if button is None:
+            if not choice:
                 return
 
-            resume = (button == 0)
+            if choice['key'] == 'resume':
+                resume = True
 
         pl = playlist.LocalPlaylist(self.show_.all(), self.show_.getServer())
         if len(pl):  # Don't use playlist if it's only this video
