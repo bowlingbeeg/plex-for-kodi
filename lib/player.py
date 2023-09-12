@@ -1673,6 +1673,10 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if not self.started:
             self.onPlayBackFailed()
 
+        if isinstance(self.handler, ZidooPlayerHandler) and self.lastPlayWasBGM and not self.isPlaying():
+            self.lastPlayWasBGM = False
+            return
+
         util.DEBUG_LOG('ZidooPlayer: STOPPED' + (not self.started and ': FAILED' or ''))
         self.started = False
         if not self.handler:
@@ -1682,6 +1686,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     def onPlayBackEnded(self):
         if not self.started:
             self.onPlayBackFailed()
+
+        self.lastPlayWasBGM = False
 
         util.DEBUG_LOG('ZidooPlayer: ENDED' + (not self.started and ': FAILED' or ''))
         self.started = False
@@ -1704,6 +1710,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             while not util.MONITOR.abortRequested() and self.isPlaying():
                 time.sleep(0.1)
             time.sleep(0.2)
+            if isinstance(self.handler, BGMPlayerHandler):
+                self.onPlayBackStopped()
             util.DEBUG_LOG('ZidooPlayer: Stopping and waiting...Done')
 
     def monitor(self):
