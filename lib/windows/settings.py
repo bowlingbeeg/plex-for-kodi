@@ -119,6 +119,10 @@ class OptionsSetting(BasicSetting):
 
         return 0
 
+class AutoSkipSetting(OptionsSetting):
+    def __init__(self, ID, label):
+        OptionsSetting.__init__(self, ID, label, "0", options=(('-10', '-10'), ('-5','-5'), ('0','0'), ('5','5'), ('10','10')))
+
 
 class InfoSetting(BasicSetting):
     type = 'INFO'
@@ -275,10 +279,30 @@ class Settings(object):
                 ).description(
                     T(32523, 'Automatically skip intros if available.')
                 ),
+                AutoSkipSetting(
+                    'auto_skip_intro_start_offset', T(32529, '    Skip Intro Start Offset')
+                ).description(
+                    T(32530, 'Number of seconds to delay(or start early if negative number) the start trigger.')
+                ),
+                AutoSkipSetting(
+                    'auto_skip_intro_end_offset', T(32531, '    Skip Intro End Offset')
+                ).description(
+                    T(32532, 'Number of seconds to delay(or end early if negative number) the end trigger.')
+                ),
                 BoolSetting(
                     'auto_skip_credits', T(32526, 'Auto Skip Credits'), False
                 ).description(
                     T(32527, 'Automatically skip credits if available.')
+                ),
+                AutoSkipSetting(
+                    'auto_skip_credits_start_offset', T(32533, '    Skip Credits Start Offset')
+                ).description(
+                    T(32530, 'Number of seconds to delay(or start early if negative number) the start trigger.')
+                ),
+                AutoSkipSetting(
+                    'auto_skip_credits_end_offset', T(32534, '    Skip Credits End Offset')
+                ).description(
+                    T(32532, 'Number of seconds to delay(or end early if negative number) the end trigger.')
                 ),
             )
         ),

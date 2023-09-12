@@ -1388,7 +1388,11 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     def open(self):
         self._closed = False
         self.autoSkipIntro = util.getSetting('auto_skip_intro', False)
+        self.autoSkipIntroStartOffset = int(util.getSetting('auto_skip_intro_start_offset', 0))
+        self.autoSkipIntroEndOffset = int(util.getSetting('auto_skip_intro_end_offset', 0))
         self.autoSkipCredits = util.getSetting('auto_skip_credits', False)
+        self.autoSkipCreditsStartOffset = int(util.getSetting('auto_skip_credits_start_offset', 0))
+        self.autoSkipCreditsEndOffset = int(util.getSetting('auto_skip_credits_end_offset', 0))
         self.hasPlexPass = plexapp.ACCOUNT and plexapp.ACCOUNT.hasPlexPass() or False
         self.monitor()
 
@@ -1827,18 +1831,31 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         for marker in self.video.markers:
             if (marker.type == 'intro' and self.autoSkipIntro) or (marker.type == 'credits' and self.autoSkipCredits):
-                if int(marker.startTimeOffset) <= math.floor(self.currentTime*1000) < (math.ceil(float(marker.endTimeOffset)) - FINAL_MARKER_NEGOFF):
+                startTriggerOffset = 0
+                endTriggerOffset = 0
+                if marker.type == 'intro':
+                    startTriggerOffset = self.autoSkipIntroStartOffset * 1000
+                    endTriggerOffset = self.autoSkipIntroEndOffset * 1000
+                elif marker.type == 'credits':
+                    startTriggerOffset = self.autoSkipCreditsStartOffset * 1000
+                    endTriggerOffset = self.autoSkipCreditsEndOffset * 1000
+
+                # Make sure we don't use any negative time values
+                triggerStartTime = int(marker.startTimeOffset) + startTriggerOffset
+                if triggerStartTime < 0:
+                    triggerStartTime = 0
+
+                # Make sure we don't skip past the end, the FINAL_MARKER_NEGOFF is so that the postplay screen will show
+                triggerEndTime = math.ceil(float(marker.endTimeOffset)) + endTriggerOffset
+                if triggerEndTime > (int(self.getTotalTime() * 1000) - FINAL_MARKER_NEGOFF):
+                    triggerEndTime = int(self.getTotalTime() * 1000) - FINAL_MARKER_NEGOFF
+
+                if triggerStartTime <= math.floor(self.currentTime*1000) < triggerEndTime:
                     # Make sure we don't re-trigger the same marker that way the user can seek back into the skip zone and it won't automatically jump out of it again
                     if not self.currentMarker or self.currentMarker.startTimeOffset != marker.startTimeOffset:
                         self.currentMarker = marker
-
-                        markerOff = 0
-                        if marker.type == "credits" and marker.final:
-                            # offset final marker seek so we can trigger postPlay
-                            markerOff = FINAL_MARKER_NEGOFF
-
-                        util.DEBUG_LOG(f'ZidooAutoSkip: Skipping to {math.ceil(float(marker.endTimeOffset)) - markerOff}')
-                        self.getZidooPlayerSeek(math.ceil(float(marker.endTimeOffset)) - markerOff)
+                        util.DEBUG_LOG(f'ZidooAutoSkip: Skipping to {triggerEndTime}')
+                        self.getZidooPlayerSeek(triggerEndTime)
                     break
 
     def isPlaying(self):
