@@ -121,7 +121,7 @@ class OptionsSetting(BasicSetting):
 
 class AutoSkipSetting(OptionsSetting):
     def __init__(self, ID, label):
-        OptionsSetting.__init__(self, ID, label, "0", options=(('-10', '-10'), ('-5','-5'), ('0','0'), ('5','5'), ('10','10')))
+        OptionsSetting.__init__(self, ID, label, "0", options=(('-10', '-10'), ('-5','-5'), ('-3','-3'), ('0','0'), ('3','3'), ('5','5'), ('10','10')))
 
 
 class InfoSetting(BasicSetting):
