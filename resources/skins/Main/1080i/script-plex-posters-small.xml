@@ -123,7 +123,7 @@
                     <preloaditems>2</preloaditems>
                     <pagecontrol>152</pagecontrol>
                     <!-- ITEM LAYOUT ########################################## -->
-                    <itemlayout width="170" height="265">
+                    <itemlayout width="170" height="262">
                         <control type="group">
                             <posx>55</posx>
                             <posy>137</posy>
@@ -211,7 +211,7 @@
                                     <posx>0</posx>
                                     <posy>218</posy>
                                     <width>144</width>
-                                    <height>30</height>
+                                    <height>32</height>
                                     <font>font10</font>
                                     <align>center</align>
                                     <textcolor>FFFFFFFF</textcolor>
@@ -222,7 +222,7 @@
                     </itemlayout>
 
                     <!-- FOCUSED LAYOUT ####################################### -->
-                    <focusedlayout width="170" height="265">
+                    <focusedlayout width="170" height="262">
                         <control type="group">
                             <posx>55</posx>
                             <posy>137</posy>
@@ -323,7 +323,7 @@
                                         <posx>0</posx>
                                         <posy>218</posy>
                                         <width>144</width>
-                                        <height>30</height>
+                                        <height>32</height>
                                         <font>font10</font>
                                         <align>center</align>
                                         <textcolor>FFFFFFFF</textcolor>
