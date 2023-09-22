@@ -484,8 +484,9 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
                 self.setWindows(VIEWS_POSTER.get('all'))
                 self.setDefault(VIEWS_POSTER.get(viewtype))
 
+    @busy.dialog()
     def doClose(self):
-        self.tasks.cancel()
+        self.tasks.kill()
         kodigui.MultiWindow.doClose(self)
 
     def onFirstInit(self):
