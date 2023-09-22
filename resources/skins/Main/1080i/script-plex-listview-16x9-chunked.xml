@@ -505,27 +505,17 @@
                                 <textcolor>99FFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
                             </control>
-                            <control type="group">
+                            <control type="label">
                                 <visible>String.IsEqual(Window(10000).Property(script.plex.key), ListItem.Property(key))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>34</width>
-                                    <height>34</height>
-                                    <colordiffuse>99FFFFFF</colordiffuse>
-                                    <texture border="12">script.plex/white-square-rounded.png</texture>
-                                </control>
-                                <control type="label">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>34</width>
-                                    <height>32</height>
-                                    <font>font10</font>
-                                    <align>center</align>
-                                    <aligny>center</aligny>
-                                    <textcolor>FF000000</textcolor>
-                                    <label>$INFO[ListItem.Label]</label>
-                                </control>
+                                <posx>0</posx>
+                                <posy>0</posy>
+                                <width>34</width>
+                                <height>32</height>
+                                <font>font10</font>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                                <textcolor>FFE5A00D</textcolor>
+                                <label>$INFO[ListItem.Label]</label>
                             </control>
                         </control>
                     </control>
@@ -551,27 +541,17 @@
                                 <textcolor>99FFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
                             </control>
-                            <control type="group">
+                            <control type="label">
                                 <visible>String.IsEqual(Window(10000).Property(script.plex.key), ListItem.Property(key))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>34</width>
-                                    <height>34</height>
-                                    <colordiffuse>99FFFFFF</colordiffuse>
-                                    <texture border="12">script.plex/white-square-rounded.png</texture>
-                                </control>
-                                <control type="label">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>34</width>
-                                    <height>32</height>
-                                    <font>font10</font>
-                                    <align>center</align>
-                                    <aligny>center</aligny>
-                                    <textcolor>FF000000</textcolor>
-                                    <label>$INFO[ListItem.Label]</label>
-                                </control>
+                                <posx>0</posx>
+                                <posy>0</posy>
+                                <width>34</width>
+                                <height>32</height>
+                                <font>font10</font>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                                <textcolor>FFE5A00D</textcolor>
+                                <label>$INFO[ListItem.Label]</label>
                             </control>
                         </control>
 
