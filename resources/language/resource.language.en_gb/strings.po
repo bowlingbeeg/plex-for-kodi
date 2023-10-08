@@ -1118,6 +1118,30 @@ msgctxt "#32528"
 msgid "Set how long the skip credits button shows for."
 msgstr ""
 
+msgctxt "#32529"
+msgid "    Skip Intro Start Offset"
+msgstr ""
+
+msgctxt "#32530"
+msgid "Number of seconds to delay(or start early if negative number) the start trigger."
+msgstr ""
+
+msgctxt "#32531"
+msgid "    Skip Intro End Offset"
+msgstr ""
+
+msgctxt "#32532"
+msgid "Number of seconds to delay(or end early if negative number) the end trigger."
+msgstr ""
+
+msgctxt "#32533"
+msgid "    Skip Credits Start Offset"
+msgstr ""
+
+msgctxt "#32534"
+msgid "    Skip Credits End Offset"
+msgstr ""
+
 msgctxt "#32540"
 msgid "Show when the current video will end in player"
 msgstr ""

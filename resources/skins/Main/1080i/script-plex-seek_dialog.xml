@@ -148,7 +148,7 @@
                     <align>center</align>
                     <aligny>center</aligny>
                     <textcolor>FFCC7B19</textcolor>
-                    <label>[UPPERCASE]$ADDON[script.plexmod 32436][/UPPERCASE]</label>
+                    <label>[UPPERCASE]$ADDON[script.zidooplexmod 32436][/UPPERCASE]</label>
                 </control>
             </control>
 
@@ -217,7 +217,7 @@
                 <textoffsetx>70</textoffsetx>
                 <textcolor>FF000000</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
-                <!--<label>$ADDON[script.plexmod 32495]</label>-->
+                <!--<label>$ADDON[script.zidooplexmod 32495]</label>-->
                 <label>$INFO[Window.Property(skipMarkerName)]</label>
             </control>
         </control>

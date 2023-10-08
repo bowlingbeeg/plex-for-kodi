@@ -141,7 +141,7 @@ class AdvancedSettings(object):
         ("postplay_timeout", 16),
         ("skip_intro_button_timeout", 10),
         ("skip_credits_button_timeout", 10),
-        ("playlist_visit_media", True),
+        ("playlist_visit_media", False),
         ("intro_skip_early", False),
         ("show_media_ends_info", True),
         ("show_media_ends_label", True),
