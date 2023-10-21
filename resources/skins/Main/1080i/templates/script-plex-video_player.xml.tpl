@@ -54,7 +54,7 @@
             <align>left</align>
             <aligny>center</aligny>
             <textcolor>A0FFFFFF</textcolor>
-            <label>[UPPERCASE]$ADDON[script.plexmod 32438][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 32438][/UPPERCASE]</label>
         </control>
 
         <control type="group" id="100">
@@ -165,7 +165,7 @@
                         <align>left</align>
                         <aligny>center</aligny>
                         <textcolor>FFFFFFFF</textcolor>
-                        <label>[UPPERCASE]$ADDON[script.plexmod 32439][/UPPERCASE]</label>
+                        <label>[UPPERCASE]$ADDON[script.zidooplexmod 32439][/UPPERCASE]</label>
                     </control>
                     <control type="group">
                         <posx>582</posx>
@@ -375,7 +375,7 @@
                     <align>left</align>
                     <aligny>center</aligny>
                     <textcolor>FFFFFFFF</textcolor>
-                    <label>[UPPERCASE]$ADDON[script.plexmod 32440][/UPPERCASE]</label>
+                    <label>[UPPERCASE]$ADDON[script.zidooplexmod 32440][/UPPERCASE]</label>
                 </control>
                 <control type="list" id="400">
                     <posx>0</posx>
@@ -899,7 +899,7 @@
                     <align>left</align>
                     <aligny>center</aligny>
                     <textcolor>FFFFFFFF</textcolor>
-                    <label>[UPPERCASE]$ADDON[script.plexmod 32419][/UPPERCASE]</label>
+                    <label>[UPPERCASE]$ADDON[script.zidooplexmod 32419][/UPPERCASE]</label>
                 </control>
                 <control type="list" id="403">
                     <posx>0</posx>

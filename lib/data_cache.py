@@ -113,7 +113,7 @@ class DataCacheManager(object):
                     d = zlib.compress(d.encode("utf-8"))
                 dcf.write(d)
                 dcf.close()
-                LOG("Data cache written to: addon_data/script.plexmod/data_cache.json")
+                LOG("Data cache written to: addon_data/script.zidooplexmod/data_cache.json")
             except:
                 ERROR("Couldn't write data_cache.json")
 

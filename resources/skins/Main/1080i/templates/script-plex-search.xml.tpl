@@ -70,7 +70,7 @@
     <align>left</align>
     <aligny>center</aligny>
     <textcolor>FFFFFFFF</textcolor>
-    <label>[UPPERCASE]$ADDON[script.plexmod 32431][/UPPERCASE]</label>
+    <label>[UPPERCASE]$ADDON[script.zidooplexmod 32431][/UPPERCASE]</label>
 </control>
 
 <control type="group" id="899">
@@ -124,7 +124,7 @@
                 <align>center</align>
                 <aligny>center</aligny>
                 <textcolor>FFFFFFFF</textcolor>
-                <label>$ADDON[script.plexmod 32345]</label>
+                <label>$ADDON[script.zidooplexmod 32345]</label>
             </control>
         </control>
         <control type="group">
@@ -1675,7 +1675,7 @@
                 <focusedcolor>FF000000</focusedcolor>
                 <texturefocus colordiffuse="FFE5A00D" border="50">script.plex/white-square-rounded-with-shadow.png</texturefocus>
                 <texturenofocus>-</texturenofocus>
-                <label>$ADDON[script.plexmod 32322]</label>
+                <label>$ADDON[script.zidooplexmod 32322]</label>
             </control>
         </control>
         <control type="group">
@@ -1698,7 +1698,7 @@
                 <focusedcolor>FF000000</focusedcolor>
                 <texturefocus colordiffuse="FFE5A00D" border="50">script.plex/white-square-rounded-with-shadow.png</texturefocus>
                 <texturenofocus>-</texturenofocus>
-                <label>$ADDON[script.plexmod 32432]</label>
+                <label>$ADDON[script.zidooplexmod 32432]</label>
             </control>
         </control>
         <control type="group">
@@ -1721,7 +1721,7 @@
                 <focusedcolor>FF000000</focusedcolor>
                 <texturefocus colordiffuse="FFE5A00D" border="50">script.plex/white-square-rounded-with-shadow.png</texturefocus>
                 <texturenofocus>-</texturenofocus>
-                <label>$ADDON[script.plexmod 32433]</label>
+                <label>$ADDON[script.zidooplexmod 32433]</label>
             </control>
         </control>
     </control>
@@ -1741,7 +1741,7 @@
             <align>right</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$ADDON[script.plexmod 32434][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 32434][/UPPERCASE]</label>
         </control>
         <control type="group">
             <posx>480</posx>
@@ -1771,7 +1771,7 @@
             <align>center</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$ADDON[script.plexmod 32435][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 32435][/UPPERCASE]</label>
         </control>
     </control>
 </control>

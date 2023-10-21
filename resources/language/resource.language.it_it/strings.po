@@ -2007,10 +2007,10 @@ msgstr "Recensioni"
 msgctxt "#32954"
 msgid "Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n"
 "\n"
-"To customize other cache/network-related values, copy \"script.plexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
+"To customize other cache/network-related values, copy \"script.zidooplexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
 msgstr "Necessita riavvio di Kodi. ATTENZIONE: Questo sovrascriverà il file advancedsettings.xml!\n"
 "\n"
-"Per personalizzare altri valori relativi alla cache/rete, copia \"script.plexmod/pm4k_cache_template.xml\" nella cartella del profilo e modificalo secondo le tue preferenze. (Consulta la sezione Informazioni per i percorsi dei file)"
+"Per personalizzare altri valori relativi alla cache/rete, copia \"script.zidooplexmod/pm4k_cache_template.xml\" nella cartella del profilo e modificalo secondo le tue preferenze. (Consulta la sezione Informazioni per i percorsi dei file)"
 
 #: 
 msgctxt "#32955"
@@ -2162,9 +2162,9 @@ msgstr "Tema del Player"
 #: 
 msgctxt "#32984"
 msgid "Sets the player theme. Currently only customizes the playback control buttons. ATTENTION: [I]Might[/I] need an addon restart.\n"
-"In order to customize this, copy one of the xml's in script.plexmod/resources/skins/Main/1080i/templates to addon_data/script.plexmod/templates/seek_dialog_buttons_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
+"In order to customize this, copy one of the xml's in script.zidooplexmod/resources/skins/Main/1080i/templates to addon_data/script.zidooplexmod/templates/seek_dialog_buttons_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
 msgstr "Imposta il tema del lettore. Attualmente personalizza solo i pulsanti di controllo della riproduzione. ATTENZIONE: [I]Potrebbe[/I] essere necessario riavviare l'addon. \n"
-"Per personalizzarlo, copia uno degli xml in script.plexmod/resources/skins/Main/1080i/templates in addon_data/script.plexmod/templates/seek_dialog_buttons_custom.xml e modificalo secondo le tue preferenze, quindi seleziona \"Personalizzato\" come tema."
+"Per personalizzarlo, copia uno degli xml in script.zidooplexmod/resources/skins/Main/1080i/templates in addon_data/script.zidooplexmod/templates/seek_dialog_buttons_custom.xml e modificalo secondo le tue preferenze, quindi seleziona \"Personalizzato\" come tema."
 
 #: 
 msgctxt "#32985"
@@ -2248,8 +2248,8 @@ msgstr "Abilita path mapping"
 
 #: 
 msgctxt "#33001"
-msgid "Honor path_mapping.json in the addon_data/script.plexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
-msgstr "Rispetta path_mapping.json nella cartella addon_data/script.plexmod quando riproduci direttamente i media. Questo può essere utilizzato per lo streaming utilizzando altre tecniche come SMB/NFS/ecc. invece dell'handler HTTP predefinito. È incluso un'esempio di path_mapping.json nella cartella principale dell'addon come path_mapping.example.json."
+msgid "Honor path_mapping.json in the addon_data/script.zidooplexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
+msgstr "Rispetta path_mapping.json nella cartella addon_data/script.zidooplexmod quando riproduci direttamente i media. Questo può essere utilizzato per lo streaming utilizzando altre tecniche come SMB/NFS/ecc. invece dell'handler HTTP predefinito. È incluso un'esempio di path_mapping.json nella cartella principale dell'addon come path_mapping.example.json."
 
 #: 
 msgctxt "#33002"

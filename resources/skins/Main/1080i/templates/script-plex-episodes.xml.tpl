@@ -257,7 +257,7 @@
                 <textoffsetx>15</textoffsetx>
                 <texturefocus colordiffuse="FFAC3223" border="12">script.plex/white-square-rounded.png</texturefocus>
                 <texturenofocus colordiffuse="FFAC3223" border="12">script.plex/white-square-rounded.png</texturenofocus>
-                <label>$ADDON[script.plexmod 32312]</label>
+                <label>$ADDON[script.zidooplexmod 32312]</label>
             </control>
         </control>
         <control type="grouplist">
@@ -327,7 +327,7 @@
                 <textoffsetx>15</textoffsetx>
                 <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
                 <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>[UPPERCASE]$ADDON[script.plexmod 32395][/UPPERCASE]</label>
+                <label>[UPPERCASE]$ADDON[script.zidooplexmod 32395][/UPPERCASE]</label>
             </control>
             <control type="label">
                 <width>auto</width>
@@ -351,7 +351,7 @@
                 <textoffsetx>15</textoffsetx>
                 <texturefocus colordiffuse="40000000" border="12">script.plex/white-square-rounded-top-padded.png</texturefocus>
                 <texturenofocus colordiffuse="40000000" border="12">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>[UPPERCASE]$ADDON[script.plexmod 32396][/UPPERCASE]</label>
+                <label>[UPPERCASE]$ADDON[script.zidooplexmod 32396][/UPPERCASE]</label>
             </control>
             <control type="label">
                 <visible>!String.IsEmpty(Container(400).ListItem.Property(subtitles))</visible>
@@ -893,7 +893,7 @@
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>FFFFFFFF</textcolor>
-                <label>[UPPERCASE]$ADDON[script.plexmod 32419][/UPPERCASE]</label>
+                <label>[UPPERCASE]$ADDON[script.zidooplexmod 32419][/UPPERCASE]</label>
             </control>
             <control type="list" id="402">
                 <posx>0</posx>

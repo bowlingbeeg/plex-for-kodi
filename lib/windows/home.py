@@ -737,7 +737,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             return
 
         if (self.is_active and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
-                not xbmc.Player().isPlayingVideo()):
+                not xbmc.Player().isPlayingVideo() and not player.PLAYER.isPlaying()):
             self.showHubs(self.lastSection, update=True)
 
     def doClose(self):
@@ -1053,7 +1053,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     def refreshLastSection(self, *args, **kwargs):
         self.enableUpdates()
-        if not xbmc.Player().isPlayingVideo():
+        if not xbmc.Player().isPlayingVideo() and not player.PLAYER.isPlaying():
             util.LOG("Refreshing last section after wake events")
             self.showHubs(self.lastSection, force=True)
 
