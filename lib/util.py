@@ -162,7 +162,7 @@ class AdvancedSettings(object):
         ("postplay_timeout", 16),
         ("skip_intro_button_timeout", 10),
         ("skip_credits_button_timeout", 10),
-        ("playlist_visit_media", True),
+        ("playlist_visit_media", False),
         ("intro_skip_early", False),
         ("show_media_ends_info", True),
         ("show_media_ends_label", True),
@@ -173,7 +173,7 @@ class AdvancedSettings(object):
         ("local_reach_timeout", 10),
         ("auto_skip_offset", 2.5),
         ("conn_check_timeout", 2.5),
-        ("postplayCancel", True),
+        ("postplayCancel", False),
         ("skip_marker_timer_cancel", True),
         ("skip_marker_timer_immediate", False),
         ("low_drift_timer", True),
@@ -187,7 +187,7 @@ class AdvancedSettings(object):
         ("poster_resolution_scale_perc", 100),
         ("consecutive_video_pb_wait", 0.0),
         ("retrieve_all_media_up_front", False),
-        ("library_chunk_size", 240),
+        ("library_chunk_size", 60),
     )
 
     def __init__(self):
@@ -279,7 +279,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
     def onNotification(self, sender, method, data):
         LOG("Notification: {} {} {}".format(sender, method, data))
-        if sender == 'script.plexmod' and method.endswith('RESTORE'):
+        if sender == 'script.zidooplexmod' and method.endswith('RESTORE'):
             from .windows import kodigui
             if not kodigui.BaseFunctions.lastWinID:
                 ERROR("Addon never properly started, can't reactivate")

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.plexmod"
-       name="Plex"
-       version="0.7.6"
-       provider-name="pannal">
+<addon id="script.zidooplexmod"
+       name="ZidooPlexMod"
+       version="0.3.6"
+       provider-name="bowlingbeeg">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.27.1+matrix.1"/>
@@ -17,9 +17,9 @@
     </extension>
     <extension point="xbmc.service" library="service.py" />
     <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">PlexMod for Kodi</summary>
-        <summary lang="es_ES">PlexMod para Kodi</summary>
-        <summary lang="de_DE">PlexMod für Kodi</summary>
+        <summary lang="en_GB">ZidooPlexMod for Kodi</summary>
+        <summary lang="es_ES">ZidooPlexMod para Kodi</summary>
+        <summary lang="de_DE">ZidooPlexMod für Kodi</summary>
         <description lang="en_GB">Unofficial Plex for Kodi add-on</description>
         <description lang="es_ES">Complemento no oficial de Plex para Kodi</description>
         <description lang="de_DE">Inoffizielles Plex für Kodi add-on</description>
@@ -28,38 +28,13 @@
         <disclaimer lang="de">Dieses Addon wird nicht von der Firma Plex Inc. unterstützt</disclaimer>
 
         <license>GPL-2.0-only</license>
-        <forum>https://forums.plex.tv/t/plexmod-for-kodi-18-19-20-21/481208</forum>
+        <forum>http://forum.zidoo.tv/index.php?threads/plextozidoo-an-external-player-for-plex-using-native-zidoo-player.94714/</forum>
         <website>https://www.plex.tv</website>
-        <source>https://github.com/pannal/plex-for-kodi</source>
+        <source>https://github.com/bowlingbeeg/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Core: Avoid DNS rebind protection issues for plex.direct
-- Core: Support ipv6 plex.direct hosts when checking for locality/LAN
-- Core: Network: Massively speed up local connection checks
-- Core: Network: Skip local connection checks for plex.tv
-- Core: Network: Add 172.16.0.0/12 as local network
-- Core: MyPlex: Ignore non-server resources
-- Core: Use correct default for LAN_REACHABILITY_TIMEOUT
-- Core: Cache home users indefinitely; add refresh button to user select
-- Core: Add support for adaptive readfactor from Kodi Omega BETA3 onwards; recommend it instead of the default range
-- Core: Add setting to allow VC1 DirectPlay (default on; was on by default before)
-- Core: MDE: Fix DirectStreaming when media has no deep analysis by setting the maximum bitrate to unlimited in maximum quality mode
-- Core: Simplify video DirectStream codec decision handling
-- Core: Make sure our home window opens, exit if it doesn't in time; unify waiting for window functionality
-- Home: Add "Refresh Users" action to user dropdown to refresh available home users
-- Home: Reduce unnecessary section refreshes if the section hasn't changed
-- Playback: Fix PlayQueue crashing
-- Userselect: Remove legacy thread/cache handling leftovers
-- Userselect: Fix ACTION_PREVIOUS_MENU/ESC closing the addon instead of leaving the user selection
-- SeekDialog: Avoid accidental seeking when navigating through player buttons after closing player settings without changing anything
-- SeekDialog: Hide OSD fast after changing subtitle via settings
-- SeekDialog: Show episode year in player overlay if possible
-- SeekDialog: Widen episode/movie title line
-- SeekDialog: Autoscroll episode/movie title lines for too long titles
-- SeekDialog: Hide non-autoskipping marker into the OSD using NAV_BACK/PREVIOUS_MENU
-- SeekDialog: Apply positive marker endtime offset to manually skipping markers as well (unifying with the autoskip handling), to avoid re-showing the marker occasionally after seeking
-- Library: Show current total item count in title
-- Settings: Add description for Direct Stream
+            Support zidoo player for Kodi 20+
+            Support custom library layout via xml file
         </news>
         <assets>
             <icon>icon.png</icon>
