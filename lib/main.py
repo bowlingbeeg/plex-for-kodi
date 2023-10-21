@@ -59,7 +59,7 @@ def realExit():
         xbmc.executebuiltin('Quit')
 
     elif restart:
-        xbmc.executebuiltin('RunScript(script.plexmod)')
+        xbmc.executebuiltin('RunScript(script.zidooplexmod)')
 
 
 def signout():

@@ -9,7 +9,7 @@
     <align>left</align>
     <aligny>center</aligny>
     <textcolor>FFFFFFFF</textcolor>
-    <label>[UPPERCASE]$ADDON[script.plexmod 32333][/UPPERCASE]</label>
+    <label>[UPPERCASE]$ADDON[script.zidooplexmod 32333][/UPPERCASE]</label>
 </control>
 {% endblock %}
 {% block content %}
@@ -71,7 +71,7 @@
             <align>left</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$ADDON[script.plexmod 32048][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 32048][/UPPERCASE]</label>
         </control>
         <control type="list" id="101">
             <posx>0</posx>
@@ -229,7 +229,7 @@
             <align>left</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$ADDON[script.plexmod 32053][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 32053][/UPPERCASE]</label>
         </control>
         <control type="list" id="301">
             <posx>-21.5</posx>

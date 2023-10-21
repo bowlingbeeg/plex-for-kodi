@@ -520,10 +520,10 @@ class Settings(object):
                              '. This setting fixes that by ignoring the PMSs decision and selecting the same language '
                              'without a forced flag if possible.')
                 ),
-                BoolSetting('calculate_oshash', T(32958, 'Calculate OpenSubtitles.com hash'),
-                            False).description(
-                    T(32959, '')
-                ),
+                #BoolSetting('calculate_oshash', T(32958, 'Calculate OpenSubtitles.com hash'),
+                #            False).description(
+                #    T(32959, '')
+                #),
             )
         ),
         'ui': (
@@ -602,82 +602,82 @@ class Settings(object):
                 KeySetting('map_button_home', T(33085), None).description(T(33087))
             )
         ),
-        'player': (
-            T(32940, 'Player UI'), (
-                BoolSetting('player_official', T(33045, 'Behave like official Plex clients'), True).description(
-                    T(33046, '')),
-                BoolSetting('no_osd_time_spoilers', T(33004, ''), False, backport_from="no_spoilers").description(
-                    T(33005, '')),
-                MultiUAOptionsSetting(
-                    'player_show_buttons', T(33057, 'Show buttons'),
-                    ['subtitle_downloads', 'skip_intro', 'skip_credits'],
-                    (
-                        ('subtitle_downloads', T(32932, 'Show subtitle quick-actions button')),
-                        ('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons')),
-                        ('video_show_repeat', T(32934, 'Show repeat button')),
-                        ('video_show_shuffle', T(32935, 'Show shuffle button')),
-                        ('skip_intro', T(32495, 'Skip Intro')),
-                        ('skip_credits', T(32496, 'Skip Credits')),
-                    )
-                ).description(T(32939, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
-                    (
-                        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),
-                        ('never', T(32033, 'Never'))
-                    )
-                ).description(T(33088, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
-                    (
-                        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),
-                        ('never', T(32033, 'Never'))
-                    )
-                ).description(T(33088, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'resume_seek_behind', T(33089, ''), 0,
-                    [(0, T(32481))] + [
-                        (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
-                                            unit_s_or_ms="ms" if a < 1000 else "s")) for a in
-                        [100] + list(range(250, 1000, 250)) + list(range(1000, 61000, 1000))]
-                ).description(T(33090, '')),
-                BoolSetting('resume_seek_behind_pause', T(33092, ''), False).description(
-                    T(33095, '')),
-                OptionsSetting(
-                    'resume_seek_behind_after', T(33093, ''), 0,
-                    [(0, T(32481))] + [
-                        (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
-                                            unit_s_or_ms="ms" if a < 1000 else "s")) for a in
-                        list(range(250, 1000, 250)) + list(range(1000, 61000, 1000))]
-                ).description(T(33094, '')),
-                BoolSetting('resume_seek_behind_onlydp', T(33096, ''), True).description(
-                    T(33097, '')),
-                OptionsSetting(
-                    'player_stop_on_idle',
-                    T(32946, 'Stop video playback on idle after'),
-                    0,
-                    ((0, T(32033, 'Never')), (30, '30s'), (60, '1m'), (120, '2m'), (300, '5m'), (600, '10m'),
-                     (900, '15m'), (1200, '20m'), (1800, '30m'), (2700, '45m'), (3600, '1h'),)
-                ),
-                BoolSetting(
-                    'player_stop_on_screensaver', T(32947, 'Stop video playback on screensaver'), False
-                ),
-            )
-        ),
+        #'player': (
+        #    T(32940, 'Player UI'), (
+        #        BoolSetting('player_official', T(33045, 'Behave like official Plex clients'), True).description(
+        #            T(33046, '')),
+        #        BoolSetting('no_osd_time_spoilers', T(33004, ''), False, backport_from="no_spoilers").description(
+        #            T(33005, '')),
+        #        MultiUAOptionsSetting(
+        #            'player_show_buttons', T(33057, 'Show buttons'),
+        #            ['subtitle_downloads', 'skip_intro', 'skip_credits'],
+        #            (
+        #                ('subtitle_downloads', T(32932, 'Show subtitle quick-actions button')),
+        #                ('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons')),
+        #                ('video_show_repeat', T(32934, 'Show repeat button')),
+        #                ('video_show_shuffle', T(32935, 'Show shuffle button')),
+        #                ('skip_intro', T(32495, 'Skip Intro')),
+        #                ('skip_credits', T(32496, 'Skip Credits')),
+        #            )
+        #        ).description(T(32939, 'Only applies to video player UI')),
+        #        OptionsSetting(
+        #            'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
+        #            (
+        #                ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),
+        #                ('never', T(32033, 'Never'))
+        #            )
+        #        ).description(T(33088, 'Only applies to video player UI')),
+        #        OptionsSetting(
+        #            'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
+        #            (
+        #                ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),
+        #                ('never', T(32033, 'Never'))
+        #            )
+        #        ).description(T(33088, 'Only applies to video player UI')),
+        #        OptionsSetting(
+        #            'resume_seek_behind', T(33089, ''), 0,
+        #            [(0, T(32481))] + [
+        #                (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
+        #                                    unit_s_or_ms="ms" if a < 1000 else "s")) for a in
+        #                [100] + list(range(250, 1000, 250)) + list(range(1000, 61000, 1000))]
+        #        ).description(T(33090, '')),
+        #        BoolSetting('resume_seek_behind_pause', T(33092, ''), False).description(
+        #            T(33095, '')),
+        #        OptionsSetting(
+        #            'resume_seek_behind_after', T(33093, ''), 0,
+        #            [(0, T(32481))] + [
+        #                (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
+        #                                    unit_s_or_ms="ms" if a < 1000 else "s")) for a in
+        #                list(range(250, 1000, 250)) + list(range(1000, 61000, 1000))]
+        #        ).description(T(33094, '')),
+        #        BoolSetting('resume_seek_behind_onlydp', T(33096, ''), True).description(
+        #            T(33097, '')),
+        #        OptionsSetting(
+        #            'player_stop_on_idle',
+        #            T(32946, 'Stop video playback on idle after'),
+        #            0,
+        #            ((0, T(32033, 'Never')), (30, '30s'), (60, '1m'), (120, '2m'), (300, '5m'), (600, '10m'),
+        #             (900, '15m'), (1200, '20m'), (1800, '30m'), (2700, '45m'), (3600, '1h'),)
+        #        ),
+        #        BoolSetting(
+        #            'player_stop_on_screensaver', T(32947, 'Stop video playback on screensaver'), False
+        #        ),
+        #    )
+        #),
         'player_user': (
             T(32631, 'Playback (user-specific)'), (
-                BoolUserSetting(
-                    'show_chapters', T(33601, 'Show video chapters'), True
-                ).description(
-                    T(33602, 'If available, show video chapters from the video-file instead of the '
-                             'timeline-big-seek-steps.')
-                ),
-                BoolUserSetting(
-                    'virtual_chapters', T(33603, 'Use virtual chapters'), True
-                ).description(
-                    T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
-                             ' markers identified by the Plex Server (Intro, Credits).')
-                ),
+                #BoolUserSetting(
+                #    'show_chapters', T(33601, 'Show video chapters'), True
+                #).description(
+                #    T(33602, 'If available, show video chapters from the video-file instead of the '
+                #             'timeline-big-seek-steps.')
+                #),
+                #BoolUserSetting(
+                #    'virtual_chapters', T(33603, 'Use virtual chapters'), True
+                #).description(
+                #    T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
+                #             ' markers identified by the Plex Server (Intro, Credits).')
+                #),
                 BoolUserSetting(
                     'auto_skip_in_transcode', T(32948, 'Allow auto-skip when transcoding'), True
                 ).description(
@@ -713,12 +713,12 @@ class Settings(object):
                 ).description(
                     T(32527, 'Automatically skip credits if available. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
                 ),
-                BoolUserSetting(
-                    'show_intro_skip_early', T(33505, 'Show intro skip button early'), False
-                ).description(
-                    T(33506, 'Show the intro skip button from the start of a video with an intro marker. The auto-skipp'
-                             'ing setting applies. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
-                ),
+                #BoolUserSetting(
+                #    'show_intro_skip_early', T(33505, 'Show intro skip button early'), False
+                #).description(
+                #    T(33506, 'Show the intro skip button from the start of a video with an intro marker. The auto-skipp'
+                #             'ing setting applies. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
+                #),
                 BoolUserSetting(
                     'skip_post_play_tv', T(32973, 'Episodes: Skip Post Play screen'), False
                 ).description(
@@ -769,32 +769,32 @@ class Settings(object):
                 BoolSetting('exit_default_is_quit', T(32965, 'Start Plex On Kodi Startup'), False)
                 .description(T(32966, "stub")),
                 BoolSetting('path_mapping', T(33000, ''), True).description(T(33001, '')),
-                BufferSetting('cache_size',
-                              T(33613, 'Kodi Buffer Size (MB)'),
-                              20,
-                              [(mem, '{} MB'.format(mem)) for mem in lib.cache.kcm.viableOptions])
-                .description(
-                    '{}{}'.format(T(33614, 'stub1').format(
-                        lib.cache.kcm.free, lib.cache.kcm.recMax),
-                        '' if lib.cache.kcm.useModernAPI else ' ' + T(32954, 'stub2'))
-                ) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
-                ReadFactorSetting('readfactor',
-                                  T(32922, 'Kodi Cache Readfactor'),
-                                  4,
-                                  [(rf, str(rf) if rf > 0 else T(32976, 'stub')) for rf in lib.cache.kcm.readFactorOpts])
-                .description(
-                    T(32923, 'Sets the Kodi cache readfactor value. Default: {0}, recommended: {1}.'
-                             'With "Slow connection" enabled this will be set to {2}, as otherwise the cache doesn\'t'
-                             'fill fast/aggressively enough.').format(lib.cache.kcm.defRF,
-                                                                      lib.cache.kcm.recRFRange,
-                                                                      lib.cache.kcm.defRFSM)
-                ) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
-                BoolSetting(
-                    'slow_connection', T(32915, 'Slow connection'), False
-                ).description(T(32916, "Use with a wonky/slow connection, "
-                                       "e.g. in a hotel room. Adjusts the UI to visually "
-                                       "wait for item refreshes and waits for the buffer to fill when starting "
-                                       "playback.")),
+                #BufferSetting('cache_size',
+                #              T(33613, 'Kodi Buffer Size (MB)'),
+                #              20,
+                #              [(mem, '{} MB'.format(mem)) for mem in lib.cache.kcm.viableOptions])
+                #.description(
+                #    '{}{}'.format(T(33614, 'stub1').format(
+                #        lib.cache.kcm.free, lib.cache.kcm.recMax),
+                #        '' if lib.cache.kcm.useModernAPI else ' ' + T(32954, 'stub2'))
+                #) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
+                #ReadFactorSetting('readfactor',
+                #                  T(32922, 'Kodi Cache Readfactor'),
+                #                  4,
+                #                  [(rf, str(rf) if rf > 0 else T(32976, 'stub')) for rf in lib.cache.kcm.readFactorOpts])
+                #.description(
+                #    T(32923, 'Sets the Kodi cache readfactor value. Default: {0}, recommended: {1}.'
+                #             'With "Slow connection" enabled this will be set to {2}, as otherwise the cache doesn\'t'
+                #             'fill fast/aggressively enough.').format(lib.cache.kcm.defRF,
+                #                                                      lib.cache.kcm.recRFRange,
+                #                                                      lib.cache.kcm.defRFSM)
+                #) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
+                #BoolSetting(
+                #    'slow_connection', T(32915, 'Slow connection'), False
+                #).description(T(32916, "Use with a wonky/slow connection, "
+                #                       "e.g. in a hotel room. Adjusts the UI to visually "
+                #                       "wait for item refreshes and waits for the buffer to fill when starting "
+                #                       "playback.")),
                 OptionsSetting(
                     'action_on_sleep',
                     T(32700, 'Action on Sleep event'),
@@ -835,7 +835,7 @@ class Settings(object):
         ),
     }
 
-    SECTION_IDS = ('main', 'video', 'audio', 'ui', 'player', 'player_user', 'network', 'system', 'about')
+    SECTION_IDS = ('main', 'video', 'audio', 'ui', 'player_user', 'network', 'system', 'about')
 
     def __getitem__(self, key):
         return self.SETTINGS[key]

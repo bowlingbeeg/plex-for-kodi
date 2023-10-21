@@ -37,7 +37,7 @@
                 </setting>
                 <setting id="library_chunk_size" type="string" label="32971" help="32972">
                     <level>0</level>
-                    <default>240</default>
+                    <default>60</default>
                     <constraints>
                         <options>
                             <option>60</option>
@@ -83,6 +83,7 @@
         </category>
         <!-- Player -->
         <category id="player" label="32464">
+            <visible>false</visible>
             <group id="2" label="">
                 <setting id="auto_seek" type="boolean" label="32466" help="32900">
                     <level>0</level>
@@ -210,6 +211,7 @@
                         <heading>32524</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_credits_button_timeout" type="integer" label="32525" help="32528">
                     <level>0</level>
@@ -223,6 +225,7 @@
                         <heading>32528</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_intro_button_show_early_threshold1" type="integer" label="33509" help="33510">
                     <level>0</level>
@@ -236,6 +239,7 @@
                         <heading>33510</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="intro_marker_max_offset" type="integer" label="33037" help="33038">
                     <level>0</level>
@@ -249,16 +253,19 @@
                         <heading>33510</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_marker_timer_cancel" type="boolean" label="32906" help="32907">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_marker_timer_immediate" type="boolean" label="32908" help="32909">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
             </group>
         </category>
@@ -365,7 +372,7 @@
                 </setting>
                 <setting id="postplay_cancel" type="boolean" label="32905">
                     <level>0</level>
-                    <default>true</default>
+                    <default>false</default>
                     <control type="toggle"/>
                 </setting>
             </group>
