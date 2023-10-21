@@ -29,7 +29,7 @@ from lib.util import T
 import six
 from six.moves import range
 
-CHUNK_SIZE = 200
+CHUNK_SIZE = 40
 # CHUNK_SIZE = 30
 
 KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
