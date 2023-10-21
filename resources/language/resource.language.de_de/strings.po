@@ -1594,8 +1594,8 @@ msgid "Kodi Buffer Size (MB)"
 msgstr "Kodi Puffergröße (MB)"
 
 msgctxt "#33614"
-msgid "Set the Kodi Cache/Buffer size. Free: {} MB, Recommended max: {} MB, Default: 20 MB. Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n\nTo customize other cache/network-related values, copy \"script.plexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
-msgstr "Setzt die Kodi Cache/Puffer Größe. Frei: {} MB, empfohlenes Max.: {} MB, Default: 20 MB. Benötigt Kodi Neustart. ACHTUNG: Überschreibt advancedsettings.xml!\n\nUm weitere Cache-/Netzwerkbezogene Werte zu ändern, kopiere \"script.plexmod/pm4k_cache_template.xml\" in den Profilordner und editiere sie. (Für die Dateipfade schaue in die Über-Sektion)"
+msgid "Set the Kodi Cache/Buffer size. Free: {} MB, Recommended max: {} MB, Default: 20 MB. Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n\nTo customize other cache/network-related values, copy \"script.zidooplexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
+msgstr "Setzt die Kodi Cache/Puffer Größe. Frei: {} MB, empfohlenes Max.: {} MB, Default: 20 MB. Benötigt Kodi Neustart. ACHTUNG: Überschreibt advancedsettings.xml!\n\nUm weitere Cache-/Netzwerkbezogene Werte zu ändern, kopiere \"script.zidooplexmod/pm4k_cache_template.xml\" in den Profilordner und editiere sie. (Für die Dateipfade schaue in die Über-Sektion)"
 
 msgctxt "#33615"
 msgid "{time} left"
