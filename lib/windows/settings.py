@@ -327,28 +327,28 @@ class Settings(object):
         ),
         'player': (
             T(32940, 'Player UI'), (
-                BoolSetting('subtitle_downloads', T(32932, 'Show subtitle quick-actions button'), False).description(
-                    T(32939, 'Only applies to video player UI')),
-                BoolSetting('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons'), False).description(
-                    T(32939, 'Only applies to video player UI')),
-                BoolSetting('video_show_repeat', T(32934, 'Show repeat button'), False).description(
-                    T(32939, 'Only applies to video player UI')),
-                BoolSetting('video_show_shuffle', T(32935, 'Show shuffle button'), False).description(
-                    T(32939, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
-                    (
-                        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
-                        ('never', T(32033, 'Never'))
-                    )
-                ).description(T(32939, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
-                    (
-                        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
-                        ('never', T(32033, 'Never'))
-                    )
-                ).description(T(32939, 'Only applies to video player UI')),
+                #BoolSetting('subtitle_downloads', T(32932, 'Show subtitle quick-actions button'), False).description(
+                #    T(32939, 'Only applies to video player UI')),
+                #BoolSetting('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons'), False).description(
+                #    T(32939, 'Only applies to video player UI')),
+                #BoolSetting('video_show_repeat', T(32934, 'Show repeat button'), False).description(
+                #    T(32939, 'Only applies to video player UI')),
+                #BoolSetting('video_show_shuffle', T(32935, 'Show shuffle button'), False).description(
+                #    T(32939, 'Only applies to video player UI')),
+                #OptionsSetting(
+                #    'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
+                #    (
+                #        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
+                #        ('never', T(32033, 'Never'))
+                #    )
+                #).description(T(32939, 'Only applies to video player UI')),
+                #OptionsSetting(
+                #    'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
+                #    (
+                #        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
+                #        ('never', T(32033, 'Never'))
+                #    )
+                #).description(T(32939, 'Only applies to video player UI')),
             )
         ),
         'player_user': (
@@ -378,24 +378,24 @@ class Settings(object):
                 ).description(
                     T(32527, 'Automatically skip credits if available. Doesn\'t override enabled binge mode.')
                 ),
-                BoolUserSetting(
-                    'show_intro_skip_early', T(33505, 'Show intro skip button early'), False
-                ).description(
-                    T(33506, 'Show the intro skip button from the start of a video with an intro marker. The auto-skipp'
-                             'ing setting applies. Doesn\'t override enabled binge mode.')
-                ),
-                BoolUserSetting(
-                    'show_chapters', T(33601, 'Show video chapters'), True
-                ).description(
-                    T(33602, 'If available, show video chapters from the video-file instead of the '
-                             'timeline-big-seek-steps.')
-                ),
-                BoolUserSetting(
-                    'virtual_chapters', T(33603, 'Use virtual chapters'), True
-                ).description(
-                    T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
-                             ' markers identified by the Plex Server (Intro, Credits).')
-                ),
+                #BoolUserSetting(
+                #    'show_intro_skip_early', T(33505, 'Show intro skip button early'), False
+                #).description(
+                #    T(33506, 'Show the intro skip button from the start of a video with an intro marker. The auto-skipp'
+                #             'ing setting applies. Doesn\'t override enabled binge mode.')
+                #),
+                #BoolUserSetting(
+                #    'show_chapters', T(33601, 'Show video chapters'), True
+                #).description(
+                #    T(33602, 'If available, show video chapters from the video-file instead of the '
+                #             'timeline-big-seek-steps.')
+                #),
+                #BoolUserSetting(
+                #    'virtual_chapters', T(33603, 'Use virtual chapters'), True
+                #).description(
+                #    T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
+                #             ' markers identified by the Plex Server (Intro, Credits).')
+                #),
             )
         ),
         'network': (
@@ -431,33 +431,33 @@ class Settings(object):
             T(33600, 'System'), (
 
                 BoolSetting('kiosk.mode', T(32043, 'Start Plex On Kodi Startup'), False),
-                BufferSetting('cache_size',
-                              T(33613, 'Kodi Buffer Size (MB)'),
-                              20,
-                              [(mem, '{} MB'.format(mem)) for mem in util.kcm.viableOptions])
-                .description(
-                    T(33614, 'Set the Kodi Cache/Buffer size. Free: {} MB, '
-                             'Recommended max: {} MB, Default: 20 MB. '
-                             'Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n\n'
-                             'To customize other cache/network-related values, '
-                             'copy "script.plexmod/pm4k_cache_template.xml" to profile folder and edit it to '
-                             'your liking. (See About section for the file paths)'
-                      ).format(util.kcm.free, util.kcm.recMax)
-                ),
-                ReadFactorSetting('readfactor',
-                                  T(32922, 'Kodi Cache Readfactor'),
-                                  4,
-                                  [(rf, str(rf)) for rf in util.kcm.readFactorOpts])
-                .description(
-                    T(32923, 'Sets the Kodi cache readfactor value. Default: 4, recommended: 4-10.'
-                             'With "Slow connection" enabled this will be set to 20, as otherwise the cache doesn\'t'
-                             'fill fast/aggressively enough.'
-                      )
-                ),
-                BoolSetting(
-                    'slow_connection', T(32915, 'Slow connection'), False
-                ).description("Use with a wonky/slow connection, e.g. in a hotel room. Adjusts the UI to visually "
-                              "wait for item refreshes and waits for the buffer to fill when starting playback."),
+                #BufferSetting('cache_size',
+                #              T(33613, 'Kodi Buffer Size (MB)'),
+                #              20,
+                #              [(mem, '{} MB'.format(mem)) for mem in util.kcm.viableOptions])
+                #.description(
+                #    T(33614, 'Set the Kodi Cache/Buffer size. Free: {} MB, '
+                #             'Recommended max: {} MB, Default: 20 MB. '
+                #             'Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n\n'
+                #             'To customize other cache/network-related values, '
+                #             'copy "script.zidooplexmod/pm4k_cache_template.xml" to profile folder and edit it to '
+                #             'your liking. (See About section for the file paths)'
+                #      ).format(util.kcm.free, util.kcm.recMax)
+                #),
+                #ReadFactorSetting('readfactor',
+                #                  T(32922, 'Kodi Cache Readfactor'),
+                #                  4,
+                #                  [(rf, str(rf)) for rf in util.kcm.readFactorOpts])
+                #.description(
+                #    T(32923, 'Sets the Kodi cache readfactor value. Default: 4, recommended: 4-10.'
+                #             'With "Slow connection" enabled this will be set to 20, as otherwise the cache doesn\'t'
+                #             'fill fast/aggressively enough.'
+                #      )
+                #),
+                #BoolSetting(
+                #    'slow_connection', T(32915, 'Slow connection'), False
+                #).description("Use with a wonky/slow connection, e.g. in a hotel room. Adjusts the UI to visually "
+                #              "wait for item refreshes and waits for the buffer to fill when starting playback."),
                 OptionsSetting(
                     'action_on_sleep',
                     T(32700, 'Action on Sleep event'),
