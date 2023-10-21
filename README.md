@@ -1,33 +1,24 @@
-# PlexMod (for Kodi)
+# ZidooPlexMod (for Kodi)
 
-This is a modification of the official open-source Plex client for Kodi "plex-for-kodi" (Plex4Kodi)  semi-maintained by me (pannal).
+This is a modification of the PlexMod script by pannal(https://github.com/pannal/plex-for-kodi) to work with the native zidoo player on zidoo machines.
 
-Contrary to how this repository was handled before, this client does _not_ claim to adhere to the Plex Inc. design guidelines, all the time.
+It requires version 2.0+ of the PlexToZidoo app found here https://github.com/bowlingbeeg/PlexToZidoo/releases
+Follow the install instructions for PlexToZidoo(https://github.com/bowlingbeeg/PlexToZidoo#readme) but ignore all of the setup of the native Plex app since the ZidooPlexMod will be your interface to Plex.
 
-It implements features that are not implemented in other official Plex clients and may implement others in non-conform ways.
-
-It is still based off of the original P4K source and critical bugfixes will be PR'd back.
-
-## Active branches
-* [develop-kodi21](https://github.com/pannal/plex-for-kodi/tree/develop_kodi21) (Kodi 19, 20, 21 cross-compatible)
-* [develop-kodi18](https://github.com/pannal/plex-for-kodi/tree/develop_kodi18) (legacy)
-
-Master branch is based off of the official plex-for-kodi master branch.
 
 ## Installation
 
 ### Via repository
-* Add `https://pannal.github.io/dontpanickodi/` to your Kodi installation as a file source
+* Add `https://bowlingbeeg.github.io/bowlingbeeg.kodi/` to your Kodi installation as a file source
 * Go back to addons, choose zip file, choose the file source you added and install the repository
-* Install Plex via Addons->Install from repository->Don’t Panic->Video add-ons->Plex
-* Optional, recommended: Install Plextuary via Addons->Install from repository->Don’t Panic->Look and Feel->Skin->Plextuary
+* Install ZidooPlexMod via Addons->Install from repository->bowlingbeeg.kodi->Video add-ons->ZidooPlexMod
 
 ### Manual
-* Checkout any branch of this GitHub repository, rename to `script.plexmod` and use as an addon
+* Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
 
 
 ## Help/Bug Reports
-https://forums.plex.tv/t/plexmod-for-kodi-18-19-20-21/481208
+http://forum.zidoo.tv/index.php?threads/plextozidoo-an-external-player-for-plex-using-native-zidoo-player.94714/
 
 ## License
 [LICENSE](https://github.com/plexinc/plex-for-kodi/blob/master/LICENSE.txt)

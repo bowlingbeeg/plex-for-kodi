@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.plexmod"
-       name="Plex"
-       version="0.7.2"
-       provider-name="pannal">
+<addon id="script.zidooplexmod"
+       name="ZidooPlexMod"
+       version="0.3.0"
+       provider-name="bowlingbeeg">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.27.1+matrix.1"/>
@@ -17,33 +17,16 @@
     </extension>
     <extension point="xbmc.service" library="service.py" />
     <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">PlexMod for Kodi</summary>
+        <summary lang="en_GB">ZidooPlexMod for Kodi</summary>
         <description lang="en_GB">Unofficial Plex for Kodi add-on</description>
         <license>GPL-2.0-only</license>
-        <forum>https://forums.plex.tv/t/plexmod-for-kodi-18-19-20-21/481208</forum>
+        <forum>http://forum.zidoo.tv/index.php?threads/plextozidoo-an-external-player-for-plex-using-native-zidoo-player.94714/</forum>
         <website>https://www.plex.tv</website>
-        <source>https://github.com/pannal/plex-for-kodi</source>
+        <source>https://github.com/bowlingbeeg/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Fix: playing next episode when episode played threshold was met when hitting STOP button
-- Fix: Dropdown would roundrobin falsely onup item when initial item wasn't item 0
-- Fix: Movies: pressing back in a scrolled movie view with the header options open wouldn't back out properly
-- Fix: Reset library filters when Role/Cast view opened
-- Fix: Cast display in movies/preplay
-- Fix: Apply dialog flicker fix in Role/Cast
-- Fix: Dropdowns were broken sometimes (especially library view)
-- Fix: Addon crash on non-default Kodi (e.g. OSMC) due to System.BuildVersion not matching Kodi's default
-- Fix: Error on no data returned on PlexObject.reload (disconnect); Handle connection errors more gracefully
-- Fix: Background of info page (thanks @bowlingbeeg)
-- Fix: Rare SeekDialog crashes between episodes
-- Fix: OpenSubtitles not finding subtitles for certain Movies
-
-- Core: Harden against network disconnects in multiple views, home and videoplayer/seekdialog
-- Core: Re-enable backing out of videoplayer (inbetween screen)
-- Core: Player: Alternative implementation of bingeMode auto-next; ignore stop events when triggering non-user-stop
-- Core: Add setting for poster/thumbnail resolution scaling, implement in home
-- Core: Thumbnails/Art: use the same parameters as PlexWeb for images
-- SeekDialog: Possible fix for OSD not coming up again in some scenarios
+            Support zidoo player for Kodi 20+
+            Support custom library layout via xml file
         </news>
         <assets>
             <icon>icon.png</icon>
