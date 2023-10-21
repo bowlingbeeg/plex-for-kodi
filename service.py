@@ -6,15 +6,15 @@ from kodi_six import xbmcaddon
 
 
 def main():
-    if xbmc.getInfoLabel('Window(10000).Property(script.plex.service.started)'):
+    if xbmc.getInfoLabel('Window(10000).Property(script.zidooplexmod.service.started)'):
         # Prevent add-on updates from starting a new version of the addon
         return
 
-    xbmcgui.Window(10000).setProperty('script.plex.service.started', '1')
+    xbmcgui.Window(10000).setProperty('script.zidooplexmod.service.started', '1')
 
     if xbmcaddon.Addon().getSetting('kiosk.mode') == 'true':
         xbmc.log('script.plex: Starting from service (Kiosk Mode)', xbmc.LOGINFO)
-        xbmc.executebuiltin('RunScript(script.plexmod)')
+        xbmc.executebuiltin('RunScript(script.zidooplexmod)')
 
 
 if __name__ == '__main__':

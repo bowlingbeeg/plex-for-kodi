@@ -44,6 +44,7 @@
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="auto_seek_delay" parent="auto_seek" type="number" label="32487" help="32901">
                     <level>0</level>
@@ -59,21 +60,25 @@
                     <dependencies>
                         <dependency type="enable" setting="auto_seek">true</dependency>
                     </dependencies>
+                    <visible>false</visible>
                 </setting>
                 <setting id="kodi_skip_stepping" type="boolean" label="32465" help="32902">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="dynamic_timeline_seek" type="boolean" label="32471" help="32903">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="show_media_ends_info" type="boolean" label="32540" help="32541">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="show_media_ends_label" type="boolean" label="32542" help="">
                     <level>0</level>
@@ -82,11 +87,13 @@
                     <dependencies>
                         <dependency type="enable" setting="show_media_ends_info">true</dependency>
                     </dependencies>
+                    <visible>false</visible>
                 </setting>
                 <setting id="player_show_buffer" type="boolean" label="32912" help="32913">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="buffer_wait_max" type="integer" label="32918" help="32919">
                     <level>0</level>
@@ -99,6 +106,7 @@
                     <control type="slider" format="integer">
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="buffer_insufficient_wait" type="integer" label="32920" help="32921">
                     <level>0</level>
@@ -111,6 +119,7 @@
                     <control type="slider" format="integer">
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="consecutive_video_pb_wait" type="number" label="32963" help="32964">
                     <level>0</level>
@@ -154,6 +163,7 @@
                         <heading>32524</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_credits_button_timeout" type="integer" label="32525" help="32528">
                     <level>0</level>
@@ -167,6 +177,7 @@
                         <heading>32528</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_intro_button_show_early_threshold1" type="integer" label="33509" help="33510">
                     <level>0</level>
@@ -180,16 +191,19 @@
                         <heading>33510</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_marker_timer_cancel" type="boolean" label="32906" help="32907">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_marker_timer_immediate" type="boolean" label="32908" help="32909">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
+                    <visible>false</visible>
                 </setting>
             </group>
         </category>
@@ -272,7 +286,7 @@
                 </setting>
                 <setting id="playlist_visit_media" type="boolean" label="32505">
                     <level>0</level>
-                    <default>true</default>
+                    <default>false</default>
                     <control type="toggle"/>
                 </setting>
                 <setting id="postplay_timeout" type="integer" label="32501" help="32904">
@@ -284,7 +298,7 @@
                 </setting>
                 <setting id="postplay_cancel" type="boolean" label="32905">
                     <level>0</level>
-                    <default>true</default>
+                    <default>false</default>
                     <control type="toggle"/>
                 </setting>
             </group>

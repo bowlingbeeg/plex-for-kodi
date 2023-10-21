@@ -17,7 +17,7 @@ ATTR_MAP = {
     "b": "binge_mode",
     "i": "auto_skip_intro",
     "c": "auto_skip_credits",
-    "e": "show_intro_skip_early"
+    #"e": "show_intro_skip_early"
 }
 
 # I know dicts are ordered in py3, but we want to be compatible with py2.
@@ -25,7 +25,7 @@ TRANS_MAP = OrderedDict((
     ("binge_mode", 33618),
     ("auto_skip_intro", 32522),
     ("auto_skip_credits", 32526),
-    ("show_intro_skip_early", 33505)
+    #("show_intro_skip_early", 33505)
 ))
 
 ATTR_MAP_REV = dict((v, k) for k, v in ATTR_MAP.items())
