@@ -67,7 +67,7 @@ def main():
             play(data)
         else:  # This is a hack since it's both a plugin and a script. My Addons and Shortcuts otherwise can't launch the add-on
             xbmc.executebuiltin('Action(back)')  # This sometimes works to back out of the plugin directory display
-            xbmc.executebuiltin('RunScript(script.plexmod)')
+            xbmc.executebuiltin('RunScript(script.zidooplexmod)')
     except:
         util.ERROR()
 

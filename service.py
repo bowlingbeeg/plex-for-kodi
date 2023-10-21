@@ -14,7 +14,7 @@ def main():
 
     if xbmcaddon.Addon().getSetting('kiosk.mode') == 'true':
         xbmc.log('script.plex: Starting from service (Kiosk Mode)', xbmc.LOGINFO)
-        xbmc.executebuiltin('RunScript(script.plexmod)')
+        xbmc.executebuiltin('RunScript(script.zidooplexmod)')
 
 
 if __name__ == '__main__':

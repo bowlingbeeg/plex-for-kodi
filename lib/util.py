@@ -106,7 +106,7 @@ class AdvancedSettings(object):
         ("postplay_timeout", 16),
         ("skip_intro_button_timeout", 10),
         ("skip_credits_button_timeout", 10),
-        ("playlist_visit_media", True),
+        ("playlist_visit_media", False),
         ("intro_skip_early", False),
         ("show_media_ends_info", True),
         ("show_media_ends_label", True),
@@ -210,7 +210,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
     def onNotification(self, sender, method, data):
         DEBUG_LOG("Notification: {} {} {}".format(sender, method, data))
-        if sender == 'script.plexmod' and method.endswith('RESTORE'):
+        if sender == 'script.zidoplexmod' and method.endswith('RESTORE'):
             from .windows import kodigui
             getAdvancedSettings()
             populateTimeFormat()
