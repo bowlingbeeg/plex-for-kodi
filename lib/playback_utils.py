@@ -17,7 +17,7 @@ ATTR_MAP = {
     "b": "binge_mode",
     "i": "auto_skip_intro",
     "c": "auto_skip_credits",
-    "e": "show_intro_skip_early",
+    #"e": "show_intro_skip_early"
     "p": "skip_post_play_tv",
 }
 
@@ -26,7 +26,7 @@ TRANS_MAP = OrderedDict((
     ("binge_mode", 33618),
     ("auto_skip_intro", 32522),
     ("auto_skip_credits", 32526),
-    ("show_intro_skip_early", 33505),
+    #("show_intro_skip_early", 33505),
     ("skip_post_play_tv", 32973),
 ))
 

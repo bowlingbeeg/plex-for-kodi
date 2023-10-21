@@ -398,9 +398,9 @@ class PlexPlayer(BasePlayer):
 
         if not forceAC3:
             if directStream:
-                audioCodecs = "eac3,ac3,dca,aac,mp3,mp2,pcm,flac,alac,wmav2,wmapro,wmavoice,opus,vorbis,truehd"
+                audioCodecs = "eac3,ac3,dca,aac,mp3,mp2,pcm,flac,alac,wmav2,wmapro,wmavoice,truehd"
             else:
-                audioCodecs = "mp3,ac3,dca,aac,opus"
+                audioCodecs = "mp3,ac3,dca,aac"
         else:
             if dtsIsAC3:
                 audioCodecs = "ac3,dca"

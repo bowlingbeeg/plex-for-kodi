@@ -67,7 +67,7 @@ def main():
             play(data)
         else:  # This is a hack since it's both a plugin and a script. My Addons and Shortcuts otherwise can't launch the add-on
             util.ensureHome()
-            xbmc.executebuiltin('RunScript(script.plexmod)')
+            xbmc.executebuiltin('RunScript(script.zidooplexmod)')
     except:
         util.ERROR()
 
