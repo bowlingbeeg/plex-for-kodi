@@ -1463,14 +1463,21 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             #xbmc.executebuiltin('StartAndroidActivity(com.android.gallery3d, android.intent.action.VIEW, video/*, {0}, , "[ {{ \"key\" : \"position\", \"value\" : \"{1}\", \"type\" : \"string\" }}, {{ \"key\" : \"title\", \"value\" : \"test\", \"type\" : \"string\" }} ]", , , com.android.gallery3d.app.MovieActivity)'.format(url, self.handler.seekOnStart))
 
 
-            url += f'&PlexToZidoo-ViewOffset={self.handler.seekOnStart}'
-            #url += f'&PlexToZidoo-Title={self.video.title}'  --- Not sure I want to include this because then I'll have to deal with all of the special symbols
+            url = util.addURLParams(url, {
+                'PlexToZidoo-ViewOffset': self.handler.seekOnStart,
+                'PlexToZidoo-Title': self.video.title
+            })
             audioTrack = self.video.selectedAudioStream()
             if audioTrack:
-                url += f'&PlexToZidoo-AudioIndex={audioTrack.typeIndex}'
+                url = util.addURLParams(url, {'PlexToZidoo-AudioIndex': audioTrack.typeIndex})
             subtitleTrack = self.video.selectedSubtitleStream()
             if subtitleTrack:
-                url += f'&PlexToZidoo-SubtitleIndex={subtitleTrack.typeIndex+1}' # subtitle tracks are 1 based in the zidoo player
+                url = util.addURLParams(url, {'PlexToZidoo-SubtitleIndex': subtitleTrack.typeIndex+1}) # subtitle tracks are 1 based in the zidoo player
+            if self.video.mediaChoice.part.file:
+                # Can't call util.addURLParms because it doesn't handle the special characters in the path correctly
+                encodedPath = six.moves.urllib.parse.quote(self.video.mediaChoice.part.file)
+                url += f'&PlexToZidoo-Path={encodedPath}'
+
             xbmc.executebuiltin(f'StartAndroidActivity(com.hpn789.plextozidoo, android.intent.action.VIEW, video/*, {url})')
 
             # Put up this error message in the background in case we can't start the zidoo player.  If we actually get the player started we'll just kill this dialog
