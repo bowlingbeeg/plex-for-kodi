@@ -393,10 +393,9 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             util.DEBUG_LOG('Post play auto-play: Passout protection in {0}'.format(util.durationToShortText(millis)))
 
         if self.handler and self.handler.player.bingeMode:
-            self.playVideo()
-            return
-
-        self.timeout = time.time() + abs(util.advancedSettings.postplayTimeout)
+            self.timeout = time.time()
+        else:
+            self.timeout = time.time() + abs(util.advancedSettings.postplayTimeout)
         util.DEBUG_LOG('Starting post-play timer until: %i' % self.timeout)
         threading.Thread(target=self.countdown).start()
 
