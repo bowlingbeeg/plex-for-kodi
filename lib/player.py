@@ -1327,7 +1327,6 @@ class ZidooPlayerHandler(BasePlayerHandler):
 
     def onPlayBackStarted(self):
         util.DEBUG_LOG('ZidooHandler: onPlayBackStarted')
-        self.updateNowPlaying(force=True, refreshQueue=True)
 
     def onPlayBackResumed(self):
         self.updateNowPlaying()
@@ -1338,7 +1337,6 @@ class ZidooPlayerHandler(BasePlayerHandler):
 
         # show post play if possible, if an item has been watched (90% by Plex standards)
         if self.trueTime * 1000 / float(self.duration) >= self.playedThreshold:
-            self.player.video.markWatched()
             if self.next(on_end=True):
                 return
 
@@ -1356,9 +1354,6 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.sessionEnded()
 
         return True
-
-    def tick(self):
-        self.updateNowPlaying(force=True)
 
     def sessionEnded(self):
         if self.ended:
@@ -1684,6 +1679,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
     def onPlayBackStarted(self):
         self.started = True
+        self.currentTime = .001 # Need to trick the timeline update flows otherwise they ignore a 0 time
         util.DEBUG_LOG('ZidooPlayer: STARTED')
         self.trigger('playback.started')
         if not self.handler:
@@ -1781,25 +1777,32 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                     # Loop here while the movie is still being played
                     while self.started and not util.MONITOR.abortRequested() and not self._closed:
                         time.sleep(1)
+                        timeJump = False
                         zidooStatusFull = self.getZidooPlayerStatus()
                         if zidooStatusFull is not None:
                             if zidooStatusFull['video']['duration'] > 0:
                                 zidooStatus = zidooStatusFull['video']['status']
                                 if zidooStatus == 0 or zidooStatus == 1:
-                                    if self.zidooFailureDialog is not None:
-                                        self.zidooFailureDialog.doClose()
                                     if zidooStatus == 0:
                                         if self.playState != self.STATE_PAUSED:
                                             self.playState = self.STATE_PAUSED
                                             self.onPlayBackPaused()
+                                            continue # Loop back to the top so we give the Plex server a chance to catch up
                                     elif zidooStatus == 1:
                                         if self.playState != self.STATE_PLAYING:
                                             self.playState = self.STATE_PLAYING
                                             self.onPlayBackResumed()
+                                            continue # Loop back to the top so we give the Plex server a chance to catch up
                                     self.duration = zidooStatusFull['video']['duration'] / 1000
                                     newTime = zidooStatusFull['video']['currentPosition']
                                     if newTime > 0:
+                                        # If the time change since the last update is more than 10 seconds we want to
+                                        # update the plex server
+                                        if abs(newTime - (self.currentTime * 1000)) > 10000:
+                                            timeJump = True
+
                                         self.currentTime = newTime / 1000
+
                                         if self.autoSkipIntro or self.autoSkipCredits:
                                             self.checkAutoSkip()
                                 else:
@@ -1814,7 +1817,10 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                                 self.playState = self.STATE_STOPPED
                                 break
 
-                        self.handler.tick()
+                        if timeJump:
+                            self.handler.updateNowPlaying(force=True, state=self.STATE_PAUSED) # The PAUSED state should actually force an update
+                        else:
+                            self.handler.updateNowPlaying(force=True)
 
                 util.DEBUG_LOG('ZidooPlayer: Monitor 3')
                 if not util.MONITOR.abortRequested() and not self._closed:
