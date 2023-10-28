@@ -8,7 +8,8 @@ Follow the install instructions for PlexToZidoo(https://github.com/bowlingbeeg/P
 
 ## Installation
 
-Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
+- Add this Kodi repository to your Kodi installation: https://bowlingbeeg.github.io/bowlingbeeg.kodi/ ([GitHub repository](https://github.com/bowlingbeeg/bowlingbeeg.kodi)), or
+- Download the latest release and install manually as a zip file(https://kodi.wiki/view/Add-on_manager#How_to_install_from_a_ZIP_file)
 
 ## Tips
 
