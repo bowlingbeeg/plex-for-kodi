@@ -1074,6 +1074,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, playbackse
                 if with_progress:
                     self.episodesPaginator.prepareListItem(None, mli)
                 if mli == selected:
+                    self.lastItem = mli
                     self.setProgress(mli)
                 return
 
