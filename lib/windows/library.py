@@ -441,6 +441,7 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
         self.lastItem = None
         self.lastFocusID = None
         self.lastNonOptionsFocusID = None
+        self.refill = False
 
         self.dcpjPos = 0
         self.dcpjThread = None
@@ -494,7 +495,7 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
         #if ITEM_TYPE in ('episode', 'album'):
         #    self.scrollBar = CustomScrollBar(self, 950, 952, 953, 951)
 
-        if self.showPanelControl:
+        if self.showPanelControl and not self.refill:
             self.showPanelControl.newControl(self)
             self.keyListControl.newControl(self)
             self.showPanelControl.selectItem(0)
@@ -521,6 +522,7 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
 
             self.setTitle()
             self.fill()
+            self.refill = False
             if self.getProperty('no.content') or self.getProperty('no.content.filtered'):
                 self.setFocusId(self.HOME_BUTTON_ID)
             else:
@@ -1057,6 +1059,11 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
         self.sortShowPanel(choice, forceRefresh)
 
     def viewTypeButtonClicked(self):
+        for task in self.tasks:
+            if task.isValid():
+                task.cancel()
+                self.refill = True
+
         with self.lock:
             self.showPanelControl.invalidate()
             win = self.nextWindow()
