@@ -207,7 +207,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def infoButtonClicked(self):
         opener.handleOpen(
             info.InfoWindow,
-            title=self.video.title,
+            title=self.video.defaultTitle,
             sub_title=self.getProperty('info'),
             thumb=self.video.type == 'episode' and self.video.thumb or self.video.defaultThumb,
             thumb_fallback='script.plex/thumb_fallbacks/{0}.png'.format(self.video.type == 'episode' and 'show' or 'movie'),
@@ -517,6 +517,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             self.setProperty('writers', writers and u'{0}    {1}'.format(writersLabel, writers) or '')
             self.setProperty('related.header', T(32306, 'Related Shows'))
         elif self.video.type == 'movie':
+            self.setProperty('title', self.video.defaultTitle)
             self.setProperty('preview', '')
             self.setProperty('thumb', self.video.thumb.asTranscodedImageURL(*self.THUMB_POSTER_DIM))
             genres = u' / '.join([g.tag for g in self.video.genres()][:3])

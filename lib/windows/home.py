@@ -1072,8 +1072,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         return mli
 
     def createMovieListItem(self, obj, wide=False):
-        mli = self.createSimpleListItem(obj, *self.THUMB_POSTER_DIM)
-        mli.setLabel2(obj.year)
+        mli = kodigui.ManagedListItem(obj.defaultTitle, obj.year, thumbnailImage=obj.defaultThumb.asTranscodedImageURL(*self.THUMB_POSTER_DIM), data_source=obj)
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie.png')
         if not obj.isWatched:
             mli.setProperty('unwatched', '1')
