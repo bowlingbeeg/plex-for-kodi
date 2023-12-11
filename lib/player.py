@@ -1386,6 +1386,9 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
 
 class ZidooPlayerHandler(BasePlayerHandler):
+    MODE_ABSOLUTE = 0
+    MODE_RELATIVE = 1
+
     def __init__(self, player, session_id=None):
         BasePlayerHandler.__init__(self, player, session_id)
         self.playlist = None
@@ -1401,6 +1404,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.duration = 0
         self.baseOffset = 0
         self.seekOnStart = 0
+        self.mode = self.MODE_ABSOLUTE
         self.ended = False
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', chapters=None):
@@ -1412,6 +1416,14 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.title2 = title2
         self.chapters = chapters or []
         self.playedThreshold = plexapp.util.INTERFACE.getPlayedThresholdValue()
+
+    @property
+    def isTranscoded(self):
+        return self.mode == self.MODE_RELATIVE
+
+    @property
+    def isDirectPlay(self):
+        return self.mode == self.MODE_ABSOLUTE
 
     @property
     def trueTime(self):
@@ -1471,7 +1483,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         return True
 
     def onPlayBackStarted(self):
-        util.DEBUG_LOG('ZidooHandler: onPlayBackStarted')
+        util.DEBUG_LOG(f'ZidooHandler: onPlayBackStarted, DP: {self.isDirectPlay}')
 
     def onPlayBackResumed(self):
         self.updateNowPlaying()
@@ -1516,6 +1528,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     STATE_PAUSED = "paused"
     STATE_BUFFERING = "buffering"
 
+    OFFSET_RE = re.compile(r'(offset=)\d+')
+
     reserved_chars = '''?&|!{}[]()^~*:\\"'+-@#_.,% '''
     replace = ['\\' + l for l in reserved_chars]
     escape_table = str.maketrans(dict(zip(reserved_chars, replace)))
@@ -1541,6 +1555,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.resume = False
         self.currentMarker = None
         self.zidooFailureDialog = None
+        self.stopPlaybackOnIdle = util.getSetting('player_stop_on_idle', 0)
         self.reset()
         self.open()
 
@@ -1570,6 +1585,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.zidooFailureDialog = None
         self.currentMarker = None
         self.resume = False
+        self.idleTime = None
 
     def currentTrack(self):
         if self.handler.media and self.handler.media.type == 'track':
@@ -1650,6 +1666,11 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.started = False
         self.handler = BGMPlayerHandler(self, rating_key)
 
+        # store current volume if it's different from the BGM volume
+        curVol = self.handler.getVolume()
+        if volume < curVol:
+            util.setSetting('last_good_volume', curVol)
+
         self.lastPlayWasBGM = True
 
         self.handler.setVolume(volume)
@@ -1686,6 +1707,10 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
 
         meta = self.playerObject.metadata
+        if meta.isTranscoded:
+            self.handler.mode = self.handler.MODE_RELATIVE
+        else:
+            self.handler.mode = self.handler.MODE_ABSOLUTE
         url = meta.streamUrls[0]
         bifURL = self.playerObject.getBifUrl()
         util.DEBUG_LOG('Playing URL(+{1}ms): {0}'.format(plexnetUtil.cleanToken(url), offset))
@@ -1693,14 +1718,6 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.stopAndWait()  # Stop before setting up the handler to prevent player events from causing havoc
 
         self.handler.setup(self.video.duration.asInt(), meta, offset, bifURL, title=self.video.grandparentTitle, title2=self.video.title, chapters=self.video.chapters)
-
-        if offset:
-            self.handler.seekOnStart = meta.playStart * 1000
-
-        url = util.addURLParams(url, {
-            'X-Plex-Client-Profile-Name': 'Generic',
-            'X-Plex-Client-Identifier': plexapp.util.INTERFACE.getGlobal('clientIdentifier')
-        })
 
         if self.video.type == 'episode':
             pbs = self.video.playbackSettings
@@ -1711,8 +1728,46 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             # don't auto skip intro when on binge mode on the first episode of a season
             firstEp = self.video.index == '1'
 
-            self.autoSkipIntro = (self.bingeMode and not firstEp) or pbs.auto_skip_intro
-            self.autoSkipCredits = self.bingeMode or pbs.auto_skip_credits
+            if self.handler.isDirectPlay or util.getUserSetting('auto_skip_in_transcode', True):
+                self.autoSkipIntro = (self.bingeMode and not firstEp) or pbs.auto_skip_intro
+                self.autoSkipCredits = self.bingeMode or pbs.auto_skip_credits
+
+        # try to get an early intro offset so we can skip it if necessary
+        introOffset = None
+        if not offset:
+            # in case we're transcoded, instruct the marker handler to set the marker a skipped, so we don't re-skip it
+            # after seeking
+            for marker in self.video.markers:
+                if marker.type == 'intro' and self.autoSkipIntro:
+                    introOffset = math.ceil(float(marker.endTimeOffset)) + self.autoSkipOffset
+
+                    # Make sure we don't re-trigger the same marker that way the user can seek back into the skip zone and it won't automatically jump out of it again
+                    if not self.currentMarker or self.currentMarker.startTimeOffset != marker.startTimeOffset:
+                        self.currentMarker = marker
+
+                    break
+
+        if meta.isTranscoded:
+            if introOffset:
+                # cheat our way into an early intro skip by modifying the offset in the stream URL
+                util.DEBUG_LOG("Immediately seeking behind intro: {}".format(introOffset))
+                url = self.OFFSET_RE.sub(r"\g<1>{}".format(introOffset // 1000), url)
+
+                # probably not necessary
+                meta.playStart = introOffset // 1000
+        else:
+            if offset:
+                self.handler.seekOnStart = meta.playStart * 1000
+            elif introOffset:
+                util.DEBUG_LOG("Seeking behind intro after playstart: {}".format(introOffset))
+                self.handler.seekOnStart = introOffset
+
+        url = util.addURLParams(url, {
+            'X-Plex-Client-Profile-Name': 'Generic',
+            'X-Plex-Client-Identifier': plexapp.util.INTERFACE.getGlobal('clientIdentifier')
+        })
+
+
 
         self.play(url)
 
@@ -1936,11 +1991,18 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                                         if self.playState != self.STATE_PAUSED:
                                             self.playState = self.STATE_PAUSED
                                             self.onPlayBackPaused()
+                                            self.idleTime = time.time()
                                             continue # Loop back to the top so we give the Plex server a chance to catch up
+                                        if self.stopPlaybackOnIdle:
+                                            if self.idleTime and time.time() - self.idleTime >= self.stopPlaybackOnIdle:
+                                                util.DEBUG_LOG('ZidooPlayer: Monitor idle time expired - stopping playback')
+                                                self.setZidooPlayerStop()
+                                                continue
                                     elif zidooStatus == 1:
                                         if self.playState != self.STATE_PLAYING:
                                             self.playState = self.STATE_PLAYING
                                             self.onPlayBackResumed()
+                                            self.idleTime = None
                                             continue # Loop back to the top so we give the Plex server a chance to catch up
                                     self.duration = zidooStatusFull['video']['duration'] / 1000
                                     newTime = zidooStatusFull['video']['currentPosition']
@@ -2009,12 +2071,27 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         return response_json
 
-    def getZidooPlayerSeek(self, position):
+    def setZidooPlayerSeek(self, position):
         try:
             url = f'http://127.0.0.1:9529/ZidooVideoPlay/seekTo?positon={position}'
             response = requests.get(url, timeout=2)
         except requests.exceptions.RequestException as e:
             util.ERROR('Zidoo player seek failed')
+            return None
+
+        response_json = response.json()
+        util.DEBUG_LOG(response_json)
+        if response_json['status'] != 200:
+            return None
+
+        return response_json
+
+    def setZidooPlayerStop(self):
+        try:
+            url = 'http://127.0.0.1:9529/ZidooControlCenter/RemoteControl/sendkey?key=Key.MediaStop'
+            response = requests.get(url, timeout=2)
+        except requests.exceptions.RequestException as e:
+            util.ERROR('Zidoo player stop failed')
             return None
 
         response_json = response.json()
@@ -2045,7 +2122,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                     if not self.currentMarker or self.currentMarker.startTimeOffset != marker.startTimeOffset:
                         self.currentMarker = marker
                         util.DEBUG_LOG(f'ZidooAutoSkip: Skipping to {triggerEndTime}')
-                        self.getZidooPlayerSeek(triggerEndTime)
+                        self.setZidooPlayerSeek(triggerEndTime)
                     break
 
     def isPlaying(self):
