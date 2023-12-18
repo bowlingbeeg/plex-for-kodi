@@ -1530,6 +1530,9 @@ class ZidooPlayerHandler(BasePlayerHandler):
     def onPlayBackStarted(self):
         util.DEBUG_LOG(f'ZidooHandler: onPlayBackStarted, DP: {self.isDirectPlay}')
 
+    def onAVStarted(self):
+        util.DEBUG_LOG('ZidooHandler: onAVStarted')
+
     def onPlayBackResumed(self):
         self.updateNowPlaying()
 
@@ -1582,6 +1585,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     def __init__(self, *args, **kwargs):
         xbmc.Player.__init__(self, *args, **kwargs)
         signalsmixin.SignalsMixin.__init__(self)
+        self.handler = None  # Need to set this because creating the AudioPlayerHandler will call functions that check the handler
+        self.handler = AudioPlayerHandler(self)
 
     def init(self):
         self._closed = False
@@ -1591,7 +1596,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.lastPlayWasBGM = False
         self.BGMTask = None
         self.video = None
-        self.handler = None
+        self.handler = AudioPlayerHandler(self)
         self.playerObject = None
         self.currentTime = 0
         self.duration = 0
@@ -1601,6 +1606,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.currentMarker = None
         self.zidooFailureDialog = None
         self.stopPlaybackOnIdle = util.getSetting('player_stop_on_idle', 0)
+        self.idleTime = None
+        self.skipNextStopNotification = False
         self.reset()
         self.open()
 
@@ -1623,7 +1630,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.started = False
         self.bgmPlaying = False
         self.playerObject = None
-        self.handler = AudioPlayerHandler(self)
+        #self.handler = AudioPlayerHandler(self)
         self.currentTime = 0
         self.duration = 0
         self.playState = self.STATE_STOPPED
@@ -1691,6 +1698,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.handler.seekOnStart = 0
             self.onPrePlayStarted()
             self.onPlayBackStarted()
+            self.onAVStarted()
         else:
             xbmc.Player.play(self, *args, **kwargs)
 
@@ -1728,7 +1736,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if self.bgmPlaying:
             self.stopAndWait()
 
-        self.handler = handler or ZidooPlayerHandler(self, session_id)
+        self.handler = handler if handler and isinstance(handler, ZidooPlayerHandler) \
+            else ZidooPlayerHandler(self, session_id)
         self.video = video
         self.resume = resume
         self.open()
@@ -1821,7 +1830,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if self.bgmPlaying:
             self.stopAndWait()
 
-        if handler:
+        if handler and isinstance(handler, ZidooPlayerHandler):
             self.handler = handler
         else:
             self.handler = ZidooPlayerHandler(self, session_id)
@@ -1928,13 +1937,20 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.handler.onPrePlayStarted()
 
     def onPlayBackStarted(self):
-        self.started = True
-        self.currentTime = .001 # Need to trick the timeline update flows otherwise they ignore a 0 time
         util.DEBUG_LOG('ZidooPlayer: STARTED')
         self.trigger('playback.started')
+        self.started = True
+        self.currentTime = .001 # Need to trick the timeline update flows otherwise they ignore a 0 time
         if not self.handler:
             return
         self.handler.onPlayBackStarted()
+
+    def onAVStarted(self):
+        util.DEBUG_LOG('ZidooPlayer: AVStarted - {}'.format(self.handler))
+        self.trigger('av.started')
+        if not self.handler:
+            return
+        self.handler.onAVStarted()
 
     def onPlayBackPaused(self):
         util.DEBUG_LOG('ZidooPlayer: PAUSED')
@@ -1982,12 +1998,14 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.handler.onPlayBackEnded()
 
     def onPlayBackFailed(self):
-        util.DEBUG_LOG('ZidooPlayer: FAILED')
+        util.DEBUG_LOG('ZidooPlayer: FAILED - {}'.format(self.handler))
         if not self.handler:
             return
 
         if self.handler.onPlayBackFailed():
             util.showNotification(util.T(32448, 'Playback Failed!'))
+            self.stopAndWait()
+            self.close()
 
     def stopAndWait(self):
         if self.isPlaying():
