@@ -1631,6 +1631,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.currentMarker = None
         self.resume = False
         self.idleTime = None
+        self.skipNextStopNotification = False
 
     def currentTrack(self):
         if self.handler.media and self.handler.media.type == 'track':
@@ -1949,12 +1950,18 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.handler.onPlayBackResumed()
 
     def onPlayBackStopped(self):
+        if self.skipNextStopNotification:
+            util.DEBUG_LOG('ZidooPlayer: SKIP')
+            self.skipNextStopNotification = False
+            return
+
         if not self.started:
             self.onPlayBackFailed()
 
-        if isinstance(self.handler, ZidooPlayerHandler) and self.lastPlayWasBGM and not self.isPlaying():
+        if self.lastPlayWasBGM and not self.isPlaying():
+            util.DEBUG_LOG('ZidooPlayer: STOP BGM')
             self.lastPlayWasBGM = False
-            return
+            self.skipNextStopNotification = True
 
         util.DEBUG_LOG('ZidooPlayer: STOPPED' + (not self.started and ': FAILED' or ''))
         self.started = False
