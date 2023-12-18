@@ -22,7 +22,6 @@ from plexnet import util as plexnetUtil
 from six.moves import range
 
 FIVE_MINUTES_MILLIS = 300000
-FINAL_MARKER_NEGOFF = 1000
 
 class BasePlayerHandler(object):
     def __init__(self, player, session_id=None):
@@ -1570,6 +1569,9 @@ class ZidooPlayerHandler(BasePlayerHandler):
 
     __next__ = next
 
+FINAL_MARKER_NEGOFF = 1000
+MARKER_SHOW_NEGOFF = 3000
+
 class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     STATE_STOPPED = "stopped"
     STATE_PLAYING = "playing"
@@ -1794,13 +1796,14 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             # after seeking
             for marker in self.video.markers:
                 if marker.type == 'intro' and self.autoSkipIntro:
-                    introOffset = math.ceil(float(marker.endTimeOffset)) + self.autoSkipOffset
+                    if int(marker.startTimeOffset) <= MARKER_SHOW_NEGOFF:
+                        introOffset = math.ceil(float(marker.endTimeOffset)) + self.autoSkipOffset
 
-                    # Make sure we don't re-trigger the same marker that way the user can seek back into the skip zone and it won't automatically jump out of it again
-                    if not self.currentMarker or self.currentMarker.startTimeOffset != marker.startTimeOffset:
-                        self.currentMarker = marker
+                        # Make sure we don't re-trigger the same marker that way the user can seek back into the skip zone and it won't automatically jump out of it again
+                        if not self.currentMarker or self.currentMarker.startTimeOffset != marker.startTimeOffset:
+                            self.currentMarker = marker
 
-                    break
+                        break
 
         if meta.isTranscoded:
             if introOffset:
