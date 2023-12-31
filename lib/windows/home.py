@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import time
 import threading
 
-from kodi_six import xbmc
+from kodi_six import xbmc, xbmcvfs
 from kodi_six import xbmcgui
 
 from . import kodigui
@@ -22,6 +22,9 @@ from . import optionsdialog
 
 from lib.util import T
 from six.moves import range
+
+import xml.etree.ElementTree as ET
+
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
 HUB_PAGE_SIZE = 10
@@ -406,6 +409,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         )
 
         self.hubFocusIndexes = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 17, 18, 19, 20, 21, 22, 13, 14, 15, 23)
+
+        try:
+            tree = ET.parse(xbmcvfs.translatePath(util.ADDON.getAddonInfo('profile') + 'customlayout.xml'))
+            self.customLayout = tree.getroot()
+            util.DEBUG_LOG(f'Zidoo: Custom layout found')
+        except:
+            self.customLayout = None
+            util.DEBUG_LOG(f'Zidoo: No custom layout')
 
         self.bottomItem = 0
         if self.serverRefresh():
@@ -916,11 +927,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         items.append(homemli)
 
         pl = plexapp.SERVERMANAGER.selectedServer.playlists()
+        plli = None
         if pl:
             plli = kodigui.ManagedListItem('Playlists', thumbnailImage='script.plex/home/type/playlists.png', data_source=PlaylistsSection)
             plli.setProperty('is.playlists', '1')
             plli.setProperty('item', '1')
-            items.append(plli)
+            # Don't add it yet in case they customized things
 
         try:
             sections = plexapp.SERVERMANAGER.selectedServer.library.sections()
@@ -932,6 +944,49 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback) for s in [HomeSection, PlaylistsSection] + sections]
             backgroundthread.BGThreader.addTasks(self.tasks)
+
+        if self.customLayout:
+            serverName = (plexapp.SERVERMANAGER.selectedServer.name or ' ').lower()
+            selectedServer = None
+            for server in self.customLayout.findall('server'):
+                curServerName = (server.get('name') or ' ').lower()
+                if curServerName == serverName:
+                    selectedServer = server
+                    break
+
+            if selectedServer:
+                userName = (plexapp.ACCOUNT.title or plexapp.ACCOUNT.username or ' ').lower()
+                selectedUser = None
+                for user in selectedServer.findall('user'):
+                    curUserName = (user.get('name') or ' ').lower()
+                    if curUserName == 'default':
+                        selectedUser = user
+                        continue
+                    elif curUserName == userName:
+                        selectedUser = user
+                        break
+
+                if selectedUser:
+                    for library in selectedUser.findall('library'):
+                        util.DEBUG_LOG(f"Zidoo: CL - {library.get('name')} - {library.text}")
+                        libraryName = (library.get('name') or ' ').lower()
+                        if libraryName == 'playlists' and plli:
+                            if not library.text or library.text.lower() != 'hide':
+                                items.append(plli)
+                            plli = None
+                        else:
+                            for index, section in enumerate(sections):
+                                if (section.title or ' ').lower() == libraryName:
+                                    if not library.text or library.text.lower() != 'hide':
+                                        mli = kodigui.ManagedListItem(section.title, thumbnailImage='script.plex/home/type/{0}.png'.format(section.type), data_source=section)
+                                        mli.setProperty('item', '1')
+                                        items.append(mli)
+                                    sections.remove(section)
+                                    break
+
+        # Add anything else that the user didn't customize
+        if plli:
+            items.append(plli)
 
         for section in sections:
             mli = kodigui.ManagedListItem(section.title, thumbnailImage='script.plex/home/type/{0}.png'.format(section.type), data_source=section)
