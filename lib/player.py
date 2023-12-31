@@ -1529,7 +1529,9 @@ class ZidooPlayerHandler(BasePlayerHandler):
 
     def showPostPlay(self):
         if not self.shouldShowPostPlay():
+            util.DEBUG_LOG("ZidooHandler: Not showing post-play")
             return False
+        util.DEBUG_LOG("ZidooHandler: Showing post-play")
 
         if self.player.zidooFailureDialog:
             self.player.zidooFailureDialog.doClose()
@@ -1859,6 +1861,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 meta.playStart = introOffset // 1000
         else:
             if offset:
+                util.DEBUG_LOG("Using as SeekOnStart: {0}; offset: {1}".format(meta.playStart, offset))
                 self.handler.seekOnStart = meta.playStart * 1000
             elif introOffset:
                 util.DEBUG_LOG("Seeking behind intro after playstart: {}".format(introOffset))
