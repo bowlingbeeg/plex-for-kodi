@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+Copy this file into the userdata/addon_data/script.zidooplexmod/ directory.  You can customize the
+layout for each server and user by specifying a section for every user in you Plex server or you can
+setup a 'default' user so that every user who doesn't have a specific layout will use that default
+layout.  If a 'default' section isn't provided and a user doesn't have it's own section then
+ZidooPlexMod will pick the order.
+Arrange the libraries in the order that you want them shown on the title bar.  Anything you don't
+put into this list will be displayed at the end.  If you want to hide a library then add "hide" to
+the xml entry.  You can add or remove as many users/libraries as necessary to accommodate your Plex
+server.
+-->
+<custom_layout>
+    <server name="plex server name 1">
+        <user name="default">
+            <library name="library 1"></library>
+            <library name="library 2"></library>
+            <library name="Playlists">hide</library>
+        </user>
+        <user name="plex username 1">
+            <library name="library 1"></library>
+            <library name="library 2">hide</library>
+            <library name="Playlists">hide</library>
+        </user>
+        <user name="plex username 2">
+            <library name="library 1"></library>
+            <library name="library 2">hide</library>
+            <library name="Playlists"></library>
+        </user>
+    </server>
+    <server name="plex server name 2">
+        <user name="default">
+            <library name="library 1"></library>
+            <library name="library 2"></library>
+            <library name="Playlists">hide</library>
+        </user>
+        <user name="plex username 1">
+            <library name="library 1">hide</library>
+            <library name="library 2"></library>
+            <library name="Playlists">hide</library>
+        </user>
+    </server>
+</custom_layout>
