@@ -53,14 +53,6 @@ class OptionsDialog(kodigui.BaseDialog):
             if res:
                 return
 
-        return kodigui.BaseDialog.onAction(self, action)
-
-    def onClick(self, controlID):
-        if controlID in self.BUTTON_IDS:
-            self.buttonChoice = self.BUTTON_IDS.index(controlID)
-            self.doClose()
-
-    def onAction(self, action):
         try:
             if action in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK):
                 self.doClose()
@@ -68,7 +60,12 @@ class OptionsDialog(kodigui.BaseDialog):
         except:
             traceback.print_exc()
 
-        kodigui.BaseDialog.onAction(self, action)
+        return kodigui.BaseDialog.onAction(self, action)
+
+    def onClick(self, controlID):
+        if controlID in self.BUTTON_IDS:
+            self.buttonChoice = self.BUTTON_IDS.index(controlID)
+            self.doClose()
 
 
 def show(header, info, button0=None, button1=None, button2=None, action_callback=None):
