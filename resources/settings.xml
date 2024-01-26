@@ -42,7 +42,7 @@
                 </setting>
                 <setting id="library_chunk_size" type="string" label="32971" help="32972">
                     <level>0</level>
-                    <default>240</default>
+                    <default>60</default>
                     <constraints>
                         <options>
                             <option>60</option>

@@ -1578,6 +1578,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.seekOnStart = 0
         self.mode = self.MODE_ABSOLUTE
         self.ended = False
+        self._lastDuration = 0
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', chapters=None):
         self.ended = False
@@ -1636,7 +1637,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.playlist:
             return False
 
-        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
 
         return True
 
@@ -1644,7 +1645,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.playlist or not self.playlist.prev():
             return False
 
-        self.player.playVideoPlaylist(self.playlist, handler=self, resume=self.player.resume)
+        self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
 
         return True
 
@@ -1748,6 +1749,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     def open(self):
         self._closed = False
         self.bingeMode = False
+        self.skipPostPlay = False
         self.autoSkipIntro = False
         self.autoSkipCredits = False
         self.autoSkipOffset = int(util.advancedSettings.autoSkipOffset * 1000)
@@ -1911,6 +1913,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             util.DEBUG_LOG("Playback settings for {}: {}".format(self.video.ratingKey, pbs))
 
             self.bingeMode = pbs.binge_mode
+            self.skipPostPlay = pbs.binge_mode or pbs.skip_post_play_tv
 
             # don't auto skip intro when on binge mode on the first episode of a season
             firstEp = self.video.index == '1'
