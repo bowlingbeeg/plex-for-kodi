@@ -364,48 +364,48 @@ class Settings(object):
                 #),
             )
         ),
-        'player': (
-            T(32940, 'Player UI'), (
-                #OptionsSetting(
-                #    'theme',
-                #    T(32983, 'Player Theme'),
-                #    util.DEF_THEME,
-                #    (
-                #        ('modern', T(32985, 'Modern')),
-                #        ('modern-dotted', T(32986, 'Modern (dotted)')),
-                #        ('modern-colored', T(32989, 'Modern (colored)')),
-                #        ('classic', T(32987, 'Classic')),
-                #        ('custom', T(32988, 'Custom')),
-                #    )
-                #).description(
-                #    T(32984, 'stub')
-                #),
-                #BoolSetting('no_spoilers', T(33004, ''), False).description(
-                #    T(33005, '')),
-                #BoolSetting('subtitle_downloads', T(32932, 'Show subtitle quick-actions button'), False).description(
-                #    T(32939, 'Only applies to video player UI')),
-                #BoolSetting('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons'), False).description(
-                #    T(32939, 'Only applies to video player UI')),
-                #BoolSetting('video_show_repeat', T(32934, 'Show repeat button'), False).description(
-                #    T(32939, 'Only applies to video player UI')),
-                #BoolSetting('video_show_shuffle', T(32935, 'Show shuffle button'), False).description(
-                #    T(32939, 'Only applies to video player UI')),
-                #OptionsSetting(
-                #    'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
-                #    (
-                #        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
-                #        ('never', T(32033, 'Never'))
-                #    )
-                #).description(T(32939, 'Only applies to video player UI')),
-                #OptionsSetting(
-                #    'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
-                #    (
-                #        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
-                #        ('never', T(32033, 'Never'))
-                #    )
-                #).description(T(32939, 'Only applies to video player UI')),
-            )
-        ),
+        #'player': (
+        #    T(32940, 'Player UI'), (
+        #        OptionsSetting(
+        #            'theme',
+        #            T(32983, 'Player Theme'),
+        #            util.DEF_THEME,
+        #            (
+        #                ('modern', T(32985, 'Modern')),
+        #                ('modern-dotted', T(32986, 'Modern (dotted)')),
+        #                ('modern-colored', T(32989, 'Modern (colored)')),
+        #                ('classic', T(32987, 'Classic')),
+        #                ('custom', T(32988, 'Custom')),
+        #            )
+        #        ).description(
+        #            T(32984, 'stub')
+        #        ),
+        #        BoolSetting('no_spoilers', T(33004, ''), False).description(
+        #            T(33005, '')),
+        #        BoolSetting('subtitle_downloads', T(32932, 'Show subtitle quick-actions button'), False).description(
+        #            T(32939, 'Only applies to video player UI')),
+        #        BoolSetting('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons'), False).description(
+        #            T(32939, 'Only applies to video player UI')),
+        #        BoolSetting('video_show_repeat', T(32934, 'Show repeat button'), False).description(
+        #            T(32939, 'Only applies to video player UI')),
+        #        BoolSetting('video_show_shuffle', T(32935, 'Show shuffle button'), False).description(
+        #            T(32939, 'Only applies to video player UI')),
+        #        OptionsSetting(
+        #            'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
+        #            (
+        #                ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
+        #                ('never', T(32033, 'Never'))
+        #            )
+        #        ).description(T(32939, 'Only applies to video player UI')),
+        #        OptionsSetting(
+        #            'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
+        #            (
+        #                ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes')),
+        #                ('never', T(32033, 'Never'))
+        #            )
+        #        ).description(T(32939, 'Only applies to video player UI')),
+        #    )
+        #),
         'player_user': (
             T(32631, 'Playback (user-specific)'), (
                 #BoolUserSetting(
@@ -575,7 +575,7 @@ class Settings(object):
         ),
     }
 
-    SECTION_IDS = ('main', 'video', 'audio', 'player', 'player_user', 'network', 'system', 'about')
+    SECTION_IDS = ('main', 'video', 'audio', 'player_user', 'network', 'system', 'about')
 
     def __getitem__(self, key):
         return self.SETTINGS[key]

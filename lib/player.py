@@ -1662,6 +1662,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.mode = self.MODE_ABSOLUTE
         self.ended = False
         self._lastDuration = 0
+        self._progressHld = {}
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', chapters=None):
         self.ended = False
@@ -1672,6 +1673,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         self.title2 = title2
         self.chapters = chapters or []
         self.playedThreshold = plexapp.util.INTERFACE.getPlayedThresholdValue()
+        self._progressHld = {}
 
     @property
     def isTranscoded(self):
@@ -1709,16 +1711,18 @@ class ZidooPlayerHandler(BasePlayerHandler):
         return True
 
     def next(self, on_end=False):
+        hasNext = False
         if self.playlist:
-            if not next(self.playlist):
-                return False
+            hasNext = bool(next(self.playlist))
 
         if on_end:
             if self.showPostPlay():
                 return True
 
-        if not self.playlist:
+        if not self.playlist or (self.playlist and not hasNext):
             return False
+
+        self.triggerProgressEvent()
 
         self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
 
@@ -1728,6 +1732,7 @@ class ZidooPlayerHandler(BasePlayerHandler):
         if not self.playlist or not self.playlist.prev():
             return False
 
+        self.triggerProgressEvent()
         self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
 
         return True
@@ -1749,12 +1754,34 @@ class ZidooPlayerHandler(BasePlayerHandler):
     def onPlayBackResumed(self):
         self.updateNowPlaying()
 
+    @property
+    def videoPlayedFac(self):
+        return self.trueTime * 1000 / float(self.duration)
+
+    @property
+    def videoWatched(self):
+        return self.videoPlayedFac >= self.playedThreshold
+
+    def triggerProgressEvent(self):
+        if not self.player.video:
+            return
+
+        rk = str(self.player.video.ratingKey)
+        if rk not in self._progressHld:
+            # progress already consumed
+            return
+
+        self.player.trigger('video.progress', data=(rk, self._progressHld[rk] if not self.videoWatched else True))
+        self._progressHld = {}
+
     def onPlayBackStopped(self):
         util.DEBUG_LOG('ZidooHandler: onPlayBackStopped')
         self.updateNowPlaying()
+        self.triggerProgressEvent()
 
         # show post play if possible, if an item has been watched (90% by Plex standards)
-        if self.trueTime * 1000 / float(self.duration) >= self.playedThreshold:
+        util.DEBUG_LOG("ZidooHandler: played-threshold: {}/{}".format(self.videoPlayedFac, self.playedThreshold))
+        if self.videoWatched:
             if self.next(on_end=True):
                 return
 
@@ -1899,7 +1926,9 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             subtitleTrack = self.video.selectedSubtitleStream(util.getSetting("forced_subtitles_override", False))
             if subtitleTrack:
                 url = util.addURLParams(url, {'PlexToZidoo-SubtitleIndex': subtitleTrack.typeIndex+1}) # subtitle tracks are 1 based in the zidoo player
-            if self.video.mediaChoice.part.file:
+            if self.playerObject.metadata.isMapped:
+                url = util.addURLParams(url, {'PlexToZidoo-PathMapped': True})
+            elif self.video.mediaChoice.part.file:
                 # Can't call util.addURLParms because it doesn't handle the special characters in the path correctly
                 encodedPath = six.moves.urllib.parse.quote(self.video.mediaChoice.part.file)
                 url += f'&PlexToZidoo-Path={encodedPath}'
@@ -2037,12 +2066,11 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 util.DEBUG_LOG("Seeking behind intro after playstart: {}".format(introOffset))
                 self.handler.seekOnStart = introOffset
 
-        url = util.addURLParams(url, {
-            'X-Plex-Client-Profile-Name': 'Generic',
-            'X-Plex-Client-Identifier': plexapp.util.INTERFACE.getGlobal('clientIdentifier')
-        })
-
-
+        if not meta.isMapped:
+            url = util.addURLParams(url, {
+                'X-Plex-Client-Profile-Name': 'Generic',
+                'X-Plex-Client-Identifier': plexapp.util.INTERFACE.getGlobal('clientIdentifier')
+            })
 
         self.play(url)
 
@@ -2070,8 +2098,10 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.stopAndWait()
 
         self.handler = AudioPlayerHandler(self)
+        self.playerObject = plexplayer.PlexAudioPlayer(track)
         url, li = self.createTrackListItem(track, fanart)
         self.stopAndWait()
+        self.trigger('starting.audio')
         self.play(url, li, **kwargs)
 
     def playAlbum(self, album, startpos=-1, fanart=None, **kwargs):
@@ -2079,6 +2109,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.stopAndWait()
 
         self.handler = AudioPlayerHandler(self)
+        self.playerObject = plexplayer.PlexAudioPlayer()
         plist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         plist.clear()
         index = 1
@@ -2088,6 +2119,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             index += 1
         xbmc.executebuiltin('PlayerControl(RandomOff)')
         self.stopAndWait()
+        self.trigger('starting.audio')
         self.play(plist, startpos=startpos, **kwargs)
 
     def playAudioPlaylist(self, playlist, startpos=-1, fanart=None, **kwargs):
@@ -2095,6 +2127,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.stopAndWait()
 
         self.handler = AudioPlayerHandler(self)
+        self.playerObject = plexplayer.PlexAudioPlayer()
         plist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         plist.clear()
         index = 1
@@ -2112,11 +2145,14 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             else:
                 xbmc.executebuiltin('PlayerControl(RandomOff)')
         self.stopAndWait()
+        self.trigger('starting.audio')
         self.play(plist, startpos=startpos, **kwargs)
 
     def createTrackListItem(self, track, fanart=None, index=0):
         data = base64.urlsafe_b64encode(track.serialize().encode("utf8")).decode("utf8")
-        url = 'plugin://script.zidooplexmod/play?{0}'.format(data)
+        if not track.isFullObject():
+            track = track.reload()
+        url = self.playerObject.build(track)['url']
         li = xbmcgui.ListItem(track.title, path=url)
         if float(xbmc.getInfoLabel('System.BuildVersionShort')) < 20.0:
             li.setInfo('music', {
@@ -2127,6 +2163,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 'tracknumber': track.get('index').asInt(),
                 'duration': int(track.duration.asInt() / 1000),
                 'playcount': index,
+                # fixme: this is not really necessary, as we don't go the plugin:// route anymore.
+                #        changing the track identification style would mean a bigger rewrite, though, so let's keep it.
                 'comment': 'PLEX-{0}:{1}'.format(track.ratingKey, data)
             })
         else:

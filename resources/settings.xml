@@ -63,12 +63,12 @@
         </category>
         <!-- Player -->
         <category id="player" label="32464">
+            <visible>false</visible>
             <group id="2" label="">
                 <setting id="auto_seek" type="boolean" label="32466" help="32900">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
-                    <visible>false</visible>
                 </setting>
                 <setting id="auto_seek_delay" parent="auto_seek" type="number" label="32487" help="32901">
                     <level>0</level>
@@ -84,25 +84,21 @@
                     <dependencies>
                         <dependency type="enable" setting="auto_seek">true</dependency>
                     </dependencies>
-                    <visible>false</visible>
                 </setting>
                 <setting id="kodi_skip_stepping" type="boolean" label="32465" help="32902">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
-                    <visible>false</visible>
                 </setting>
                 <setting id="dynamic_timeline_seek" type="boolean" label="32471" help="32903">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle"/>
-                    <visible>false</visible>
                 </setting>
                 <setting id="show_media_ends_info" type="boolean" label="32540" help="32541">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
-                    <visible>false</visible>
                 </setting>
                 <setting id="show_media_ends_label" type="boolean" label="32542" help="">
                     <level>0</level>
@@ -111,13 +107,11 @@
                     <dependencies>
                         <dependency type="enable" setting="show_media_ends_info">true</dependency>
                     </dependencies>
-                    <visible>false</visible>
                 </setting>
                 <setting id="player_show_buffer" type="boolean" label="32912" help="32913">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle"/>
-                    <visible>false</visible>
                 </setting>
                 <setting id="buffer_wait_max" type="integer" label="32918" help="32919">
                     <level>0</level>
@@ -130,7 +124,6 @@
                     <control type="slider" format="integer">
                         <popup>false</popup>
                     </control>
-                    <visible>false</visible>
                 </setting>
                 <setting id="buffer_insufficient_wait" type="integer" label="32920" help="32921">
                     <level>0</level>
@@ -143,7 +136,6 @@
                     <control type="slider" format="integer">
                         <popup>false</popup>
                     </control>
-                    <visible>false</visible>
                 </setting>
                 <setting id="consecutive_video_pb_wait" type="number" label="32963" help="32964">
                     <level>0</level>
