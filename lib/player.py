@@ -1809,8 +1809,13 @@ class ZidooPlayerHandler(BasePlayerHandler):
     def onPlayBackStarted(self):
         util.DEBUG_LOG(f'ZidooHandler: onPlayBackStarted, DP: {self.isDirectPlay}')
 
+    def onAVChange(self):
+        util.DEBUG_LOG('ZidooHandler: onAVChange')
+        self.player.trigger('changed.video')
+
     def onAVStarted(self):
         util.DEBUG_LOG('ZidooHandler: onAVStarted')
+        self.player.trigger('started.video')
 
     def onPlayBackResumed(self):
         self.updateNowPlaying()
@@ -1954,7 +1959,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.started = False
 
         if self.handler and isinstance(self.handler, ZidooPlayerHandler):
-            url = args[0]
+            url = six.moves.urllib.parse.quote(args[0], safe="/ :")
 
             #cmds = f'/system/bin/am start --user 0 -n com.hpn789.plextozidoo/.Play --ez zdmc true'
             #cmds = f'/system/bin/am start --user 0 -n com.android.gallery3d/com.android.gallery3d.app.MovieActivity'
@@ -2069,11 +2074,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
 
         meta = self.playerObject.metadata
-        if meta.isTranscoded:
-            self.handler.mode = self.handler.MODE_RELATIVE
-        else:
-            self.handler.mode = self.handler.MODE_ABSOLUTE
         url = meta.streamUrls[0]
+
         bifURL = self.playerObject.getBifUrl()
         util.DEBUG_LOG('Playing URL(+{1}ms): {0}'.format(plexnetUtil.cleanToken(url), offset))
 
@@ -2112,6 +2114,8 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                         break
 
         if meta.isTranscoded:
+            self.handler.mode = self.handler.MODE_RELATIVE
+
             if introOffset:
                 # cheat our way into an early intro skip by modifying the offset in the stream URL
                 util.DEBUG_LOG("Immediately seeking behind intro: {}".format(introOffset))
@@ -2127,12 +2131,69 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 util.DEBUG_LOG("Seeking behind intro after playstart: {}".format(introOffset))
                 self.handler.seekOnStart = introOffset
 
+            self.handler.mode = self.handler.MODE_ABSOLUTE
+
         if not meta.isMapped:
             url = util.addURLParams(url, {
                 'X-Plex-Client-Profile-Name': 'Generic',
                 'X-Plex-Client-Identifier': plexapp.util.INTERFACE.getGlobal('clientIdentifier')
             })
 
+        vtype = self.video.type if self.video.type in ('movie', 'episode', 'musicvideo') else 'video'
+        imdbNum = None
+        fill_trakt_ids = False
+        trakt_ids = {}
+
+        # generate guids when script.trakt is installed
+        if "script.trakt" in util.USER_ADDONS:
+            fill_trakt_ids = True
+
+        a = self.video.guid
+        if "com.plexapp.agents.imdb" in a:
+            imdbNum = a.split("?lang=")[0][a.index("com.plexapp.agents.imdb://")+len("com.plexapp.agents.imdb://"):]
+            if fill_trakt_ids:
+                if imdbNum:
+                    trakt_ids["imdb"] = imdbNum
+
+        elif fill_trakt_ids and "com.plexapp.agents.themoviedb" in a:
+            trakt_ids["tmdb"] = a.split("?lang=")[0][
+                                a.index("com.plexapp.agents.themoviedb://") + len("com.plexapp.agents.themoviedb://"):]
+
+        elif fill_trakt_ids and "com.plexapp.agents.thetvdb" in a:
+            trakt_ids["tvdb"] = a.split("?lang=")[0][
+                                a.index("com.plexapp.agents.thetvdb://") +
+                                len("com.plexapp.agents.thetvdb://"):].split("/", 1)[0]
+
+        elif "plex://movie" in a or "plex://episode" in a:
+            ref = self.video
+            if fill_trakt_ids and "plex://episode" in a:
+                ref = self.video.show()
+                if not ref.isFullObject():
+                    ref.reload()
+
+            for guid in ref.guids:
+                if not imdbNum and guid.id.startswith('imdb://'):
+                    imdbNum = guid.id.split('imdb://')[1]
+
+                if fill_trakt_ids:
+                    sabbr, gid = guid.id.split("://")
+                    try:
+                        gid = int(gid)
+                    except:
+                        pass
+
+                    trakt_ids[sabbr] = gid
+        if fill_trakt_ids:
+            # generate trakt slug
+            if vtype == "movie":
+                year = self.video.year.asInt()
+                trakt_ids['slug'] = util.slugify("{}{}".format(self.video.title, year and " {}".format(year) or ""))
+
+            util.DEBUG_LOG("Setting Trakt IDs: {}".format(trakt_ids))
+            # report IDs to trakt
+            xbmcgui.Window(10000).setProperty('script.trakt.ids', json.dumps(trakt_ids))
+
+        self.trigger('starting.video')
         self.play(url)
 
     def playVideoPlaylist(self, playlist, resume=False, handler=None, session_id=None):
@@ -2263,6 +2324,13 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if not self.handler:
             return
         self.handler.onPlayBackStarted()
+
+    def onAVChange(self):
+        util.DEBUG_LOG('ZidooPlayer: AVChange - {}'.format(self.handler))
+        self.trigger('av.change')
+        if not self.handler:
+            return
+        self.handler.onAVChange()
 
     def onAVStarted(self):
         util.DEBUG_LOG('ZidooPlayer: AVStarted - {}'.format(self.handler))

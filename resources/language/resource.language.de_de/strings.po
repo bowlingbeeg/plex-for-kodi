@@ -2009,10 +2009,10 @@ msgstr "Kritik"
 msgctxt "#32954"
 msgid "Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n"
 "\n"
-"To customize other cache/network-related values, copy \"script.plexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
+"To customize other cache/network-related values, copy \"script.zidooplexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
 msgstr "Benötigt Kodi-Neustart. ACHTUNG: Überschreibt advancedsettings.xml!\n"
 "\n"
-"Um weitere Cache-/Netzwerkbezogene Werte zu ändern, kopiere \"script.plexmod/pm4k_cache_template.xml\" in den Profilordner und editiere sie. (Für die Dateipfade schaue in Abschnitt 'Über')"
+"Um weitere Cache-/Netzwerkbezogene Werte zu ändern, kopiere \"script.zidooplexmod/pm4k_cache_template.xml\" in den Profilordner und editiere sie. (Für die Dateipfade schaue in Abschnitt 'Über')"
 
 #: 
 msgctxt "#32955"

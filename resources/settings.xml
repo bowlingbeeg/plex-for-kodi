@@ -221,6 +221,7 @@
                         <heading>33510</heading>
                         <popup>false</popup>
                     </control>
+                    <visible>false</visible>
                 </setting>
                 <setting id="skip_marker_timer_cancel" type="boolean" label="32906" help="32907">
                     <level>0</level>
