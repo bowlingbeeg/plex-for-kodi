@@ -2547,7 +2547,10 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
                 if zidooStatusFull is not None:
                     util.DEBUG_LOG('ZidooPlayer: Monitor 2')
+                    if self.zidooFailureDialog:
+                        self.zidooFailureDialog.doClose()
                     # Loop here while the movie is still being played
+                    statusNull = 0
                     while self.started and not util.MONITOR.abortRequested() and not self._closed:
                         time.sleep(1)
                         timeJump = False
@@ -2592,10 +2595,11 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                                 self.playState = self.STATE_STOPPED
                                 break
                         else:
-                            # Check to see if the user cleared the error message, if so then we can stop monitoring
-                            if self.zidooFailureDialog is None or self.zidooFailureDialog.closing():
-                                self.playState = self.STATE_STOPPED
+                            util.DEBUG_LOG('ZidooPlayer: Monitor 2.1')
+                            statusNull += 1
+                            if statusNull >= 3:
                                 break
+                            continue # We randomly will get bad status so just keep going.
 
                         if timeJump:
                             self.handler.updateNowPlaying(force=True, state=self.STATE_PAUSED) # The PAUSED state should actually force an update
@@ -2603,11 +2607,12 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                             self.handler.updateNowPlaying(force=True)
 
                 util.DEBUG_LOG('ZidooPlayer: Monitor 3')
+                self.playState = self.STATE_STOPPED
                 if not util.MONITOR.abortRequested() and not self._closed:
+                    util.DEBUG_LOG('ZidooPlayer: Monitor 4')
                     self.currentMarker = None
-                    if self.zidooFailureDialog:
-                        self.zidooFailureDialog.doClose()
                     self.onPlayBackStopped()
+                util.DEBUG_LOG('ZidooPlayer: Monitor 5')
 
             self.handler.close()
             self.close()
