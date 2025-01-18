@@ -37,10 +37,10 @@ try:
     # reactivate/maximize
     if getGlobalProperty('running'):
         try:
-            log('Main: script.plexmod: Trying to reactivate minimized addon')
-            xbmc.executebuiltin('NotifyAll({0},{1},{2})'.format('script.plexmod', 'RESTORE', '{}'))
+            log('Main: script.zidooplexmod: Trying to reactivate minimized addon')
+            xbmc.executebuiltin('NotifyAll({0},{1},{2})'.format('script.zidooplexmod', 'RESTORE', '{}'))
         except:
-            log('Main: script.plexmod: Already running or faulty, couldn\'t reactivate other instance, exiting.')
+            log('Main: script.zidooplexmod: Already running or faulty, couldn\'t reactivate other instance, exiting.')
         else:
             sys.exit(0)
     else:
@@ -49,7 +49,7 @@ try:
             # we're waiting for the addon to start, immediate start was requested
             if getGlobalProperty('waiting_for_start'):
                 setGlobalProperty('waiting_for_start', '', wait=True)
-                log('Main: script.plexmod: Currently waiting for start, immediate start was requested.')
+                log('Main: script.zidooplexmod: Currently waiting for start, immediate start was requested.')
                 sys.exit(0)
 
             # only allow a single instance
@@ -64,7 +64,7 @@ try:
                     if boot_delay:
                         set_waiting_for_start = True
                         setGlobalProperty('waiting_for_start', '1', wait=True)
-                        log('Main: script.plexmod: Delaying start for {}s.', boot_delay)
+                        log('Main: script.zidooplexmod: Delaying start for {}s.', boot_delay)
                         while (not main.util.MONITOR.abortRequested() and waited < boot_delay
                                and getGlobalProperty('waiting_for_start')):
                             waited += 0.1
@@ -72,7 +72,7 @@ try:
 
                     # boot delay canceled by immediate start
                     if waited < boot_delay:
-                        log('Main: script.plexmod: Forced start before auto-start delay ({:.1f}/{} s).',
+                        log('Main: script.zidooplexmod: Forced start before auto-start delay ({:.1f}/{} s).',
                             waited, boot_delay)
                         skip_ensure_home = True
 
@@ -89,7 +89,7 @@ try:
                                 waited < 120 and (
                                 xbmcgui.getCurrentWindowId() > 10000 or xbmcgui.getCurrentWindowDialogId() > 9999):
                             if waited == 0:
-                                log('Main: script.plexmod: Waiting for auto-start; we\'re not home or have an '
+                                log('Main: script.zidooplexmod: Waiting for auto-start; we\'re not home or have an '
                                     'active dialog.')
                             waited += 0.1
                             main.util.MONITOR.waitForAbort(0.1)
@@ -103,7 +103,7 @@ try:
 
                 main.main()
         else:
-            log('Main: script.plexmod: Already running, exiting')
+            log('Main: script.zidooplexmod: Already running, exiting')
 
 except SingleInstanceException:
     pass

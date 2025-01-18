@@ -48,7 +48,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
     def onNotification(self, sender, method, data):
         LOG("Notification: {} {} {}".format(sender, method, data))
-        if sender == 'script.plexmod' and method.endswith('RESTORE'):
+        if sender == 'script.zidooplexmod' and method.endswith('RESTORE'):
             from .windows import kodigui, windowutils
 
             def exit_mainloop():
@@ -56,8 +56,8 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
                 try:
                     windowutils.HOME.doClose()
                 except:
-                    xbmc.executebuiltin('StopScript(script.plexmod)')
-                    xbmc.executebuiltin('RunScript(script.plexmod)')
+                    xbmc.executebuiltin('StopScript(script.zidooplexmod)')
+                    xbmc.executebuiltin('RunScript(script.zidooplexmod)')
 
             if not kodigui.BaseFunctions.lastWinID:
                 LOG("No lastWinID, restarting")

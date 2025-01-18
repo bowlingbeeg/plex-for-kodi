@@ -18,7 +18,7 @@ Let's say you have a common Movie library path of "/mnt/data/movies" and you've 
 share "Movies", you'd do the following ([:port] is optional for SMB):
 - Go to the Kodi file manager and add a new source
 - Add a source with "smb://serverip[:port]/Movies"
-- Copy this file to "userdata/addon_data/script.plexmod/path_mapping.json"
+- Copy this file to "userdata/addon_data/script.zidooplexmod/path_mapping.json"
 - Fill in your servername (the name of the server in Plex) in place of your_server_name below
 - Add "smb://serverip[:port]/Movies": "/mnt/data/Movies" below "// add your own mounts here" below
 

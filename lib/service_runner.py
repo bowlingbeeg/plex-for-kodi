@@ -25,29 +25,29 @@ def main(restarting_service=False):
         return
 
     lo.service_log('Started', realm="Service")
-    setGlobalProperty('service.started', '1', wait=True)
+    #setGlobalProperty('service.started', '1', wait=True)
 
     if ku.ADDON.getSetting('kiosk.mode') == 'true' and not service_started:
-        ku.xbmc.log('script.plexmod: Starting from service (Kiosk Mode)', ku.xbmc.LOGINFO)
+        ku.xbmc.log('script.zidooplexmod: Starting from service (Kiosk Mode)', ku.xbmc.LOGINFO)
         kiosk = 2 if ku.ADDON.getSetting('kiosk.always') == 'true' else 1
         delay = ku.ADDON.getSetting('kiosk.delay') or "0"
-        ku.xbmc.executebuiltin('RunScript(script.plexmod,{}{})'.format(kiosk, ",{}".format(delay) if delay != "0" else ""))
+        ku.xbmc.executebuiltin('RunScript(script.zidooplexmod,{}{})'.format(kiosk, ",{}".format(delay) if delay != "0" else ""))
 
-    if not ku.FROM_KODI_REPOSITORY and ku.ADDON.getSetting('auto_update_check') != "false":
-        while not MONITOR.abortRequested():
-            # enter the update loop. if it exits positively, it wants to be reloaded
-            setGlobalProperty('service.version', ku.ADDON.getAddonInfo('version'))
-            if uc.update_loop():
-                lo.service_log("Reloading service due to code changes", realm="Service")
-                reload(uc)
-                reload(ku)
-                reload(lo)
+    #if not ku.FROM_KODI_REPOSITORY and ku.ADDON.getSetting('auto_update_check') != "false":
+    #    while not MONITOR.abortRequested():
+    #        # enter the update loop. if it exits positively, it wants to be reloaded
+    #        setGlobalProperty('service.version', ku.ADDON.getAddonInfo('version'))
+    #        if uc.update_loop():
+    #            lo.service_log("Reloading service due to code changes", realm="Service")
+    #            reload(uc)
+    #            reload(ku)
+    #            reload(lo)
 
                 # reload ADDON
-                ku.ADDON = ku.xbmcaddon.Addon()
-                return True
+    #            ku.ADDON = ku.xbmcaddon.Addon()
+    #            return True
 
-            else:
-                # update loop didn't exit cleanly, break
-                break
+    #        else:
+    #            # update loop didn't exit cleanly, break
+    #            break
     lo.service_log("Exited", realm="Service")

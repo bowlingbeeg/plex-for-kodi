@@ -1864,10 +1864,10 @@ msgstr "Vélemények"
 msgctxt "#32954"
 msgid "Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n"
 "\n"
-"To customize other cache/network-related values, copy \"script.plexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
+"To customize other cache/network-related values, copy \"script.zidooplexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
 msgstr "Kodi újraindítása szükséges. FIGYELMEZTETÉS: Ez felülírja az advancedsettings.xml fájlt!\n"
 "\n"
-"Más, a gyorsítótárral/hálózattal kapcsolatos értékek testreszabásához másolja a „script.plexmod/pm4k_cache_template.xml” fájlt a profil mappába, és szerkessze tetszés szerint. (A fájl elérési útvonalait lásd a Leírás szakaszban)"
+"Más, a gyorsítótárral/hálózattal kapcsolatos értékek testreszabásához másolja a „script.zidooplexmod/pm4k_cache_template.xml” fájlt a profil mappába, és szerkessze tetszés szerint. (A fájl elérési útvonalait lásd a Leírás szakaszban)"
 
 #: 
 msgctxt "#32955"
@@ -2268,8 +2268,8 @@ msgstr "Epizód dátuma hozzáadva"
 
 #: 
 msgctxt "#33001"
-msgid "Long-press (or context menu) on a library item or: Honor path_mapping.json in the addon_data/script.plexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
-msgstr "Nyomja hosszan (vagy kontext menü) a könyvtári elemet vagy: path_mapping.json az addon_data/script.plexmod mappában KözvetlenLejátszás média alatt. Ez használható más technikák, például SMB/NFS/stb. segítségével történő streamelésre az alapértelmezett HTTP kezelő helyett. path_mapping.example.json a kiegészítő főkönyvtárában található."
+msgid "Long-press (or context menu) on a library item or: Honor path_mapping.json in the addon_data/script.zidooplexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
+msgstr "Nyomja hosszan (vagy kontext menü) a könyvtári elemet vagy: path_mapping.json az addon_data/script.zidooplexmod mappában KözvetlenLejátszás média alatt. Ez használható más technikák, például SMB/NFS/stb. segítségével történő streamelésre az alapértelmezett HTTP kezelő helyett. path_mapping.example.json a kiegészítő főkönyvtárában található."
 
 #: 
 msgctxt "#33043"
@@ -2346,9 +2346,9 @@ msgstr "Téma"
 #: 
 msgctxt "#32984"
 msgid "Sets the theme. Currently only customizes all control buttons. ATTENTION: [I]Might[/I] need an addon restart.\n"
-"In order to customize this, copy one of the xml's in script.plexmod/resources/skins/Main/1080i/templates to addon_data/script.plexmod/templates/{templatename}_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
+"In order to customize this, copy one of the xml's in script.zidooplexmod/resources/skins/Main/1080i/templates to addon_data/script.zidooplexmod/templates/{templatename}_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
 msgstr "Beállítja a témát. Jelenleg az összes vezérlőgombot testre szabja. FIGYELEM: [I]Lehet[/I], hogy szükség lesz egy kiegészítő újraindítására.\n"
-"A testreszabáshoz másold az egyik xml-t a script.plexmod/resources/skins/Main/1080i/templates fájlból az addon_data/script.plexmod/templates/{templatename}_custom.xml fájlba, és állítsd be tetszésed szerint, majd válaszd a „Egyéni”-t témának."
+"A testreszabáshoz másold az egyik xml-t a script.zidooplexmod/resources/skins/Main/1080i/templates fájlból az addon_data/script.zidooplexmod/templates/{templatename}_custom.xml fájlba, és állítsd be tetszésed szerint, majd válaszd a „Egyéni”-t témának."
 
 #: 
 msgctxt "#33011"
@@ -2742,8 +2742,8 @@ msgstr "Automatikusan kihagyja az epizódok főcímeit, a stáblistát és megpr
 
 #: 
 msgctxt "#33052"
-msgid "Which CA certificate bundle to use for request HTTPS verification. \"system\" uses the system-provided certificate bundle. \"ACME\" uses an extremely small bundle provided with the addon, which includes root certificates for Letsencrypt (plex.direct) and ZeroSSL. \"custom\" allows for a ca-certificate bundle in userdata/addon_data/script.plexmod/custom_bundle.crt"
-msgstr "Melyik CA tanúsítványcsomagot használja a HTTPS-ellenőrzéshez. A „rendszer” az általa biztosított tanúsítványcsomagot használja. Az „ACME” a kiegészítővel biztosított rendkívül kis csomagot használja, amely a Letsencrypt (plex.direct) és a ZeroSSL gyökértanúsítványait tartalmazza. Az „egyéni” lehetővé teszi a CA-tanúsítványköteg használatát a userdata/addon_data/script.plexmod/custom_bundle.crt fájlban."
+msgid "Which CA certificate bundle to use for request HTTPS verification. \"system\" uses the system-provided certificate bundle. \"ACME\" uses an extremely small bundle provided with the addon, which includes root certificates for Letsencrypt (plex.direct) and ZeroSSL. \"custom\" allows for a ca-certificate bundle in userdata/addon_data/script.zidooplexmod/custom_bundle.crt"
+msgstr "Melyik CA tanúsítványcsomagot használja a HTTPS-ellenőrzéshez. A „rendszer” az általa biztosított tanúsítványcsomagot használja. Az „ACME” a kiegészítővel biztosított rendkívül kis csomagot használja, amely a Letsencrypt (plex.direct) és a ZeroSSL gyökértanúsítványait tartalmazza. Az „egyéni” lehetővé teszi a CA-tanúsítványköteg használatát a userdata/addon_data/script.zidooplexmod/custom_bundle.crt fájlban."
 
 #: 
 msgctxt "#33054"

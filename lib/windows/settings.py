@@ -460,27 +460,27 @@ class Settings(object):
                         "oid certain pitfalls, Default: 90 %"
                     )
                 ),
-                OptionsSetting(
-                    'played_threshold_behaviour',
-                    T(34022, 'Video play completion behaviour'),
-                    3,
-                    (
-                        (0, T(34024, 'at selected threshold percentage')),
-                        (1, T(34025, 'at final credits marker position')),
-                        (2, T(34025, 'at first credits marker position')),
-                        (3, T(34026, 'earliest between threshold percent and first credits marker')),
-                    ),
-                    show_cb=lambda: plexnet.plexapp.SERVERMANAGER.selectedServer.prefs.get(
-                        "LibraryVideoPlayedAtBehaviour", None) is None
-                ).description(T(34023, "Decide whether to use end credits markers to determine the 'watched' "
-                                       "state of video items. When markers are not available the selected threshold "
-                                       "percentage will be used.")),
-                BoolSetting('use_alternate_seek2', T(33667, 'Use alternate seek'), util.altSeekRecommended).description(
-                    T(33668, 'ATTENTION: Only enable this if you have reproducible audio issues after '
-                             'seeking/resuming.\n\nUse an alternative seek method in videos, which can help in '
-                             'problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by '
-                             'default for CoreELEC and LG WebOS)'
-                )),
+                #OptionsSetting(
+                #    'played_threshold_behaviour',
+                #    T(34022, 'Video play completion behaviour'),
+                #    3,
+                #    (
+                #        (0, T(34024, 'at selected threshold percentage')),
+                #        (1, T(34025, 'at final credits marker position')),
+                #        (2, T(34025, 'at first credits marker position')),
+                #        (3, T(34026, 'earliest between threshold percent and first credits marker')),
+                #    ),
+                #    show_cb=lambda: plexnet.plexapp.SERVERMANAGER.selectedServer.prefs.get(
+                #        "LibraryVideoPlayedAtBehaviour", None) is None
+                #).description(T(34023, "Decide whether to use end credits markers to determine the 'watched' "
+                #                       "state of video items. When markers are not available the selected threshold "
+                #                       "percentage will be used.")),
+                #BoolSetting('use_alternate_seek2', T(33667, 'Use alternate seek'), util.altSeekRecommended).description(
+                #    T(33668, 'ATTENTION: Only enable this if you have reproducible audio issues after '
+                #             'seeking/resuming.\n\nUse an alternative seek method in videos, which can help in '
+                #             'problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by '
+                #             'default for CoreELEC and LG WebOS)'
+                #)),
                 BoolSetting(
                     'assume_resume', T(33711, 'Always resume media'), True
                 ).description(
@@ -591,24 +591,24 @@ class Settings(object):
                              " native speaker of other languages, which you don't need subtitles for, prevent Plex "
                              "from auto-selecting subtitles for those languages.")
                 ),
-                OptionsSetting(
-                    'subtitle_download_from',
-                    T(33693, 'Download subtitles using'),
-                    'plex',
-                    (
-                        ('ask', T(33694, 'Ask')),
-                        ('plex', 'Plex'),
-                        ('kodi', 'Kodi'),
-                    )
-                ).description(T(33695, "Where do you want to download subtitles from? Note: Currently this "
-                                       "only applies to the subtitle quick actions in the player. The subtitle download"
-                                       " in stream settings always uses Plex as a source.")),
-                BoolSetting('subtitle_download_fallback', T(33701, 'Fallback to Kodi'),
-                            True).description(
-                    T(33702, "When no subtitles are found via the Plex subtitle search, fall back to Kodi "
-                             "subtitle search. Note: Currently this only applies to the subtitle quick actions in the "
-                             "player. The subtitle download in stream settings always uses Plex as a source.")
-                ),
+                #OptionsSetting(
+                #    'subtitle_download_from',
+                #    T(33693, 'Download subtitles using'),
+                #    'plex',
+                #    (
+                #        ('ask', T(33694, 'Ask')),
+                #        ('plex', 'Plex'),
+                #        ('kodi', 'Kodi'),
+                #    )
+                #).description(T(33695, "Where do you want to download subtitles from? Note: Currently this "
+                #                       "only applies to the subtitle quick actions in the player. The subtitle download"
+                #                       " in stream settings always uses Plex as a source.")),
+                #BoolSetting('subtitle_download_fallback', T(33701, 'Fallback to Kodi'),
+                #            True).description(
+                #    T(33702, "When no subtitles are found via the Plex subtitle search, fall back to Kodi "
+                #             "subtitle search. Note: Currently this only applies to the subtitle quick actions in the "
+                #             "player. The subtitle download in stream settings always uses Plex as a source.")
+                #),
                 OptionsSetting(
                     'burn_subtitles',
                     T(32031, 'Burn-in Subtitles'),
@@ -622,11 +622,11 @@ class Settings(object):
                              'transcoding the video stream). If disabled it will not touch the video stream, but '
                              'will convert the subtitle to unstyled text.')
                 ),
-                BoolUserSetting('auto_sync', T(33655, 'Auto-Sync Subtitles'),
-                            True).description(
-                    T(33656, 'Only for External SRT subtitles. The PMS setting for voice activity detection '
-                             'has to be enabled for this to work.')
-                ),
+                #BoolUserSetting('auto_sync', T(33655, 'Auto-Sync Subtitles'),
+                #            True).description(
+                #    T(33656, 'Only for External SRT subtitles. The PMS setting for voice activity detection '
+                #             'has to be enabled for this to work.')
+                #),
                 BoolSetting('forced_subtitles_override', T(32941, 'Forced subtitles fix'),
                             False).description(
                     T(32493, 'When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex'
@@ -634,10 +634,10 @@ class Settings(object):
                              '. This setting fixes that by ignoring the PMSs decision and selecting the same language '
                              'without a forced flag if possible.')
                 ),
-                BoolSetting('calculate_oshash', T(32958, 'Calculate OpenSubtitles.com hash'),
-                            False).description(
-                    T(32959, '')
-                ),
+                #BoolSetting('calculate_oshash', T(32958, 'Calculate OpenSubtitles.com hash'),
+                #            False).description(
+                #    T(32959, '')
+                #),
             )
         ),
         'ui': (
@@ -759,92 +759,20 @@ class Settings(object):
                 KeySetting('map_button_home', T(33085), None).description(T(33087))
             )
         ),
-        'player': (
-            T(32940, 'Player UI'), (
-                BoolSetting('player_official', T(33045, 'Behave like official Plex clients'), True).description(
-                    T(33046, '')),
-                BoolSetting('no_osd_time_spoilers', T(33004, ''), False, backport_from="no_spoilers").description(
-                    T(33005, '')),
-                MultiUAOptionsSetting(
-                    'player_show_buttons', T(33057, 'Show buttons'),
-                    ['subtitle_downloads', 'skip_intro', 'skip_credits'],
-                    (
-                        ('subtitle_downloads', T(32932, 'Show subtitle quick-actions button')),
-                        ('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons')),
-                        ('video_show_repeat', T(32934, 'Show repeat button')),
-                        ('video_show_shuffle', T(32935, 'Show shuffle button')),
-                        ('skip_intro', T(32495, 'Skip Intro')),
-                        ('skip_credits', T(32496, 'Skip Credits')),
-                    )
-                ).description(T(32939, 'Only applies to video player UI')),
-                MultiUAOptionsSetting(
-                    'fast_pause_resume', T(34012, 'Fast pause/resume'),
-                    [],
-                    (
-                        ('paused', T(34013, 'when paused')),
-                        ('playing', T(34014, 'when playing')),
-                    )
-                ).description(T(34015, 'User-specific. Use OK/ENTER button to pause instead of showing the OSD'
-                                       ' (which can then only be accessed using DOWN), or resume when paused. '
-                                       'Only works with \'Behave like official Plex clients\' enabled.')),
-                OptionsSetting(
-                    'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
-                    (
-                        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),
-                        ('never', T(32033, 'Never'))
-                    )
-                ).description(T(33088, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'video_show_prevnext', T(32937, 'Show prev/next button'), 'eponly',
-                    (
-                        ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),
-                        ('never', T(32033, 'Never'))
-                    )
-                ).description(T(33088, 'Only applies to video player UI')),
-                OptionsSetting(
-                    'resume_seek_behind', T(33089, ''), 0,
-                    [(0, T(32481))] + [
-                        (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
-                                            unit_s_or_ms="ms" if a < 1000 else "s")) for a in
-                        [100] + list(range(250, 1000, 250)) + list(range(1000, 61000, 1000))]
-                ).description(T(33090, '')),
-                BoolSetting('resume_seek_behind_pause', T(33092, ''), False).description(
-                    T(33095, '')),
-                OptionsSetting(
-                    'resume_seek_behind_after', T(33093, ''), 0,
-                    [(0, T(32481))] + [
-                        (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
-                                            unit_s_or_ms="ms" if a < 1000 else "s")) for a in
-                        list(range(250, 1000, 250)) + list(range(1000, 61000, 1000))]
-                ).description(T(33094, '')),
-                BoolSetting('resume_seek_behind_onlydp', T(33096, ''), True).description(
-                    T(33097, '')),
-                OptionsSetting(
-                    'player_stop_on_idle',
-                    T(32946, 'Stop video playback on idle after'),
-                    0,
-                    ((0, T(32033, 'Never')), (30, '30s'), (60, '1m'), (120, '2m'), (300, '5m'), (600, '10m'),
-                     (900, '15m'), (1200, '20m'), (1800, '30m'), (2700, '45m'), (3600, '1h'),)
-                ),
-                BoolSetting(
-                    'player_stop_on_screensaver', T(32947, 'Stop video playback on screensaver'), False
-                ),
-            )
-        ),
         'player_user': (
             T(32631, 'Playback (user-specific)'), (
-                BoolUserSetting(
-                    'show_chapters', T(33601, 'Show video chapters'), True
-                ).description(
-                    T(33602, 'If available, show video chapters from the video-file instead of the '
-                             'timeline-big-seek-steps.')
-                ),
-                BoolUserSetting(
-                    'virtual_chapters', T(33603, 'Use virtual chapters'), True
-                ).description(
-                    T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
-                             ' markers identified by the Plex Server (Intro, Credits).')
-                ),
+                #BoolUserSetting(
+                #    'show_chapters', T(33601, 'Show video chapters'), True
+                #).description(
+                #    T(33602, 'If available, show video chapters from the video-file instead of the '
+                #             'timeline-big-seek-steps.')
+                #),
+                #BoolUserSetting(
+                #    'virtual_chapters', T(33603, 'Use virtual chapters'), True
+                #).description(
+                #    T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
+                #             ' markers identified by the Plex Server (Intro, Credits).')
+                #),
                 BoolUserSetting(
                     'auto_skip_in_transcode', T(32948, 'Allow auto-skip when transcoding'), True
                 ).description(
@@ -880,12 +808,12 @@ class Settings(object):
                 ).description(
                     T(32527, 'Automatically skip credits if available. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
                 ),
-                BoolUserSetting(
-                    'show_intro_skip_early', T(33505, 'Show intro skip button early'), False
-                ).description(
-                    T(33506, 'Show the intro skip button from the start of a video with an intro marker. The auto-skipp'
-                             'ing setting applies. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
-                ),
+                #BoolUserSetting(
+                #    'show_intro_skip_early', T(33505, 'Show intro skip button early'), False
+                #).description(
+                #    T(33506, 'Show the intro skip button from the start of a video with an intro marker. The auto-skipp'
+                #             'ing setting applies. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
+                #),
                 BoolUserSetting(
                     'skip_post_play_tv', T(32973, 'Episodes: Continuous playback'), False
                 ).description(
@@ -935,26 +863,26 @@ class Settings(object):
         ),
         'system': (
             T(33600, 'System'), (
-                BoolSetting('auto_update_check', T(33672, 'Check for updates'), True)
-                .description(T(33673, "Automatically check for updates periodically. If installed from a "
-                                      "Kodi repository and the Update Source setting is set to Repository, Kodi "
-                                      "itself will handle the updating of this addon. "
-                                      "Needs a Kodi restart when changed.")) if not util.FROM_KODI_REPOSITORY else None,
-                BoolSetting('update_check_startup', T(33674, 'Check for updates on start'), True)
-                .description(T(33675, "Automatically check for updates on startup. "
-                                      "Doesn't do much when Update source is Repository."
-                                      "Needs a Kodi restart when changed.")) if not util.FROM_KODI_REPOSITORY else None,
-                OptionsSetting(
-                    'update_source',
-                    T(33676, 'Update source'),
-                    'repository',
-                    (('beta', T(33678, 'Beta')), ('stable', T(33679, 'Stable')),
-                     ('repository', T(33680, 'Repository')))
-                ).description(T(33677, 'Specifies the update mode. Will immediately check for a new version '
-                                       'when changed and closing settings.\nDefault: Repository\n\nBeta: Bleeding '
-                                       'edge (possibly unstable)\nStable: Stable branch (faster than Repository)\n'
-                                       'Repository: Kodi repository (official (slow) or Don\'t Panic)')
-                              ) if not util.FROM_KODI_REPOSITORY else None,
+                #BoolSetting('auto_update_check', T(33672, 'Check for updates'), True)
+                #.description(T(33673, "Automatically check for updates periodically. If installed from a "
+                #                      "Kodi repository and the Update Source setting is set to Repository, Kodi "
+                #                      "itself will handle the updating of this addon. "
+                #                      "Needs a Kodi restart when changed.")) if not util.FROM_KODI_REPOSITORY else None,
+                #BoolSetting('update_check_startup', T(33674, 'Check for updates on start'), True)
+                #.description(T(33675, "Automatically check for updates on startup. "
+                #                      "Doesn't do much when Update source is Repository."
+                #                      "Needs a Kodi restart when changed.")) if not util.FROM_KODI_REPOSITORY else None,
+                #OptionsSetting(
+                #    'update_source',
+                #    T(33676, 'Update source'),
+                #    'repository',
+                #    (('beta', T(33678, 'Beta')), ('stable', T(33679, 'Stable')),
+                #     ('repository', T(33680, 'Repository')))
+                #).description(T(33677, 'Specifies the update mode. Will immediately check for a new version '
+                #                       'when changed and closing settings.\nDefault: Repository\n\nBeta: Bleeding '
+                #                       'edge (possibly unstable)\nStable: Stable branch (faster than Repository)\n'
+                #                       'Repository: Kodi repository (official (slow) or Don\'t Panic)')
+                #              ) if not util.FROM_KODI_REPOSITORY else None,
                 MultiOptionsSetting(
                     'cache_requests', T(33724, 'Cache Plex data for'),
                     [],
@@ -976,32 +904,32 @@ class Settings(object):
                 BoolSetting('exit_default_is_quit', T(32965, 'Start Plex On Kodi Startup'), False)
                 .description(T(32966, "stub")),
                 BoolSetting('path_mapping', T(33000, ''), True).description(T(33001, '')),
-                BufferSetting('cache_size',
-                              T(33613, 'Kodi Buffer Size (MB)'),
-                              20,
-                              [(mem, '{} MB'.format(mem)) for mem in lib.cache.kcm.viableOptions])
-                .description(
-                    '{}{}'.format(T(33614, 'stub1').format(
-                        lib.cache.kcm.free, lib.cache.kcm.recMax),
-                        '' if lib.cache.kcm.useModernAPI else ' ' + T(32954, 'stub2'))
-                ) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
-                ReadFactorSetting('readfactor',
-                                  T(32922, 'Kodi Cache Readfactor'),
-                                  4,
-                                  [(rf, str(rf) if rf > 0 else T(32976, 'stub')) for rf in lib.cache.kcm.readFactorOpts])
-                .description(
-                    T(32923, 'Sets the Kodi cache readfactor value. Default: {0}, recommended: {1}.'
-                             'With "Slow connection" enabled this will be set to {2}, as otherwise the cache doesn\'t'
-                             'fill fast/aggressively enough.').format(lib.cache.kcm.defRF,
-                                                                      lib.cache.kcm.recRFRange,
-                                                                      lib.cache.kcm.defRFSM)
-                ) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
-                BoolSetting(
-                    'slow_connection', T(32915, 'Slow connection'), False
-                ).description(T(32916, "Use with a wonky/slow connection, "
-                                       "e.g. in a hotel room. Adjusts the UI to visually "
-                                       "wait for item refreshes and waits for the buffer to fill when starting "
-                                       "playback.")),
+                #BufferSetting('cache_size',
+                #              T(33613, 'Kodi Buffer Size (MB)'),
+                #              20,
+                #              [(mem, '{} MB'.format(mem)) for mem in lib.cache.kcm.viableOptions])
+                #.description(
+                #    '{}{}'.format(T(33614, 'stub1').format(
+                #        lib.cache.kcm.free, lib.cache.kcm.recMax),
+                #        '' if lib.cache.kcm.useModernAPI else ' ' + T(32954, 'stub2'))
+                #) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
+                #ReadFactorSetting('readfactor',
+                #                  T(32922, 'Kodi Cache Readfactor'),
+                #                  4,
+                #                  [(rf, str(rf) if rf > 0 else T(32976, 'stub')) for rf in lib.cache.kcm.readFactorOpts])
+                #.description(
+                #    T(32923, 'Sets the Kodi cache readfactor value. Default: {0}, recommended: {1}.'
+                #             'With "Slow connection" enabled this will be set to {2}, as otherwise the cache doesn\'t'
+                #             'fill fast/aggressively enough.').format(lib.cache.kcm.defRF,
+                #                                                      lib.cache.kcm.recRFRange,
+                #                                                      lib.cache.kcm.defRFSM)
+                #) if not util.FROM_KODI_REPOSITORY or lib.cache.kcm.useModernAPI else None,
+                #BoolSetting(
+                #    'slow_connection', T(32915, 'Slow connection'), False
+                #).description(T(32916, "Use with a wonky/slow connection, "
+                #                       "e.g. in a hotel room. Adjusts the UI to visually "
+                #                       "wait for item refreshes and waits for the buffer to fill when starting "
+                #                       "playback.")),
                 OptionsSetting(
                     'action_on_sleep',
                     T(32700, 'Action on Sleep event'),
@@ -1038,17 +966,17 @@ class Settings(object):
                 InfoSetting('addon_path', T(33616, 'Addon Path'), util.ADDON.getAddonInfo("path")),
                 InfoSetting('userdata_path', T(33617, 'Userdata/Profile Path'),
                             util.translatePath("special://profile")),
-                InfoSetting('service_status', T(33689, 'Service running'),
-                            lambda: "{} ({})".format(
-                                util.getGlobalProperty("service.started") and T(32328, "Yes") or T(32329, "No"),
-                                util.getGlobalProperty("service.version"))),
-                InfoSetting('i_last_update_check', T(33690, "Last update check"),
-                            lambda: util.getGlobalProperty('last_update_check', datetime.datetime.fromtimestamp(0).strftime('%Y-%m-%dT%H:%M:%S.%f'))),
+                #InfoSetting('service_status', T(33689, 'Service running'),
+                #            lambda: "{} ({})".format(
+                #                util.getGlobalProperty("service.started") and T(32328, "Yes") or T(32329, "No"),
+                #                util.getGlobalProperty("service.version"))),
+                #InfoSetting('i_last_update_check', T(33690, "Last update check"),
+                #            lambda: util.getGlobalProperty('last_update_check', datetime.datetime.fromtimestamp(0).strftime('%Y-%m-%dT%H:%M:%S.%f'))),
             )
         ),
     }
 
-    SECTION_IDS = ('main', 'video', 'audio', 'ui', 'player', 'player_user', 'network', 'system', 'about')
+    SECTION_IDS = ('main', 'video', 'audio', 'ui', 'player_user', 'network', 'system', 'about')
 
     def __getitem__(self, key):
         return self.SETTINGS[key]

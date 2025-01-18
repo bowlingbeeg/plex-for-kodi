@@ -82,18 +82,18 @@ def waitForThreads():
         util.DEBUG_LOG("Main: Not waiting for remaining threads as exit already took to long; hard exit")
 
     if time.time() >= started + util.addonSettings.maxShutdownWait or (exit_timer_started and not exit_timer_was_alive):
-        util.LOG('Main: script.plexmod: threads took too long or timer hit, HARD EXITING')
+        util.LOG('Main: script.zidooplexmod: threads took too long or timer hit, HARD EXITING')
         sys.exit(0)
 
 @atexit.register
 def realExit():
-    xbmc.log('Main: script.plexmod: REALLY FINISHED', xbmc.LOGINFO)
+    xbmc.log('Main: script.zidooplexmod: REALLY FINISHED', xbmc.LOGINFO)
     if quitKodi:
-        xbmc.log('Main: script.plexmod: QUITTING KODI', xbmc.LOGINFO)
+        xbmc.log('Main: script.zidooplexmod: QUITTING KODI', xbmc.LOGINFO)
         xbmc.executebuiltin('Quit')
 
     elif restart:
-        xbmc.executebuiltin('RunScript(script.plexmod)')
+        xbmc.executebuiltin('RunScript(script.zidooplexmod)')
 
 
 def signout():
@@ -104,8 +104,8 @@ def signout():
 exit_timer_started = False
 
 def hardExit():
-    util.LOG('Main: script.plexmod: timer hit, triggering hard exit...')
-    xbmc.executebuiltin('StopScript(script.plexmod)')
+    util.LOG('Main: script.zidooplexmod: timer hit, triggering hard exit...')
+    xbmc.executebuiltin('StopScript(script.zidooplexmod)')
     interrupt_main()
 
 

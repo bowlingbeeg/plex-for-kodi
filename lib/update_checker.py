@@ -34,9 +34,9 @@ def disable_enable_addon():
     log("Toggling")
     try:
         xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Addons.SetAddonEnabled',
-                                 'params': {'addonid': 'script.plexmod', 'enabled': False}}))
+                                 'params': {'addonid': 'script.zidooplexmod', 'enabled': False}}))
         xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Addons.SetAddonEnabled',
-                                 'params': {'addonid': 'script.plexmod', 'enabled': True}}))
+                                 'params': {'addonid': 'script.zidooplexmod', 'enabled': True}}))
     except:
         raise
 
@@ -136,7 +136,7 @@ def update_loop():
                                 #raise UpdateException('Timeout waiting for UI to close')
                                 log('Timeout waiting for UI to close')
                                 try:
-                                    xbmc.executebuiltin('StopScript(script.plexmod)')
+                                    xbmc.executebuiltin('StopScript(script.zidooplexmod)')
                                 except:
                                     pass
                         else:
@@ -211,7 +211,7 @@ def update_loop():
                                 lib.kodi_util.ADDON = xbmcaddon.Addon()
 
                                 if do_start:
-                                    xbmc.executebuiltin('RunScript(script.plexmod,0,0,1)')
+                                    xbmc.executebuiltin('RunScript(script.zidooplexmod,0,0,1)')
 
                                 if "updater" in major_changes or "service" in major_changes:
                                     return True

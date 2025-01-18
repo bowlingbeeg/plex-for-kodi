@@ -336,9 +336,9 @@ Addons:
 - Core/Settings: Backport old separated boolean settings to multioptions
 - Core/Settings: Implement MultiOptionsSetting
 - Core/Settings: Implement theme-relevant settings flag; reapply theme if necessary after exiting settings and revisiting home
-- Core/Templating: Allow full context overriding by using addon_data/script.plexmod/context_overrides.json (see lib/templating/context.py for structure)
+- Core/Templating: Allow full context overriding by using addon_data/script.zidooplexmod/context_overrides.json (see lib/templating/context.py for structure)
 - Core/Templating: Recompile templates if we're missing XMLs; fixes addon not starting after upgrade without theme version change
-- Core/Theming: Allow overriding theme definition/defaults by supplying theme_overrides.json in userdata/addon_data/script.plexmod; see /lib/templating/context.py for the data structure
+- Core/Theming: Allow overriding theme definition/defaults by supplying theme_overrides.json in userdata/addon_data/script.zidooplexmod; see /lib/templating/context.py for the data structure
 - Core/Theming: When rendering templates, show kodi progress dialog
 - Core/Windows: Fix "Go to Home to {library}"; properly select and focus library in section list
 - Dropdown/Libraries: Fix visual scrolling issues on dropdowns with many items (e.g.: Genres)
@@ -399,7 +399,7 @@ Addons:
 - Settings/Video: Streamline playback features and video codecs to reduce the amount of settings available
 - AddonSettings: Add setting for tickrate (default: 1 Hz, min: 0.5 Hz, max: 10 Hz)
 - AddonSettings: Add setting to Cache Templates (default: on); Add setting to always recompile templates on start (default: off)
-- AddonSettings: Add setting to choose the CA-certificate bundle (system, plex.direct (default), custom (userdata/addon_data/script.plexmod/custom_bundle.crt)
+- AddonSettings: Add setting to choose the CA-certificate bundle (system, plex.direct (default), custom (userdata/addon_data/script.zidooplexmod/custom_bundle.crt)
 - AddonSettings: Add setting to specify the limit for round-robining hubs (default: 250, safe tested on SHIELD: 1000)
 - AddonSettings: Increase CoreELEC resume seek wait to 250ms by default (was: 200ms); thanks @panaitwebbos for testing
 - AddonSettings: Reset default Plex Requests timeout to 5s (was 10s); increase maximum to 60s (was 30s)
@@ -478,14 +478,14 @@ Addons:
 - Core: Add support for Guids in new library agents
 - Core/Episodes/Player: Inject Show reference into episodes to speed up playback start and avoid additional API hits; Don't initiate a playlist if only one episode is being played
 - Core: Compatibility with script.trakt
-- Core: Add automated generic JSON data cache, stored as addon_data/script.plexmod/data_cache.json
+- Core: Add automated generic JSON data cache, stored as addon_data/script.zidooplexmod/data_cache.json
 - Core/TV: Store and use "once seen" genres for a show in the data cache to speed up certain views (such as postplay and continue watching, with no spoiler mode active)
 - Core: Automatically clean up old unused data cache entries which haven't been accessed for 30 days
 - Core/Settings: Add option to use watched markers instead of unwatched markers (default: on)
 - Core/Settings: Add option to hide the black background on inverted watched markers (default: off)
 - Core: Fix dialogs reverting the underlying window's watched marker setting temporarily
 - Core: Memory usage and performance optimizations (possibly >10% in py3 and >30% in py2 by using __slots__ on massively used classes)
-- Core: Allow for custom watched.png, unwatched.png, unwatched-rounded.png in addon_data/script.plexmod/media/
+- Core: Allow for custom watched.png, unwatched.png, unwatched-rounded.png in addon_data/script.zidooplexmod/media/
 - Core: Improve delete media clarity
 - Core/Playlists: Fix context menu "play" action on playlist items when addonSetting playlist visit media is on
 - Core/Windows: Optimize Imports
@@ -517,7 +517,7 @@ Addons:
 - Core: Fix issues resulting in new devices being registered with plex.tv on every plugin start
 - Core: Only use mapped file path if mapped file exists or verification is off
 - Core: Backgrounds: More concise fallback handling
-- Core/Player: Add optional DirectPlay path mapping via addon_data/script.plexmod/path_mapping.json (path_mapping.example.json included in addon directory). Allows for arbitrary replacements of HTTP playback with SMB, NFS, local mounts etc.
+- Core/Player: Add optional DirectPlay path mapping via addon_data/script.zidooplexmod/path_mapping.json (path_mapping.example.json included in addon directory). Allows for arbitrary replacements of HTTP playback with SMB, NFS, local mounts etc.
 - Home: Rework and simplify section/library change logic
 - Home: Never update hubs while playing a video to avoid hickups in high bitrate scenarios
 - Home: Properly cache user thumbnail (by removing the ?c timestamp from the URL), increasing performance
@@ -1069,7 +1069,7 @@ Fix theme music playback; set default theme music volume to 50%
 Initial PlexMod for Kodi release, based on my plex-for-kodi fork's develop branch
 Add support for Kodi Nexus (20) on LibreELEC and Android
 Add AV1 toggle and AV1 direct play support
-Rename addon to "script.plexmod"
+Rename addon to "script.zidooplexmod"
 Add all non-plex-conform features of the develop branch as default features
 
 [- 0.2.3 -]

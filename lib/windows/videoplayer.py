@@ -152,8 +152,8 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
             player.PLAYER._ignorePlaybackFailure = True
             if player.PLAYER.isPlayingVideo():
                 player.PLAYER.close()
-                if player.PLAYER.handler:
-                    player.PLAYER.handler.stoppedManually = True
+                #if player.PLAYER.handler:
+                #    player.PLAYER.handler.stoppedManually = True
                 player.PLAYER.stop()
 
         kodigui.ControlledWindow.doClose(self)
@@ -355,7 +355,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         util.DEBUG_LOG("VideoPlayerWindow: play() called")
         self.hidePostPlay()
 
-        player.PLAYER.dontRequeueBGM = True
+        #player.PLAYER.dontRequeueBGM = True
 
         def anyOtherVPlayer():
             return any(list(filter(lambda x: x['playerid'] > 0, kodijsonrpc.rpc.Player.GetActivePlayers())))
@@ -519,7 +519,10 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
             util.DEBUG_LOG('Post play auto-play: Passout protection in {0}',
                            lambda: util.durationToShortText(millis))
 
-        self.timeout = time.time() + abs(util.addonSettings.postplayTimeout)
+        if self.handler and self.handler.player and self.handler.player.skipPostPlay:
+            self.timeout = time.time()
+        else:
+            self.timeout = time.time() + abs(util.addonSettings.postplayTimeout)
         util.DEBUG_LOG('Starting post-play timer until: %i' % self.timeout)
         threading.Thread(target=self.countdown).start()
 
