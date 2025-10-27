@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.zidooplexmod"
        name="ZidooPlexMod"
-       version="0.4.1"
+       version="1.0.5d_zidoo"
        provider-name="bowlingbeeg">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -28,6 +28,7 @@
         <disclaimer lang="de">Dieses Addon wird nicht von der Firma Plex Inc. unterstützt</disclaimer>
 
         <license>GPL-2.0-only</license>
+        <forum>https://forum.zidoo.tv/index.php?threads/plex-client-for-zidoo-devices-zidooplexmod.97396</forum>
         <forum>https://forums.plex.tv/t/plexmod-for-kodi-18-19-20-21/481208</forum>
         <website>https://www.plex.tv</website>
         <source>https://github.com/bowlingbeeg/plex-for-kodi</source>
