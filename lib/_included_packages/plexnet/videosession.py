@@ -27,7 +27,7 @@ class MediaDetails:
         "subtitleStreamDecision": "subtitle_stream.decision",
         "subtitleLocation": "subtitle_stream.location",
         "subtitleBurn": "subtitle_stream.burn",
-        "subtitleAutoSync": "subtitle_stream.should_auto_sync",
+        #"subtitleAutoSync": "subtitle_stream.should_auto_sync",
     }
 
     def __init__(self, *args, **kwargs):
@@ -401,7 +401,7 @@ class SubtitlesPPI(ComputedPPIValue):
                                                                         "burn" if i.details.session.subtitleBurn else v2]),
         DPAttributeEqualsValue("subtitleStreamDecision", "burn", DPAttribute("subtitleStreamDecision")),
         DPAttributeExists("subtitleLocation"),
-        DPAttributesDiffer("subtitleAutoSync", valueFormatter=lambda i, v1, v2: [v1 and "auto-sync" or None, None]),
+        #DPAttributesDiffer("subtitleAutoSync", valueFormatter=lambda i, v1, v2: [v1 and "auto-sync" or None, None]),
     ]
 
 

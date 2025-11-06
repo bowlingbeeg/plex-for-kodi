@@ -987,7 +987,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             # the subtitle stream might not have had the correct amount of data set to properly determine auto sync
             # reinit the auto sync state with our current video
             subs.init_auto_sync(video=self.player.video)
-            path = subs.getSubtitleServerPath(auto_sync=subs.should_auto_sync)
+            path = subs.getSubtitleServerPath(auto_sync=None)
             if self.isDirectPlay:
                 self.player.showSubtitles(False)
                 if path:
@@ -2849,7 +2849,7 @@ class ZidooPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.resume = resume
         self.currentTime = 0
         self.open()
-        self._playVideo(resume and self.video.viewOffset.asInt() or 0, force_update=True)
+        self._playVideo(resume and self.video.viewOffset.asInt() or 0, force_update=True, session_id=session_id)
 
     def playAudio(self, track, fanart=None, **kwargs):
         if self.bgmPlaying:
