@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.1.3-beta4.3"
+       version="1.1.3-beta4.4"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,7 +34,11 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Revert to beta4.1 state
+- Home: Resolve old fixme for update exit event
+- Core: Ensure we're updating our lastused value by running our plugin endpoint with a stub value after exiting
+- Plugin-Endpoint: Support stub-run
+- Core: Do not update lastused value when ran from plugin endpoint initially
+- Settings: Add "Ensure Kodi Addon position" (default: On)
         </news>
         <assets>
             <icon>icon2.png</icon>
