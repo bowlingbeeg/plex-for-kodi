@@ -455,6 +455,11 @@ class Settings(object):
                     T(32100, 'Skip user selection and pin entry on startup.')
                 ),
                 BoolSetting(
+                    'ensure_lastused', T(34062, 'Ensure Kodi Addon position'), True
+                ).description(
+                    T(34063, 'When not run from the Program addons section, our lastused value will not be updated. Make sure it does when the addon exits.')
+                ),
+                BoolSetting(
                     'search_use_kodi_kbd', T(32955, 'Use Kodi keyboard for searching'), False
                 ),
                 ThemeMusicSetting('theme_music', T(32480, 'Theme music'), 5),

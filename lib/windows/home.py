@@ -827,8 +827,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._ignoreTick = True
         self.stopRetryingRequests()
 
-        # fixme: add "update" to the list of closeOptions for which we should force quit if necessary?
-        # self.closeOption = "update"
+        self.closeOption = "update"
         self.unhookSignals()
         self.doClose()
         return True

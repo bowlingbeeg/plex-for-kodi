@@ -3491,3 +3491,11 @@ msgstr "Verdunkeln während initialem Spulen"
 msgctxt "#34061"
 msgid "Show directors in cast lists"
 msgstr "Regisseure in Besetzungen anzeigen"
+
+msgctxt "#34062"
+msgid "Ensure Kodi Addon position"
+msgstr "Kodi Addon-Position sicherstellen"
+
+msgctxt "#34063"
+msgid "When not run from the Program addons section, our lastused value will not be updated. Make sure it does when the addon exits."
+msgstr "Werden wir nicht vob Programme-Addons-Kategorie gestartet, wird unser \"zuletzt-benutzt\"-Wert nicht aktualisiert. Sichergehen, dass das geschieht, wenn das Addon beendet wird."

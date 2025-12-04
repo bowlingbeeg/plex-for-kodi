@@ -35,6 +35,7 @@ from .data_cache import dcm
 BACKGROUND = None
 quitKodi = False
 restart = False
+skipEnsureLastUsed = False
 
 
 if six.PY2:
@@ -94,6 +95,9 @@ def realExit():
 
     elif restart:
         xbmc.executebuiltin('RunScript(script.plexmod)')
+    else:
+        if not skipEnsureLastUsed and util.getSetting('ensure_lastused'):
+            updateLastUsedAddon()
 
 
 def signout():
@@ -143,8 +147,23 @@ def main(force_render=False):
             pass
 
 
+def updateLastUsedAddon():
+    """
+    Runs our plugin endpoint with a stub value, so it immediately returns, then issues a Back action to back out of it.
+    This is called atExit if necessary and updates the recently used video addon list with our addon (as it's a script,
+    it would normally not get its lastused property updated when ran from service or script video endpoint)
+    :return:
+    """
+    try:
+        util.setGlobalProperty('ignore_spinner', '1', wait=True)
+        xbmc.executebuiltin("RunAddon(script.plexmod,stub)")
+        xbmc.executebuiltin('Action(back)')
+    finally:
+        util.setGlobalProperty('ignore_spinner', '')
+
+
 def _main():
-    global quitKodi, restart, exit_timer_started
+    global quitKodi, restart, exit_timer_started, skipEnsureLastUsed
 
     # uncomment to profile code #1
     #pr = cProfile.Profile()
@@ -225,6 +244,7 @@ def _main():
                         util.DEBUG_LOG('Main: STARTING WITH SERVER: {0}', selectedServer)
 
                         windowutils.HOME = home.HomeWindow.create()
+
                         if windowutils.HOME.waitForOpen(base_win_id=BACKGROUND._winID):
                             windowutils.HOME.modal()
                         else:
@@ -266,13 +286,17 @@ def _main():
                             util.LOG("Restarting Addon")
                             restart = True
                             return
+                        elif closeOption == 'update':
+                            util.LOG("Exiting for update")
+                            skipEnsureLastUsed = True
+                            return
                     finally:
                         try:
                             kodiExiting = closeOption == "kodi_exit" or windowutils.HOME.closeOption == "kodi_exit"
                         except:
                             kodiExiting = False
 
-                        if closeOption in ("quit", "exit", "restart") and not kodiExiting:
+                        if closeOption in ("quit", "exit", "restart", "update") and not kodiExiting:
                             if not exit_timer.is_alive():
                                 util.DEBUG_LOG("Main: Starting hard exit timer of {} seconds...", util.addonSettings.maxShutdownWait)
                                 exit_timer.start()

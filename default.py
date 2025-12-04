@@ -22,14 +22,21 @@ logger.setLevel(logging.DEBUG)
 from_kiosk = False
 kiosk_always = False
 boot_delay = False
+skip_ensure_last_used = False
 argvlen = len(sys.argv)
 if argvlen > 1:
-    from_kiosk = int(sys.argv[1]) > 0
-    kiosk_always = int(sys.argv[1]) > 1
-    if argvlen > 2:
-        boot_delay = int(sys.argv[2])
-        if argvlen > 3:
-            update_successful = bool(int(sys.argv[3]))
+    try:
+        from_kiosk = int(sys.argv[1]) > 0
+    except ValueError:
+        # first arg can be "fromplugin" as well
+        from_kiosk = False
+        skip_ensure_last_used = True
+    else:
+        kiosk_always = int(sys.argv[1]) > 1
+        if argvlen > 2:
+            boot_delay = int(sys.argv[2])
+            if argvlen > 3:
+                update_successful = bool(int(sys.argv[3]))
 
 started = False
 set_waiting_for_start = False
@@ -57,6 +64,11 @@ try:
                 started = True
                 skip_ensure_home = False
                 from lib import main
+
+                if skip_ensure_last_used:
+                    # if we were called from out plugin endpoint, make sure not to try and stub-run the plugin endpoint
+                    # again when exiting
+                    main.skipEnsureLastUsed = True
 
                 # called from service.py?
                 if from_kiosk:
