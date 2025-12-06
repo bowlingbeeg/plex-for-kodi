@@ -279,12 +279,12 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.blackout = False
         self.blackoutDialog = None
         self.blackoutShown = False
-        self.postBlackoutVolume = None
         self.skipFixForNextSeek = False
         self.reportedSeekPlayerTime = None
         self.pausedForSeek = False
         self.isMapped = False
         self.reused = False
+        self.prePlayVolume = None
         self.reset()
 
     def reset(self):
@@ -313,7 +313,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.reportedSeekPlayerTime = None
         self.blackout = False
         self.blackoutShown = False
-        self.postBlackoutVolume = None
+        self.prePlayVolume = None
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', seeking=NO_SEEK, chapters=None,
               is_mapped=False):
@@ -335,6 +335,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._subtitleStreamOffset = None
         self.isMapped = is_mapped
         self.playbackID = str(uuid.uuid4())
+        self.prePlayVolume = self.getVolume()
         if not self.blackoutDialog:
             self.blackoutDialog = blackoutdialog.BlackoutDialog.create(show=False)
         self.getDialog(setup=True)
@@ -511,6 +512,16 @@ class SeekPlayerHandler(BasePlayerHandler):
         else:
             self.seek(max(self.trueTime - 30, 0) * 1000, seeking=self.SEEK_REWIND)
 
+    def ensureCorrectVolume(self):
+        if self.getVolume() == 1:
+            util.LOG("SeekHandler: We've detected bad volume (current: {}, desired: {})", self.getVolume(), self.prePlayVolume)
+            if self.prePlayVolume is not None and self.prePlayVolume > 1:
+                util.LOG("SeekHandler: Setting volume to: {}",self.prePlayVolume)
+                self.setVolume(self.prePlayVolume)
+            else:
+                util.LOG("SeekHandler: No valid volume stored, setting volume to: 100")
+                self.setVolume(100)
+
     def start_blackout(self):
         if not self.blackoutShown:
             # set flag as early as possible as we might get called multiple times
@@ -518,17 +529,14 @@ class SeekPlayerHandler(BasePlayerHandler):
             util.DEBUG_LOG('SeekHandler: Blackout')
             self.blackoutDialog.show()
 
-            # store current volume
-            self.postBlackoutVolume = self.getVolume()
             util.DEBUG_LOG('SeekHandler: Setting volume to 1.')
             self.setVolume(1)
 
     def stop_blackout(self):
         if self.blackoutShown:
-            if self.postBlackoutVolume:
-                util.DEBUG_LOG('SeekHandler: Setting volume back to {}.', self.postBlackoutVolume)
-                self.setVolume(self.postBlackoutVolume)
-                self.postBlackoutVolume = None
+            if self.prePlayVolume is not None:
+                util.DEBUG_LOG('SeekHandler: Setting volume back to {}.', self.prePlayVolume)
+                self.setVolume(self.prePlayVolume)
 
             if self.blackoutDialog.isOpen:
                 util.DEBUG_LOG('SeekHandler: Disabling Blackout')
@@ -536,6 +544,9 @@ class SeekPlayerHandler(BasePlayerHandler):
 
             self.blackout = False
             self.blackoutShown = False
+
+        # double check for correct volume
+        self.ensureCorrectVolume()
 
         util.setGlobalBoolProperty('playback_started', True)
 
@@ -1008,7 +1019,8 @@ class SeekPlayerHandler(BasePlayerHandler):
                         else:
                             util.DEBUG_LOG(
                                 "OnPlayBackSeek: SeekOnStart: Player not playing video anymore during initial evaluation")
-                            self.stop_blackout()
+                            if self.blackout:
+                                self.stop_blackout()
                             return
                 else:
                     util.DEBUG_LOG("SeekHandler: onPlayBackSeek: adjusted SOS is now less than 1000ms, not triggering seek (player: {}, low: {}, high: {})", p_time, withinSOSLow, withinSOSHigh)
@@ -1051,12 +1063,14 @@ class SeekPlayerHandler(BasePlayerHandler):
                         if util.MONITOR.abortRequested():
                             util.DEBUG_LOG("OnPlayBackSeek: SeekOnStart: Abort requested while waiting for seek")
                             SOSSuccess = False
-                            self.stop_blackout()
+                            if self.blackout:
+                                self.stop_blackout()
                             break
                         elif not self.player.isPlayingVideo():
                             util.DEBUG_LOG("OnPlayBackSeek: SeekOnStart: Player not playing video while waiting for seek")
                             self.skipFixForNextSeek = False
-                            self.stop_blackout()
+                            if self.blackout:
+                                self.stop_blackout()
                             return
 
                         withinSOSHigh += 250
@@ -1315,6 +1329,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.setAudioTrack()
 
     def onPlayBackFailed(self):
+        # we might've crashed, make sure we set a correct volume again
+        self.ensureCorrectVolume()
         if self.ended:
             return False
 
@@ -1393,9 +1409,9 @@ class SeekPlayerHandler(BasePlayerHandler):
             except:
                 pass
 
-
     def sessionEnded(self):
         self.player.sessionID = None
+        self.ensureCorrectVolume()
         if self.ended:
             return
         self.ended = True
