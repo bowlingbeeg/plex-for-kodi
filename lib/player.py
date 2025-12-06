@@ -1179,7 +1179,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                     util.DEBUG_LOG("SeekHandler: subtitleStreamOffset: Returning zero as we didn't find an embedded subtitle")
                     return 0
 
-                util.DEBUG_LOG("SeekHandler: subtitleStreamOffset: Found embedded subtitle at: {}", ext_subs_amount)
+                util.DEBUG_LOG("SeekHandler: subtitleStreamOffset: Found embedded subtitle at: {}; Kodi subtitles: {}", ext_subs_amount, kodisubs)
 
                 # find embedded subtitle stream in Kodi stream list
                 # we know Kodi puts external subtitles first, start there (Kodi might see more external subs or the PMS
@@ -1189,9 +1189,24 @@ class SeekPlayerHandler(BasePlayerHandler):
                 # the terminological one (e.g: ger vs. deu, fre vs. fra)
                 ess_lang = languages.get(part2t=ess.languageCode)
                 for sub in kodisubs[ext_subs_amount:]:
+                    sub_language = sub['language'].strip(",.()- ")
+                    # we're expecting Kodi to return a 3-char part2b, if it doesn't, try to fix
+                    if len(sub_language) < 3:
+                        # kodi somehow mismatched the language and/or the subtitle was mis-tagged (e.g. pt (BR))
+                        util.DEBUG_LOG(
+                            "SeekHandler: subtitleStreamOffset: Found broken language definition in Kodi subtitle {}; trying to fix",
+                            sub)
+                        try:
+                            sub_language = languages.get(part1=sub_language).part2b
+                            util.LOG(
+                                "SeekHandler: subtitleStreamOffset: Fixed broken Kodi subtitle language for {} to: {}",
+                                sub, sub_language)
+                        except:
+                            util.LOG("SeekHandler: subtitleStreamOffset: Couldn't find language for Kodi subtitle {}; ignoring", sub)
+                            continue
+
                     if (sub['isdefault'] == ess.default.asBool() and sub['isforced'] == ess.forced.asBool() and
-                            sub['name'] == six.ensure_str(ess.title) and languages.get(
-                                part2b=sub['language']) == ess_lang):
+                            sub['name'] == six.ensure_str(ess.title) and languages.get(part2b=sub_language) == ess_lang):
                         self._subtitleStreamOffset = sub['index'] - ess.typeIndex
                         util.DEBUG_LOG("SeekHandler: subtitleStreamOffset: Returning offset: {} ({})",
                                        self._subtitleStreamOffset, sub)
