@@ -312,7 +312,10 @@ class AsyncPoolManager(PoolManager):
 class AsyncHTTPAdapter(HTTPAdapter):
     def cancel(self):
         for c in self.connections:
-            c.cancel()
+            try:
+                c.cancel()
+            except:
+                pass
 
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK):
         """Initializes a urllib3 PoolManager. This method should not be called
