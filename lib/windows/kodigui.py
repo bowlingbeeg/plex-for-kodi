@@ -222,8 +222,8 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
         global LAST_BG_URL
         self._winID = xbmcgui.getCurrentWindowId()
         BaseFunctions.lastWinID = self._winID
-        self.setProperty('use_solid_background', util.hasCustomBGColour and '1' or '')
-        if util.hasCustomBGColour:
+        self.setProperty('use_solid_background', util.useSolidBackground and '1' or '')
+        if util.useSolidBackground:
             bgColour = util.addonSettings.backgroundColour if util.addonSettings.backgroundColour != "-" \
                 else "ff000000"
             self.setProperty('background_colour', "0x%s" % bgColour.lower())

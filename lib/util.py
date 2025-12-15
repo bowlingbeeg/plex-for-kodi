@@ -124,8 +124,8 @@ DEBUG = addonSettings.debug
 
 hasCustomBGColour = False
 if KODI_VERSION_MAJOR > 18:
-    hasCustomBGColour = not addonSettings.dynamicBackgrounds and addonSettings.backgroundColour and \
-                        addonSettings.backgroundColour != "-"
+    useSolidBackground = not addonSettings.dynamicBackgrounds and addonSettings.backgroundColour
+    hasCustomBGColour = useSolidBackground and addonSettings.backgroundColour != "-"
 
 
 def getAdvancedSettings():
