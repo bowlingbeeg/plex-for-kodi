@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.1.4-beta1"
+       version="1.1.4-beta2"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,9 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Player: Embedded subtitles: Fix parsing mis-tagged Kodi subtitle offset (stream tagged as "pt (BR)" for example gets parsed by Kodi as "pt-", which is invalid
-- Core/Plexnet: Don't fail on HTTPConnectionPool.cancel
-- SeekHandler/Blackout: Make sure we arrive at a correct volume; might fix "no sound" issues after seeking
+- Core: Clarify variables states for hasCustomBGColour and add useSolidBackground (fixes a very rare issue with badly retained background images when solid background is wanted but no color set; thanks @andybkma)
+- Player/CE CPM/Codec Logos: Fix logos not hiding or appearing in multiple scenarios
+- Episodes: Fix long scrolling episode titles cutting off remaining time pill
         </news>
         <assets>
             <icon>icon2.png</icon>
