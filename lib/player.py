@@ -277,6 +277,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
         self.blackout = False
+        self.blackoutWasWanted = False
+        self.pbStartedSet = False
         self.blackoutDialog = None
         self.blackoutShown = False
         self.skipFixForNextSeek = False
@@ -312,6 +314,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.pausedForSeek = False
         self.reportedSeekPlayerTime = None
         self.blackout = False
+        self.blackoutWasWanted = False
+        self.pbStartedSet = False
         self.blackoutShown = False
         self.prePlayVolume = None
 
@@ -548,7 +552,11 @@ class SeekPlayerHandler(BasePlayerHandler):
         # double check for correct volume
         self.ensureCorrectVolume()
 
-        util.setGlobalBoolProperty('playback_started', True)
+        if not self.pbStartedSet:
+            util.setGlobalBoolProperty('playback_started', True)
+            self.pbStartedSet = True
+        else:
+            util.setGlobalBoolProperty('playback_started', False)
 
     def seekAbsolute(self, seek=None, skip_alt_seek_fix=False):
         self.seekOnStart = seek if seek is not None else self.seekOnStart if self.seekOnStart is not None else None
@@ -627,7 +635,8 @@ class SeekPlayerHandler(BasePlayerHandler):
                     self.seekOnStart = None
                     self.seekBackTo = None
                     self.seekingBackTo = False
-                    self.stop_blackout()
+                    if self.blackout:
+                        self.stop_blackout()
             else:
                 util.DEBUG_LOG("SeekAbsolute: Seeking to {0}", self.seekOnStart)
                 self.player.seekTime(seekSeconds)
@@ -635,11 +644,13 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def onAVChange(self):
         util.DEBUG_LOG('SeekHandler: onAVChange')
-        if self.blackout:
+        if self.blackoutWasWanted and self.blackout:
             # this might occur even before AVStarted
             self.start_blackout()
         else:
-            util.setGlobalBoolProperty('playback_started', False)
+            if self.pbStartedSet:
+                util.MONITOR.waitFor(0.1)
+                util.setGlobalBoolProperty('playback_started', False)
 
         self.player.trigger('changed.video')
         if self.dialog:
@@ -647,8 +658,18 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def onAVStarted(self):
         util.DEBUG_LOG('SeekHandler: onAVStarted')
-        if self.blackout:
+        if self.blackoutWasWanted and self.blackout:
             self.start_blackout()
+        # we might've hit onAVChange before hitting onAVStarted
+        elif self.blackoutWasWanted and not self.blackout and self.pbStartedSet:
+            util.MONITOR.waitFor(0.1)
+            util.setGlobalBoolProperty('playback_started', False)
+        else:
+            if not self.pbStartedSet:
+                util.setGlobalBoolProperty('playback_started', True)
+                self.pbStartedSet = True
+                util.MONITOR.waitFor(0.1)
+                util.setGlobalBoolProperty('playback_started', False)
 
         self.player.trigger('started.video')
 
@@ -2065,11 +2086,11 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             if offset:
                 util.DEBUG_LOG("SeekOnStart: Using as SeekOnStart: {0}; offset: {1}", meta.playStart, offset)
                 self.handler.seekOnStart = meta.playStart * 1000
-                self.handler.blackout = blackout
+                self.handler.blackout = self.handler.blackoutWasWanted = blackout
             elif introOffset:
                 util.DEBUG_LOG("SeekOnStart: Seeking behind intro after playstart: {}", introOffset)
                 self.handler.seekOnStart = introOffset
-                self.handler.blackout = blackout
+                self.handler.blackout = self.handler.blackoutWasWanted = blackout
 
             # seek back on start
             if not self.handler.seekOnStart and util.getSetting('seek_back_on_start'):
@@ -2081,7 +2102,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 util.DEBUG_LOG("SeekOnStart: Seeking temporarily to: {}", max(to, 1000))
                 self.handler.seekOnStart = to
                 self.handler.seekBackTo = 50
-                self.handler.blackout = blackout
+                self.handler.blackout = self.handler.blackoutWasWanted = blackout
 
             if self.handler.seekOnStart is not None:
                 util.setGlobalProperty('playback_initializing', '1', wait=True)
