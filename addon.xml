@@ -35,7 +35,7 @@
         <platform>all</platform>
         <news>
 - Core: Clarify variables states for hasCustomBGColour and add useSolidBackground (fixes a very rare issue with badly retained background images when solid background is wanted but no color set; thanks @andybkma)
-- Player/CE CPM/Codec Logos: Fix logos not hiding or appearing in multiple scenarios
+- Player/CoreELEC CPM/Codec Logos: Fix logos not hiding or appearing in multiple scenarios
 - Episodes: Fix long scrolling episode titles cutting off remaining time pill
         </news>
         <assets>
