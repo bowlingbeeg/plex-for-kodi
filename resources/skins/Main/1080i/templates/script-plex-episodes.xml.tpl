@@ -135,7 +135,20 @@
             <orientation>horizontal</orientation>
             <usecontrolcoords>true</usecontrolcoords>
             <control type="label">
+                <visible>String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
                 <width max="880">auto</width>
+                <height>{{ vscale(60) }}</height>
+                <font>font13</font>
+                <align>left</align>
+                <aligny>top</aligny>
+                <textcolor>FFFFFFFF</textcolor>
+                <scroll>true</scroll>
+                <scrollspeed>35</scrollspeed>
+                <label>$INFO[Container(400).ListItem.Property(title)]</label>
+            </control>
+            <control type="label">
+                <visible>!String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
+                <width max="700">auto</width>
                 <height>{{ vscale(60) }}</height>
                 <font>font13</font>
                 <align>left</align>
