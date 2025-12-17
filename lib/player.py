@@ -554,9 +554,10 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         if not self.pbStartedSet:
             util.setGlobalBoolProperty('playback_started', True)
+            util.setGlobalBoolProperty('playback_started_event', True)
             self.pbStartedSet = True
         else:
-            util.setGlobalBoolProperty('playback_started', False)
+            util.setGlobalBoolProperty('playback_started_event', False)
 
     def seekAbsolute(self, seek=None, skip_alt_seek_fix=False):
         self.seekOnStart = seek if seek is not None else self.seekOnStart if self.seekOnStart is not None else None
@@ -650,7 +651,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         else:
             if self.pbStartedSet:
                 util.MONITOR.waitFor(0.1)
-                util.setGlobalBoolProperty('playback_started', False)
+                util.setGlobalBoolProperty('playback_started_event', False)
 
         self.player.trigger('changed.video')
         if self.dialog:
@@ -663,13 +664,14 @@ class SeekPlayerHandler(BasePlayerHandler):
         # we might've hit onAVChange before hitting onAVStarted
         elif self.blackoutWasWanted and not self.blackout and self.pbStartedSet:
             util.MONITOR.waitFor(0.1)
-            util.setGlobalBoolProperty('playback_started', False)
+            util.setGlobalBoolProperty('playback_started_event', False)
         else:
             if not self.pbStartedSet:
                 util.setGlobalBoolProperty('playback_started', True)
+                util.setGlobalBoolProperty('playback_started_event', True)
                 self.pbStartedSet = True
                 util.MONITOR.waitFor(0.1)
-                util.setGlobalBoolProperty('playback_started', False)
+                util.setGlobalBoolProperty('playback_started_event', False)
 
         self.player.trigger('started.video')
 
@@ -2108,6 +2110,9 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 util.setGlobalProperty('playback_initializing', '1', wait=True)
             else:
                 util.setGlobalProperty('playback_initializing', '', wait=True)
+
+            util.setGlobalBoolProperty('playback_started', False)
+            util.setGlobalBoolProperty('playback_started_event', False)
 
             self.handler.mode = self.handler.MODE_ABSOLUTE
 
