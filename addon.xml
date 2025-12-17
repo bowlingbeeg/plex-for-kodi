@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.1.4-beta2"
+       version="1.1.4-beta3"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,9 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Core: Clarify variables states for hasCustomBGColour and add useSolidBackground (fixes a very rare issue with badly retained background images when solid background is wanted but no color set; thanks @andybkma)
-- Player/CoreELEC CPM/Codec Logos: Fix logos not hiding or appearing in multiple scenarios
-- Episodes: Fix long scrolling episode titles cutting off remaining time pill
+- Episodes: Fix deleting an episode created a pagination placeholder
+- Player: Stop abusing playback_started state for codec logos; implement playback_started_event instead
+- AddonSettings: Allow specifying a custom background color (when dynamic backgrounds are disabled); overrides preset colors if set
         </news>
         <assets>
             <icon>icon2.png</icon>
