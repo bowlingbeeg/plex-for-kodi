@@ -226,6 +226,21 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
         if util.useSolidBackground:
             bgColour = util.addonSettings.backgroundColour if util.addonSettings.backgroundColour != "-" \
                 else "ff000000"
+
+            if util.addonSettings.customBackgroundColour:
+                try:
+                    cbgColour = util.addonSettings.customBackgroundColour.strip("#").strip().lower()
+                    cbgclen = len(cbgColour)
+                    if cbgclen < 6 or cbgclen > 8:
+                        # invalid color
+                        util.LOG("Invalid custom background colour: {}".format(util.addonSettings.customBackgroundColour))
+                    else:
+                        if cbgclen == 6:
+                            cbgColour = "ff{}".format(cbgColour)
+                        bgColour = cbgColour
+                except:
+                    pass
+
             self.setProperty('background_colour', "0x%s" % bgColour.lower())
             self.setProperty('background_colour_opaque', "0x%s" % bgColour.lower())
         else:

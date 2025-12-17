@@ -366,11 +366,24 @@
                 </setting>
                 <setting id="background_colour" type="string" label="33200" help="33201">
                   <level>0</level>
-                  <default>-</default> <!-- Black -->
+                  <default>ff000000</default> <!-- Black -->
 	              <control type="colorbutton" />
                   <dependencies>
                       <dependency type="enable" setting="dynamic_backgrounds">false</dependency>
                   </dependencies>
+                </setting>
+                <setting id="custom_background_colour" type="string" label="33202" help="33203">
+                  <level>0</level>
+                  <default></default>
+                  <constraints>
+                      <allowempty>true</allowempty>
+                  </constraints>
+                  <dependencies>
+                      <dependency type="enable" setting="dynamic_backgrounds">false</dependency>
+                  </dependencies>
+                  <control type="edit" format="string">
+                      <heading>33202</heading>
+                  </control>
                 </setting>
                 <setting id="background_art_blur_amount2" type="integer" label="32469">
                     <level>0</level>

@@ -1202,6 +1202,14 @@ msgctxt "#33201"
 msgid "Specify solid Background Color instead of using media images"
 msgstr ""
 
+msgctxt "#33202"
+msgid "Custom Background Color"
+msgstr ""
+
+msgctxt "#33203"
+msgid "Specify your own background color in AARRGGBB format"
+msgstr ""
+
 msgctxt "#33400"
 msgid "Use old compatibility profile"
 msgstr ""
