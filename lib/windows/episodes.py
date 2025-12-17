@@ -1194,6 +1194,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             )
         elif choice['key'] == 'delete':
             self.delete(mli.dataSource)
+            self.episodesPaginator.leafCount = int(self.season.leafCount) if self.season else 0
             self.fillEpisodes()
         elif choice['key'] == 'playback_settings':
             self.playbackSettings(self.show_, pos, bottom)
