@@ -1868,10 +1868,26 @@ class PostersWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     CHUNK_OVERCOMMIT = 6
 
 
+class PostersCompactWindow(PostersWindow):
+    xmlFile = 'script-plex-posters-compact.xml'
+    VIEWTYPE = 'panel3'
+    MULTI_WINDOW_ID = 3
+    ROW_SIZE = 10
+    CHUNK_OVERCOMMIT = 30
+
+
 class PostersSmallWindow(PostersWindow):
     xmlFile = 'script-plex-posters-small.xml'
     VIEWTYPE = 'panel2'
     MULTI_WINDOW_ID = 1
+    ROW_SIZE = 10
+    CHUNK_OVERCOMMIT = 30
+
+
+class PostersSmallCompactWindow(PostersWindow):
+    xmlFile = 'script-plex-posters-small-compact.xml'
+    VIEWTYPE = 'panel4'
+    MULTI_WINDOW_ID = 4
     ROW_SIZE = 10
     CHUNK_OVERCOMMIT = 30
 
@@ -1900,8 +1916,10 @@ class ListViewSquareWindow(PostersWindow):
 VIEWS_POSTER = {
     'panel': PostersWindow,
     'panel2': PostersSmallWindow,
+    'panel3': PostersCompactWindow,
+    'panel4': PostersSmallCompactWindow,
     'list': ListView16x9Window,
-    'all': (PostersWindow, PostersSmallWindow, ListView16x9Window)
+    'all': (PostersWindow, PostersCompactWindow, PostersSmallWindow, PostersSmallCompactWindow, ListView16x9Window)
 }
 
 VIEWS_SQUARE = {
