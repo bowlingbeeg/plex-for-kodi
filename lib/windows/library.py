@@ -470,11 +470,13 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
     @busy.dialog()
     def doClose(self, **kw):
         pnUtil.APP.off("watchlist:modified", self.setWatchlistDirty)
+        util.MONITOR.off("library.back_home", self.goHomeRoot)
         self.tasks.kill()
         kodigui.MultiWindow.doClose(self)
 
     def onFirstInit(self):
         pnUtil.APP.on("watchlist:modified", self.setWatchlistDirty)
+        util.MONITOR.on("library.back_home", self.goHomeRoot)
         if self.showPanelControl and not self.refill:
             self.showPanelControl.newControl(self)
             self.keyListControl.newControl(self)

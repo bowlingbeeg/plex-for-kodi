@@ -3507,3 +3507,11 @@ msgstr "Kodi Addon-Position sicherstellen"
 msgctxt "#34063"
 msgid "When not run from the Program addons section, our lastused value will not be updated. Make sure it does when the addon exits."
 msgstr "Werden wir nicht vob Programme-Addons-Kategorie gestartet, wird unser \"zuletzt-benutzt\"-Wert nicht aktualisiert. Sichergehen, dass das geschieht, wenn das Addon beendet wird."
+
+msgctxt "#34064"
+msgid "Return to Home on Screensaver"
+msgstr "Zurück zu Home bei Bildschirmschoner"
+
+msgctxt "#34065"
+msgid "When Kodi starts its screensaver, and we are in a library view, return to home. This saves idle energy as the library views are very heavy on the CPU even on idle due to a Kodi bug."
+msgstr "Wenn Kodi seinen Bildschirmschoner startet und wir in einer Bibliothek-Ansicht sind, zu Home zurückkehren. Dies spart Energie, da ein Kodi-Bug zu einer hohen Idle-CPU-Nutzung in Bibliotheksansichten führt."

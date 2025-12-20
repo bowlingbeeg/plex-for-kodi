@@ -12,12 +12,24 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         signalsmixin.SignalsMixin.__init__(self)
         self.device_sleeping = False
         self.wait_interval = 0.1
+        self.ignore_ssevent = False
 
     def watchStatusChanged(self):
         self.trigger('changed.watchstatus')
 
     def actionStop(self):
-        self.stopPlayback()
+        if xbmc.Player().isPlayingVideo():
+            self.stopPlayback()
+            return True
+        return False
+
+    def actionHome(self):
+        from plexnet import plexapp
+        from .windows import windowutils
+        plexapp.util.APP.trigger('close.windows')
+        plexapp.util.APP.trigger('close.dialogs')
+        windowutils.HOME.go_root = True
+        windowutils.HOME.show()
 
     def actionQuit(self):
         LOG('OnSleep: Exit Kodi')
@@ -92,7 +104,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
             from .windows import windowutils
             LOG("OnQuit: Stopping playback")
             self.trigger('system.exit')
-            self.stopPlayback()
+            self.actionStop()
             LOG("OnQuit: Closing Home")
             windowutils.HOME.closeOption = "kodi_exit"
             windowutils.HOME.doClose()
@@ -103,12 +115,26 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         xbmc.Player().stop()
 
     def onScreensaverActivated(self):
+        if self.ignore_ssevent:
+            self.ignore_ssevent = False
+            return
         LOG("Monitor: OnScreensaverActivated")
+        if getSetting('player_stop_on_screensaver'):
+            self.ignore_ssevent = self.actionStop()
+
+        if getSetting('onss_library_back_home'):
+            LOG("Monitor: OnScreensaverActivated: Triggering going home")
+            self.trigger('library.back_home')
+
+        # we've stopped playback during an onScreensaverActivated event, which deactivates the screensaver. Reactivate.
+        if self.ignore_ssevent:
+            xbmc.executebuiltin('activatescreensaver')
+
         self.trigger('screensaver.activated')
-        if getSetting('player_stop_on_screensaver', False) and xbmc.Player().isPlayingVideo():
-            self.stopPlayback()
 
     def onScreensaverDeactivated(self):
+        if self.ignore_ssevent:
+            return
         LOG("Monitor: OnScreensaverDeactivated")
         self.trigger('screensaver.deactivated')
 

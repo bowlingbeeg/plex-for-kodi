@@ -1043,11 +1043,17 @@ class Settings(object):
                                        "e.g. in a hotel room. Adjusts the UI to visually "
                                        "wait for item refreshes and waits for the buffer to fill when starting "
                                        "playback.")),
+                BoolSetting(
+                    'onss_library_back_home', T(34064, 'Return to Home on Screensaver'), True
+                ).description(T(34065, 'When Kodi starts its screensaver, and we are in a library view, '
+                                       'return to home. This saves idle energy as the library views are very heavy '
+                                       'on the CPU even on idle due to a Kodi bug.'),),
                 OptionsSetting(
                     'action_on_sleep',
                     T(32700, 'Action on Sleep event'),
                     'none',
                     (('none', T(32702, 'Nothing')), ('stop', T(32703, 'Stop playback')),
+                     ('home', T(34066, 'Go Home')),
                      ('quit', T(32704, 'Quit Kodi')), ('reboot', T(32426, 'Reboot')),
                      ('shutdown', T(32423, 'Shutdown')),
                      ('hibernate', T(32425, 'Hibernate')), ('suspend', T(32424, 'Suspend')),
