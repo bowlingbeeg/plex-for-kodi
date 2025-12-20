@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.1.4-beta3"
+       version="1.1.4-beta4"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,9 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Episodes: Fix deleting an episode created a pagination placeholder
-- Player: Stop abusing playback_started state for codec logos; implement playback_started_event instead
-- AddonSettings: Allow specifying a custom background color (when dynamic backgrounds are disabled); overrides preset colors if set
+- Library: Add PostersCompact and PostersSmallCompact views with no text (thanks @Rick_Williams)
+- Library: Go home when screensaver is activated (saves CPU usage)
+- Settings: Add setting to return home when screensaver is activated on a library screen (default: on)
         </news>
         <assets>
             <icon>icon2.png</icon>
