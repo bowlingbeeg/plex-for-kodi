@@ -166,22 +166,22 @@ class XMLBase(object):
                         try:
                             self._errored = True
                             self.closeWRecompileTpls()
-                        finally:
-                            return
+                        except Exception:
+                            pass
                     elif self.__class__.__name__ == "BackgroundWindow":
                         try:
                             self._errored = True
                             self.doClose()
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            self._errored = True
+                            self.doClose()
                         finally:
-                            return
-
-                    try:
-                        self._errored = True
-                        self.doClose()
-                    finally:
-                        from . import windowutils
-                        windowutils.HOME.closeWRecompileTpls()
-                        return
+                            from . import windowutils
+                            windowutils.HOME.closeWRecompileTpls()
+                    return
                 raise
         self._onInit()
 

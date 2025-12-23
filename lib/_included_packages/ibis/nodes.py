@@ -104,8 +104,29 @@ def safe_math_eval(s):
     def _eval(node):
         if isinstance(node, ast.Expression):
             return _eval(node.body)
+
+        # Try to handle constant nodes - check for various constant types
+        # ast.Constant is the modern way (Python 3.8+)
         if isinstance(node, utils.Constant):
-            return getattr(node, 'value', getattr(node, 'n'))
+            value = getattr(node, 'value', getattr(node, 'n', None))
+            if value is not None:
+                return value
+
+        # Handle legacy numeric/string constant types for older Python versions
+        if hasattr(ast, 'Num') and isinstance(node, ast.Num):
+            return node.n
+        if hasattr(ast, 'Str') and isinstance(node, ast.Str):
+            return node.s
+
+        # Check if this is any kind of constant node by checking for value/n attributes
+        # This is a fallback for potential Python 3.14 changes
+        if hasattr(node, 'value'):
+            # Likely a constant-like node
+            return node.value
+        if hasattr(node, 'n'):
+            # Legacy numeric constant
+            return node.n
+
         if isinstance(node, ast.Name):
             return node.id
         if isinstance(node, ast.BinOp):
@@ -130,7 +151,17 @@ def safe_math_eval(s):
             if isinstance(node.operand, ops):
                 operand = _eval(node.operand)
             else:
-                operand = node.operand.value
+                # Try to get value from constant node - be defensive about Python version differences
+                operand = getattr(node.operand, 'value', getattr(node.operand, 'n', None))
+                if operand is None:
+                    # Fallback for unknown constant types - try to eval the operand recursively
+                    try:
+                        operand = _eval(node.operand)
+                        # If operand is a string (variable name), we can't apply unary op
+                        if isinstance(operand, six.string_types):
+                            raise SyntaxError("Cannot apply unary operator to variable")
+                    except:
+                        raise SyntaxError("Cannot extract value from operand: {}".format(type(node.operand)))
             return un_ops[type(node.op)](operand)
         if isinstance(node, ast.Call):
             args = [_eval(x) for x in node.args]
@@ -138,7 +169,10 @@ def safe_math_eval(s):
                 return checkmath(node.func.id, *args)
             except KeepExpr as e:
                 return "{}({})".format(node.func.id, ",".join(map(str, args)))
-        msg = "Bad syntax, {}".format(type(node))
+
+        # Unknown node type - provide detailed error for debugging
+        node_attrs = {attr: getattr(node, attr, None) for attr in dir(node) if not attr.startswith('_')}
+        msg = "Unsupported AST node type: {} (attrs: {})".format(type(node).__name__, node_attrs)
         raise SyntaxError(msg)
 
     return _eval(tree)
@@ -154,6 +188,20 @@ def apply_math_context(expr, argnames, args):
     # re-evaluate math expr after resolving variables
     ret = safe_math_eval(expr)
     return ret
+
+
+def eval_expr(expr):
+    tree = ast.parse(expr, mode="eval")
+    return eval(compile(tree, "<expr>", "eval"), {"__builtins__": {}})
+
+
+def _is_constant_expr(expr):
+    try:
+        tree = ast.parse(expr, mode="eval")
+    except SyntaxError:
+        return False
+
+    return not any(isinstance(node, ast.Name) for node in ast.walk(tree))
 
 
 class Expression:
@@ -178,49 +226,60 @@ class Expression:
             self.literal = self._apply_filters_to_literal(self.literal)
 
     def _parse_primary_expr(self, expr):
-        try:
-            self.literal = ast.literal_eval(expr)
-            self.is_literal = True
-        except:
-            if any(ext in expr for ext in ('+', '- ', '/', '*', '**', '%')):
-                # fixme: this currently doesn't work with variables with filters applied, e.g.: a|default(10) + 20
-                try:
-                    matheval = safe_math_eval(expr)
-                    if isinstance(matheval, list):
-                        # we've found possible variables in the math evaluation
-                        self.is_literal = False
-                        self.is_func_call = True
+        # 1) Try constant-only literal evaluation
+        if _is_constant_expr(expr):
+            try:
+                self.literal = eval_expr(expr)
+                self.is_literal = True
+                return
+            except Exception:
+                # constant expression but invalid (syntax, zero-div, etc)
+                pass
 
-                        func_args = []
-                        for index, arg in enumerate(matheval):
-                            if isinstance(arg, six.string_types):
-                                # try resolving as variable
-                                if utils.isidentifier(arg):
-                                    func_args.append(ContextVariable(arg))
-                                    continue
-                                elif self.re_func_call.match(arg):
-                                    # func call
-                                    func_args.append(Expression(arg, self.token))
-                                    continue
-                            func_args.append(arg)
+        # 2) Try math parsing (variable-aware)
+        if any(op in expr for op in ('+', '/', '*', '**', '%')) or ' - ' in expr:
+            try:
+                matheval = safe_math_eval(expr)
+                if isinstance(matheval, list):
+                    # we've found possible variables in the math evaluation
+                    self.is_literal = False
+                    self.is_func_call = True
 
-                        self.varstring = lambda *args: apply_math_context(expr, matheval, args)
+                    func_args = []
+                    for arg in matheval:
+                        if isinstance(arg, six.string_types):
+                            if utils.isidentifier(arg):
+                                func_args.append(ContextVariable(arg))
+                                continue
+                            elif self.re_func_call.match(arg):
+                                func_args.append(Expression(arg, self.token))
+                                continue
+                        func_args.append(arg)
 
-                        self.func_args = func_args
-                        self.func_kwargs = {}
-                        return
-
-                    self.literal = matheval
-                    self.is_literal = True
+                    self.varstring = lambda *args: apply_math_context(expr, matheval, args)
+                    self.func_args = func_args
+                    self.func_kwargs = {}
                     return
-                except:
-                    pass
 
-            self.is_literal = False
-            self.is_func_call, self.dyn_args, self.varstring, self.func_args, self.func_kwargs = self._try_parse_as_func_call(expr)
-            if not self.is_func_call and not self.re_varstring.match(expr):
-                msg = "Unparsable expression '{}'.".format(expr)
-                errors.raise_(errors.TemplateSyntaxError(msg, self.token), None)
+                self.literal = matheval
+                self.is_literal = True
+                return
+            except Exception:
+                pass
+
+        # 3) Variable / function parsing
+        self.is_literal = False
+        (
+            self.is_func_call,
+            self.dyn_args,
+            self.varstring,
+            self.func_args,
+            self.func_kwargs,
+        ) = self._try_parse_as_func_call(expr)
+
+        if not self.is_func_call and not self.re_varstring.match(expr):
+            msg = "Unparsable expression '{}'.".format(expr)
+            errors.raise_(errors.TemplateSyntaxError(msg, self.token), None)
 
     def _try_parse_as_func_call(self, expr):
         match = self.re_func_call.match(expr)
@@ -237,9 +296,9 @@ class Expression:
                 kwarg, arg = arg.split("=", 1)
             try:
                 if kwarg:
-                    func_kwargs[kwarg] = ast.literal_eval(arg)
+                    func_kwargs[kwarg] = eval_expr(arg)
                 else:
-                    func_args[index] = ast.literal_eval(arg)
+                    func_args[index] = eval_expr(arg)
             except Exception:
                 # try resolving as variable
                 if utils.isidentifier(arg):

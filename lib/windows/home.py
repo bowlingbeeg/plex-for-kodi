@@ -859,8 +859,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 # wait for it to be consumed
                 try:
                     util.waitForConsumption('update_response', timeout=200)
-                finally:
-                    return self.doUpdate()
+                except Exception:
+                    pass
+                return self.doUpdate()
 
     def tick(self):
         if self._shuttingDown:

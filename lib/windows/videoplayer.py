@@ -740,6 +740,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
 
 
 def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
+    w = None
     try:
         w = VideoPlayerWindow.open(video=video, play_queue=play_queue, resume=resume, bgm=bgm, aggressive=True)
     except util.NoDataException:
@@ -755,7 +756,10 @@ def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
         player.PLAYER.off('changed.video', w.onVideoChanged)
         player.PLAYER.off('change.background', w.changeBackground)
         player.PLAYER.reset()
+
+    if w:
         command = w.exitCommand
         del w
         util.garbageCollect()
         return command
+    return

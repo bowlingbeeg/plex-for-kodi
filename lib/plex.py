@@ -435,8 +435,9 @@ class CallbackEvent(plexapp.util.CompatEvent):
 
             if timeout:
                 plexnet_util.Event.wait(self, timeout)
-        finally:
-            return self.isSet()
+        except Exception:
+            pass
+        return self.isSet()
 
     def close(self):
         self.set()

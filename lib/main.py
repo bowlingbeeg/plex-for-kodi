@@ -306,8 +306,8 @@ def _main():
                         background.setShutdown()
                         gc.collect(2)
 
-                        if kodiExiting:
-                            return
+                    if kodiExiting:
+                        return
 
             else:
                 break
@@ -349,7 +349,6 @@ def _main():
             gc.collect(2)
         except SystemExit:
             util.LOG("Main: SystemExit exception caught (outer)...")
-            return
-
-        if util.KODI_VERSION_MAJOR == 18:
-            realExit()
+        else:
+            if util.KODI_VERSION_MAJOR == 18:
+                realExit()
