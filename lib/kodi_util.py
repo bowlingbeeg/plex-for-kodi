@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import sys
 import platform
 
 # noinspection PyUnresolvedReferences
@@ -51,7 +52,11 @@ except:
 
 
 # no GIL anymore?
-ENABLE_HIGH_CONCURRENCY = PYTHON_VERSION_TUPLE[0] >= 3 and PYTHON_VERSION_TUPLE[1] >= 14
+ENABLE_HIGH_CONCURRENCY = False
+try:
+    ENABLE_HIGH_CONCURRENCY = not sys._is_gil_enabled()
+except:
+    pass
 
 
 if KODI_VERSION_MAJOR > 18:
