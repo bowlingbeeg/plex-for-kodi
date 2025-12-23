@@ -645,12 +645,23 @@ vendor = None
 model = None
 
 
+CE_U3K_SB_LAV_MIN = 20251220132748
+CE_SB_LAV_SWITCH = False
+
 def getCoreELEC():
-    global platform, device, platform_version, vendor, model
+    global platform, device, platform_version, vendor, model, CE_SB_LAV_SWITCH
     try:
         stdout = subprocess.check_output('lsb_release', shell=True).decode()
         match = re.search(r'CoreELEC', stdout)
         if match:
+            if "U3k" in stdout:
+                try:
+                    CE_SB_LAV_SWITCH = int(stdout.split("U3k_")[-1]) >= CE_U3K_SB_LAV_MIN
+                    if CE_SB_LAV_SWITCH:
+                        LOG("CoreELEC U3k build with LAV filters found. List-based fixing seamless branching possible.")
+                except:
+                    pass
+
             platform = "Linux"
             try:
                 model = subprocess.check_output(['cat', '/proc/device-tree/model']).decode().strip("\0 \n\r")
