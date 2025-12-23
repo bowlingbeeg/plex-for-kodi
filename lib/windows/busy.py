@@ -38,7 +38,7 @@ class BusyClosableMsgWindow(BusyClosableWindow):
         self.setProperty("message", msg)
 
 
-def dialog(msg='LOADING', condition=None, delay=True, delay_time=0.5):
+def dialog(msg='LOADING', condition=None, delay=True, delay_time=1.5):
     def methodWrap(func):
         def inner(*args, **kwargs):
             timer = None
