@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.1.4-beta4"
+       version="1.1.4-beta5"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,13 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Library: Add PostersCompact and PostersSmallCompact views with no text (thanks @Rick_Williams)
-- Library: Go home when screensaver is activated (saves CPU usage)
-- Settings: Add setting to return home when screensaver is activated on a library screen (default: on)
+- Core: Concurrency: Check for sys._is_gil_enabled() instead of trying to discern it from the python version
+- Core/KodiGUI/Busy: busy.dialog: Wait for 1.5 seconds until showing the busy spinner (was: 0.5s)
+- Core: Detect CE U3k bullds above B9 that implement the alternative LAV filters for future auto-fixing of seamless branching titles
+- Core: Fix compatibility with Python 3.14 (3.14.2) (might break certain assumptions) (U3k B10)
+- Core: Future-proof template engine (ibis) (thanks @tuffghost)
+- Home/LibraryHubs: Use poster view for in progress TV/Movie library hubs (was 16x9 view)
+- Home/LibraryHubs: Add "Remove from continue watching" option to TV/Movie library's hubs in progress items as well
         </news>
         <assets>
             <icon>icon2.png</icon>
