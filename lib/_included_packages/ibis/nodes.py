@@ -20,6 +20,26 @@ from . import errors
 instruction_keywords = {}
 
 
+def _get_constant_value(node):
+    """
+    Extract the value from a constant AST node.
+    Works across Python 2.7 to 3.14+ by checking multiple attributes.
+    Returns None if the node is not a constant or value cannot be extracted.
+    """
+    # Modern Python 3.8+: ast.Constant with 'value' attribute
+    if hasattr(node, 'value'):
+        return node.value
+    # Legacy Python 2.7-3.7: ast.Num with 'n' attribute
+    if hasattr(node, 'n'):
+        return node.n
+    # Legacy Python 2.7-3.7: ast.Str with 's' attribute
+    if hasattr(node, 's'):
+        return node.s
+    # Python 3.0-3.7: ast.NameConstant (True, False, None)
+    # Actually has 'value' attribute, so handled above
+    return None
+
+
 # Set of registered endwords for instruction tags with block scope.
 instruction_endwords = set()
 
@@ -105,30 +125,25 @@ def safe_math_eval(s):
         if isinstance(node, ast.Expression):
             return _eval(node.body)
 
-        # Try to handle constant nodes - check for various constant types
-        # ast.Constant is the modern way (Python 3.8+)
+        # Check if this is a constant node first (before trying to extract value)
+        # utils.Constant is either ast.Constant (Py3.8+) or a tuple of types (Py2.7-3.7)
         if isinstance(node, utils.Constant):
-            value = getattr(node, 'value', getattr(node, 'n', None))
-            if value is not None:
-                return value
+            # Use helper to extract value - handles all Python versions
+            # Note: don't check "if value is not None" because 0, False, None, '' are valid!
+            return _get_constant_value(node)
 
-        # Handle legacy numeric/string constant types for older Python versions
-        if hasattr(ast, 'Num') and isinstance(node, ast.Num):
-            return node.n
-        if hasattr(ast, 'Str') and isinstance(node, ast.Str):
-            return node.s
-
-        # Check if this is any kind of constant node by checking for value/n attributes
-        # This is a fallback for potential Python 3.14 changes
+        # Fallback: check for constant-like nodes by attribute presence
+        # This handles potential future Python versions with new constant node types
         if hasattr(node, 'value'):
-            # Likely a constant-like node
             return node.value
         if hasattr(node, 'n'):
-            # Legacy numeric constant
             return node.n
+        if hasattr(node, 's'):
+            return node.s
 
         if isinstance(node, ast.Name):
             return node.id
+
         if isinstance(node, ast.BinOp):
             left = _eval(node.left)
             right = _eval(node.right)
@@ -147,22 +162,24 @@ def safe_math_eval(s):
             if ret:
                 return ret
             return bin_ops[type(node.op)](left, right)
+
         if isinstance(node, ast.UnaryOp):
             if isinstance(node.operand, ops):
                 operand = _eval(node.operand)
             else:
-                # Try to get value from constant node - be defensive about Python version differences
-                operand = getattr(node.operand, 'value', getattr(node.operand, 'n', None))
-                if operand is None:
-                    # Fallback for unknown constant types - try to eval the operand recursively
+                # Try to get value from constant node using helper
+                operand = _get_constant_value(node.operand)
+                if operand is None and not isinstance(node.operand, utils.Constant):
+                    # operand is None AND it's not a Constant node, so it failed to extract
+                    # (vs. operand is a Constant with value None)
                     try:
                         operand = _eval(node.operand)
-                        # If operand is a string (variable name), we can't apply unary op
                         if isinstance(operand, six.string_types):
                             raise SyntaxError("Cannot apply unary operator to variable")
                     except:
-                        raise SyntaxError("Cannot extract value from operand: {}".format(type(node.operand)))
+                        raise SyntaxError("Cannot extract value from operand: {}".format(type(node.operand).__name__))
             return un_ops[type(node.op)](operand)
+
         if isinstance(node, ast.Call):
             args = [_eval(x) for x in node.args]
             try:
@@ -170,9 +187,8 @@ def safe_math_eval(s):
             except KeepExpr as e:
                 return "{}({})".format(node.func.id, ",".join(map(str, args)))
 
-        # Unknown node type - provide detailed error for debugging
-        node_attrs = {attr: getattr(node, attr, None) for attr in dir(node) if not attr.startswith('_')}
-        msg = "Unsupported AST node type: {} (attrs: {})".format(type(node).__name__, node_attrs)
+        # Unknown node type - simpler error message (avoid expensive attribute enumeration)
+        msg = "Unsupported AST node type: {}".format(type(node).__name__)
         raise SyntaxError(msg)
 
     return _eval(tree)
