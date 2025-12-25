@@ -325,7 +325,7 @@ class TextBox:
         self.win.getControl(self.CONTROL_TEXTBOX).setText(text)
 
 
-class SettingControl:
+class SettingControl(object):
     def __init__(self, setting, log_display, disable_value=''):
         self.setting = setting
         self.logDisplay = log_display

@@ -2926,3 +2926,31 @@ msgstr ""
 msgctxt "#34065"
 msgid "When Kodi starts its screensaver, and we are in a library view, return to home. This saves idle energy as the library views are very heavy on the CPU even on idle due to a Kodi bug."
 msgstr ""
+
+msgctxt "#34066"
+msgid "Seamless branching LAV mode (CoreELEC U3k B9+)"
+msgstr ""
+
+msgctxt "#34067"
+msgid "LAV filter mode for seamless branching movies with TrueHD/JOC. Auto-applied to known movies. Default: LAV SB (4)"
+msgstr ""
+
+msgctxt "#34068"
+msgid "Off (0)"
+msgstr ""
+
+msgctxt "#34069"
+msgid "Seek/Sync (1)"
+msgstr ""
+
+msgctxt "#34070"
+msgid "Debug (3)"
+msgstr ""
+
+msgctxt "#34071"
+msgid "LAV SB (4) - Recommended"
+msgstr ""
+
+msgctxt "#34072"
+msgid "LAV Full (5)"
+msgstr ""

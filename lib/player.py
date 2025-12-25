@@ -16,6 +16,7 @@ from . import kodijsonrpc
 from . import colors
 from .windows import seekdialog, windowutils, blackoutdialog
 from . import util
+from . import seamless_branching
 from plexnet import plexplayer
 from plexnet import plexapp
 from plexnet import signalsmixin
@@ -1439,6 +1440,18 @@ class SeekPlayerHandler(BasePlayerHandler):
             return
         self.ended = True
         util.DEBUG_LOG('Player: Video session ended')
+
+        # Restore LAV filter setting
+        if self.player.lavSettingControl:
+            self.player.lavSettingControl.restore()
+            self.player.lavSettingControl = None
+
+        # Restore alternate seek flag
+        if self.player._originalAlternateSeek:
+            util.DEBUG_LOG('Alternate seek restored')
+            self.useAlternateSeek = True
+            self.player._originalAlternateSeek = False
+
         self.player.trigger('session.ended', session_id=self.sessionID)
         self.hideOSD(delete=True)
 
@@ -1848,6 +1861,8 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.ignoreStopEvents = False
         self.isExternal = False
         self.dontRequeueBGM = False
+        self.lavSettingControl = None
+        self._originalAlternateSeek = False
         if xbmc.getCondVisibility('Player.HasMedia') and self.isPlayingAudio() and not self.bgmPlaying:
             self.started = True
         self.resume = False
@@ -2055,6 +2070,55 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             util.MONITOR.waitForAbort(util.addonSettings.consecutiveVideoPbWait)
 
         self.ignoreStopEvents = False
+
+        # Seamless branching LAV filter workaround (CoreELEC U3k B9+)
+        # Check if this movie needs LAV filters enabled
+        if util.CE_SB_LAV_SWITCH and self.video.type == 'movie':
+            # Extract IMDB ID
+            imdb_id = None
+            guid = self.video.guid
+
+            if "com.plexapp.agents.imdb" in guid:
+                imdb_id = guid.split("?lang=")[0][
+                    guid.index("com.plexapp.agents.imdb://") + len("com.plexapp.agents.imdb://"):]
+            elif "plex://movie" in guid:
+                # For new Plex agent, check guids array
+                for g in self.video.guids:
+                    if g.id.startswith('imdb://'):
+                        imdb_id = g.id.split('imdb://')[1]
+                        break
+
+            # Get audio stream object
+            audio_stream = None
+            if (self.playerObject and
+                hasattr(self.playerObject, 'choice') and
+                self.playerObject.choice and
+                hasattr(self.playerObject.choice, 'audioStream') and
+                self.playerObject.choice.audioStream):
+                audio_stream = self.playerObject.choice.audioStream
+
+            # Check if LAV filters should be enabled
+            if seamless_branching.sbm.is_seamless_branching_movie(imdb_id, audio_stream):
+                util.DEBUG_LOG('Seamless branching detected: IMDB={} codec={} bitrate={}kbps title={}',
+                              imdb_id,
+                              audio_stream.codec if audio_stream else 'none',
+                              audio_stream.bitrate if audio_stream and hasattr(audio_stream, 'bitrate') else 'unknown',
+                              self.video.title)
+
+                # Enable LAV filters (use SettingControl for Kodi setting)
+                lav_mode = seamless_branching.sbm.get_lav_mode()
+                self.lavSettingControl = util.SettingControl(
+                    seamless_branching.SeamlessBranchingManager.LAV_SETTING_ID,
+                    'LAV Seamless Branching Filter',
+                    disable_value=0
+                )
+                self.lavSettingControl.set(lav_mode)
+
+                # Disable alternate seek (internal handler flag, not Kodi setting)
+                if self.handler.useAlternateSeek:
+                    util.DEBUG_LOG('Alternate seek disabled for seamless branching')
+                    self._originalAlternateSeek = True
+                    self.handler.useAlternateSeek = False
 
         # fixme: this handler might be accessing a new playerObject, not the one it's expecting to access,
         #        especially when .next() is used

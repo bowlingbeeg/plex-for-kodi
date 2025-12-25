@@ -3515,3 +3515,39 @@ msgstr "Zurück zu Home bei Bildschirmschoner"
 msgctxt "#34065"
 msgid "When Kodi starts its screensaver, and we are in a library view, return to home. This saves idle energy as the library views are very heavy on the CPU even on idle due to a Kodi bug."
 msgstr "Wenn Kodi seinen Bildschirmschoner startet und wir in einer Bibliothek-Ansicht sind, zu Home zurückkehren. Dies spart Energie, da ein Kodi-Bug zu einer hohen Idle-CPU-Nutzung in Bibliotheksansichten führt."
+
+msgctxt "#34066"
+msgid "Seamless branching LAV mode (CoreELEC U3k B9+, avdvplus, p3i)"
+msgstr "Seamless branching LAV Modus (CoreELEC U3k B9+, avdvplus, p3i)"
+
+msgctxt "#34067"
+msgid "LAV filter mode for seamless branching movies with TrueHD/JOC. Auto-applied to known movies. Default: LAV SB (4)"
+msgstr "LAV-Filter-Modus für Filme mit Seamless Branching in TrueHD/JOC. Wird für bekannte Titel automatisch angewandt. Standard: LAV SB (4)"
+
+msgctxt "#34068"
+msgid "Off (0)"
+msgstr ""
+
+msgctxt "#34069"
+msgid "Seek/Sync (1)"
+msgstr ""
+
+msgctxt "#34070"
+msgid "Debug (3)"
+msgstr ""
+
+msgctxt "#34071"
+msgid "LAV SB (4) - Recommended"
+msgstr ""
+
+msgctxt "#34072"
+msgid "LAV Full (5)"
+msgstr ""
+
+msgctxt "#34073"
+msgid "Seamless branching fix"
+msgstr "Seamless Branching Fix"
+
+msgctxt "#34074"
+msgid "Automatically temporarily activate LAV Full or SB mode in CoreELEC on supported builds to alleviate audio dropouts on certain titles, if necessary. Based on \"seamless_branching.json\", can be user-amended by putting a file with the same name and structure into userdata/addon_data/script.plexmod."
+msgstr "Aktiviert automatisch temporär den LAV Full oder SB Modus in CoreELEC bei unterstützten Builds um Audio-Aussetzer in bestimmten Titeln zu vermeiden, wenn nötig. Basierend auf \"seamless_branching.json\", kann durch den Nutzer erweitert werden, indem eine Datei mit dem selben Namen und Struktur in userdata/addon_data/script.plexmod abgelegt wird."

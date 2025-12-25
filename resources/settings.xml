@@ -202,6 +202,20 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="seamless_branching_lav_mode" type="integer" label="34066" help="34067">
+                    <level>0</level>
+                    <default>4</default>
+                    <constraints>
+                        <options>
+                            <option label="34068">0</option>
+                            <option label="34069">1</option>
+                            <option label="34070">3</option>
+                            <option label="34071">4</option>
+                            <option label="34072">5</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="integer"/>
+                </setting>
                 <setting id="show_media_ends_info" type="boolean" label="32540" help="32541">
                     <level>0</level>
                     <default>true</default>

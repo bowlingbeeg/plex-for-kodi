@@ -78,6 +78,7 @@ class AddonSettings(object):
         ("cache_theme_music", True),
         ("coreelec_seek_prefer_reported", True),
         ("coreelec_wait_player_time1", True),
+        ("seamless_branching_lav_mode", 4),
     )
 
     def __init__(self):
