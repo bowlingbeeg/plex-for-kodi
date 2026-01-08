@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2025-01-15",
+  "last_updated": "2025-12-28",
   "source": "https://forums.plex.tv/t/plex-truehd-atmos-seamless-branch-nvidia-shield-bad-movies/934740",
   "description": "Movies with seamless branching issues when playing TrueHD/JOC audio. These films may experience audio dropouts and video/audio sync issues during DirectPlay.",
   "movies": [
@@ -22,6 +22,7 @@
     {"imdb_id": "tt0093409", "title": "Lethal Weapon (1987)"},
     {"imdb_id": "tt0110413", "title": "Léon: The Professional (1994)"},
     {"imdb_id": "tt8760708", "title": "M3GAN (2022)"},
+    {"imdb_id": "tt26342662", "title": "M3GAN 2.0 (2025)"},
     {"imdb_id": "tt15495720", "title": "Nosferatu (2024)"},
     {"imdb_id": "tt0134847", "title": "Pitch Black (2000)"},
     {"imdb_id": "tt0318627", "title": "Resident Evil: Apocalypse (2004)"},
@@ -38,6 +39,7 @@
     {"imdb_id": "tt0391198", "title": "The Grudge (2004)"},
     {"imdb_id": "tt3659388", "title": "The Martian (2015)"},
     {"imdb_id": "tt0087781", "title": "The Natural (1984)"},
-    {"imdb_id": "tt0320691", "title": "Underworld (2003)"}
+    {"imdb_id": "tt0320691", "title": "Underworld (2003)"},
+    {"imdb_id": "tt2948356", "title": "Zootopia (2016)"}
   ]
 }
