@@ -705,6 +705,8 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
                 video = self.next
                 if prev:
                     video = self.prev
+                    # when playing the previous video, move the playlist back as well
+                    self.playlist.prev()
 
                 if not video:
                     util.DEBUG_LOG('Trying to play next video with no next video available')
