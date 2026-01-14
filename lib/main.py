@@ -198,6 +198,12 @@ def _main():
                     ):
                         oldAccID = plexapp.ACCOUNT.ID
                         result = userselect.start(BACKGROUND._winID)
+                        tries = 0
+                        while result == 'retry' and tries < 2:
+                            util.DEBUG_LOG("Main: User select: possibly wrong pin entered, retrying after refreshing home users ({}/2)", tries + 1)
+                            result = userselect.start(BACKGROUND._winID)
+                            tries += 1
+
                         if not result:
                             return
                         elif result == 'signout':
@@ -205,7 +211,9 @@ def _main():
                             break
                         elif result == 'signin':
                             break
-                        elif result == 'cancel' and fromSwitch:
+                        elif result in ('cancel', 'retry') and fromSwitch:
+                            if result == 'retry':
+                                util.LOG("Main: User select failed multiple times possibly due to wrong pin entry.")
                             util.DEBUG_LOG('Main: User selection canceled, reusing previous user')
                             plexapp.ACCOUNT.isAuthenticated = True
                         elif result == 'cancel':
@@ -275,7 +283,7 @@ def _main():
                                 util.DEBUG_LOG('Main: Fast-Switching users...: {}', uid)
                                 util.setSetting('previous_user', plexapp.ACCOUNT.ID)
                                 with busy.BusySignalContext(plexapp.util.APP, "account:response", wait_max=10):
-                                    if plexapp.ACCOUNT.switchHomeUser(uid) and plexapp.ACCOUNT.switchUser:
+                                    if plexapp.ACCOUNT.switchHomeUser(uid, silent=True) and plexapp.ACCOUNT.switchUser:
                                         util.DEBUG_LOG('Waiting for user change...')
 
                         elif closeOption == 'recompile':
