@@ -645,7 +645,8 @@ vendor = None
 model = None
 
 
-CE_U3K_SB_LAV_MIN = 20251220132748
+CE_U3K_SB_LAV_MIN = 20251220132748  # B9
+CE_AVD_SB_LAV_MIN = 20251221124544  # R2
 CE_SB_LAV_SWITCH = False
 
 def getCoreELEC():
@@ -659,6 +660,14 @@ def getCoreELEC():
                     CE_SB_LAV_SWITCH = int(stdout.split("U3k_")[-1]) >= CE_U3K_SB_LAV_MIN
                     if CE_SB_LAV_SWITCH:
                         LOG("CoreELEC U3k build with LAV filters found. List-based fixing seamless branching possible.")
+                except:
+                    pass
+
+            elif "avdvplus" in stdout:
+                try:
+                    CE_SB_LAV_SWITCH = int(stdout.split("avdvplus_")[-1]) >= CE_AVD_SB_LAV_MIN
+                    if CE_SB_LAV_SWITCH:
+                        LOG("CoreELEC avdvplus build with LAV filters found. List-based fixing seamless branching possible.")
                 except:
                     pass
 
