@@ -675,6 +675,7 @@ class Settings(object):
                     'watched_indicators', T(33022, ''),
                     "modern_2024",
                     (
+                        ('none', T(32309, 'None')),
                         ('classic', T(32987, 'Classic')),
                         ('modern', T(32985, 'Modern')),
                         ('modern_2024', T(33076, 'Modern (2024)')),
