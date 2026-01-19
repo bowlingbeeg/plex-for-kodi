@@ -220,6 +220,8 @@ def _main():
                             return
                         if not fromSwitch:
                             util.DEBUG_LOG('Main: User selected')
+                        background.setBusy()
+                        util.MONITOR.trigger("background.activate")
 
                         # store previous account ID for fast user switch
                         if oldAccID and oldAccID != plexapp.ACCOUNT.ID:
@@ -254,6 +256,7 @@ def _main():
                         windowutils.HOME = home.HomeWindow.create()
 
                         if windowutils.HOME.waitForOpen(base_win_id=BACKGROUND._winID):
+                            background.setBusy(False)
                             windowutils.HOME.modal()
                         else:
                             util.LOG("Couldn't open home window, exiting")

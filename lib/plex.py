@@ -518,7 +518,7 @@ def authorize():
 
     background.setSplash(False)
 
-    back = signin.Background.create()
+    back = signin.SignInBackground.create()
 
     pre = signin.PreSignInWindow.open()
     try:
@@ -570,3 +570,5 @@ def authorize():
     finally:
         back.doClose()
         del back
+        background.setBusy()
+        util.MONITOR.trigger("background.activate")

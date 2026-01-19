@@ -290,15 +290,23 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
         pass
 
     def waitForOpen(self, base_win_id=None):
+        def not_open():
+            return (not base_win_id and not self.isOpen) or (base_win_id and xbmcgui.getCurrentWindowId() < base_win_id)
+
+        if not not_open():
+            util.DEBUG_LOG("Window {} opened: {}", self, self.isOpen)
+            return True
+
         tries = 0
-        while ((not base_win_id and not self.isOpen) or
-               (base_win_id and xbmcgui.getCurrentWindowId() <= base_win_id)) and tries < util.MONITOR.waitAmount(120, interval=1.0):
+        while not_open() and tries < util.MONITOR.waitAmount(120, interval=1.0):
             if tries == 0:
-                util.LOG("Couldn't open window {}, other dialog open? Retrying for 120s. ({}, {}, {})", (self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen))
+                util.LOG("Couldn't open window {}, other dialog open? Retrying for 120s. ({}, {}, {})", self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen)
             if util.MONITOR.abortRequested():
-                util.LOG("Couldn't open window {}, abort requested ({}, {}, {})", (self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen))
+                util.LOG("Couldn't open window {}, abort requested ({}, {}, {})", self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen)
                 break
             self.show()
+            if not not_open():
+                break
             if not self.isOpen:
                 tries += 1
                 util.MONITOR.waitFor(1.0)
