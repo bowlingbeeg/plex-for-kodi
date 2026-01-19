@@ -675,6 +675,10 @@ def getCoreELEC():
                 except:
                     pass
 
+            elif "p3i_" in stdout:
+                CE_SB_LAV_SWITCH = True
+                LOG("CoreELEC p3i build with LAV filters found. List-based fixing seamless branching possible.")
+
             platform = "Linux"
             try:
                 model = subprocess.check_output(['cat', '/proc/device-tree/model']).decode().strip("\0 \n\r")
