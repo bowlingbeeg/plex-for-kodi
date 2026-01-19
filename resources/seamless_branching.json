@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2025-12-28",
+  "last_updated": "2026-01-19",
   "source": "https://forums.plex.tv/t/plex-truehd-atmos-seamless-branch-nvidia-shield-bad-movies/934740",
   "description": "Movies with seamless branching issues when playing TrueHD/JOC audio. These films may experience audio dropouts and video/audio sync issues during DirectPlay.",
   "movies": [
@@ -24,6 +24,7 @@
     {"imdb_id": "tt8760708", "title": "M3GAN (2022)"},
     {"imdb_id": "tt26342662", "title": "M3GAN 2.0 (2025)"},
     {"imdb_id": "tt15495720", "title": "Nosferatu (2024)"},
+    {"imdb_id": "tt1711525", "title": "Office Christmas Party (2016)"},
     {"imdb_id": "tt0134847", "title": "Pitch Black (2000)"},
     {"imdb_id": "tt0318627", "title": "Resident Evil: Apocalypse (2004)"},
     {"imdb_id": "tt0108002", "title": "Rudy (1993)"},
