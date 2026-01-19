@@ -2073,7 +2073,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         # Seamless branching LAV filter workaround (CoreELEC U3k B9+)
         # Check if this movie needs LAV filters enabled
-        if util.CE_SB_LAV_SWITCH and self.video.type == 'movie':
+        if util.CE_SB_LAV_SWITCH and util.getSetting("lav_mode_auto_switch") and self.video.type == 'movie':
             # Extract IMDB ID
             imdb_id = None
             guid = self.video.guid
@@ -2107,18 +2107,22 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
                 # Enable LAV filters (use SettingControl for Kodi setting)
                 lav_mode = seamless_branching.sbm.get_lav_mode()
-                self.lavSettingControl = util.SettingControl(
+                lavSettingControl = util.SettingControl(
                     seamless_branching.SeamlessBranchingManager.LAV_SETTING_ID,
                     'LAV Seamless Branching Filter',
                     disable_value=0
                 )
-                self.lavSettingControl.set(lav_mode)
 
-                # Disable alternate seek (internal handler flag, not Kodi setting)
-                if self.handler.useAlternateSeek:
-                    util.DEBUG_LOG('Alternate seek disabled for seamless branching')
-                    self._originalAlternateSeek = True
-                    self.handler.useAlternateSeek = False
+                if seamless_branching.sbm.needs_lav_switch(lavSettingControl.original):
+                    lavSettingControl.set(lav_mode)
+                    self.lavSettingControl = lavSettingControl
+                    # Disable alternate seek (internal handler flag, not Kodi setting)
+                    if self.handler.useAlternateSeek:
+                        util.DEBUG_LOG('Alternate seek disabled for seamless branching')
+                        self._originalAlternateSeek = True
+                        self.handler.useAlternateSeek = False
+                else:
+                    util.DEBUG_LOG('LAV mode switch not necessary')
 
         # fixme: this handler might be accessing a new playerObject, not the one it's expecting to access,
         #        especially when .next() is used

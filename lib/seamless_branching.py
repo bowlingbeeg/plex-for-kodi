@@ -168,7 +168,12 @@ class SeamlessBranchingManager(object):
         Returns:
             int: LAV mode value (0-5)
         """
-        return util.getSetting('seamless_branching_lav_mode', self.LAV_MODE_LAV_SB)
+        return util.addonSettings.seamlessBranchingLavMode
+
+    def needs_lav_switch(self, mode):
+        if mode not in (self.LAV_MODE_LAV_FULL, self.LAV_MODE_LAV_SB):
+            return True
+        return False
 
 
 # Global instance

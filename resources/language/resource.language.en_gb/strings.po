@@ -2928,7 +2928,7 @@ msgid "When Kodi starts its screensaver, and we are in a library view, return to
 msgstr ""
 
 msgctxt "#34066"
-msgid "Seamless branching LAV mode (CoreELEC U3k B9+)"
+msgid "Seamless branching LAV mode (CoreELEC U3k B9+, avdvplus, p3i)"
 msgstr ""
 
 msgctxt "#34067"
@@ -2953,4 +2953,12 @@ msgstr ""
 
 msgctxt "#34072"
 msgid "LAV Full (5)"
+msgstr ""
+
+msgctxt "#34073"
+msgid "Seamless branching fix"
+msgstr ""
+
+msgctxt "#34074"
+msgid "Automatically temporarily activate LAV Full or SB mode in CoreELEC on supported builds to alleviate audio dropouts on certain titles, if necessary. Based on \"seamless_branching.json\", can be user-amended by putting a file with the same name and structure into userdata/addon_data/script.plexmod."
 msgstr ""

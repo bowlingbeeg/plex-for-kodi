@@ -354,6 +354,10 @@ class SettingControl(object):
         rpc.Settings.SetSettingValue(setting=self.setting, value=self._originalMode)
         DEBUG_LOG('{0}: RESTORED'.format(self.logDisplay))
 
+    @property
+    def original(self):
+        return self._originalMode
+
     @contextlib.contextmanager
     def suspend(self):
         self.disable()

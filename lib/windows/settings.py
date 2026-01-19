@@ -496,6 +496,12 @@ class Settings(object):
                              'problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by '
                              'default for CoreELEC and LG WebOS)'
                 )),
+                BoolSetting('lav_mode_auto_switch', T(34073, 'Seamless branching fix'), True)
+                .description(T(34074, "Automatically temporarily activate LAV Full or SB mode in CoreELEC on "
+                                      "supported builds to alleviate audio dropouts on certain titles, if necessary. "
+                                      "Based on \"seamless_branching.json\", can be user-amended by putting a file "
+                                      "with the same name and structure into userdata/addon_data/script.plexmod."))
+                if util.CE_SB_LAV_SWITCH else None,
                 BoolSetting(
                     'assume_resume', T(33711, 'Always resume media'), True
                 ).description(
