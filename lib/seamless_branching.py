@@ -45,7 +45,7 @@ class SeamlessBranchingManager(object):
     LAV_MODE_LAV_FULL = 5
 
     # Audio detection thresholds
-    TMS_EAC3_MIN_BITRATE = 768  # kbps - DD+ with tms is typically 768kbps+
+    TMS_EAC3_MIN_BITRATE = 736  # kbps - DD+ with tms is typically 768kbps+; Plex tends to miscalculate audio bitrates sometimes, though
 
     def __init__(self):
         self.seamless_branching_movies = set()  # Set of IMDB IDs
