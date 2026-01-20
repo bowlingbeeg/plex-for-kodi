@@ -2962,3 +2962,11 @@ msgstr ""
 msgctxt "#34074"
 msgid "Automatically temporarily activate LAV Full or SB mode in CoreELEC on supported builds to alleviate audio dropouts on certain titles, if necessary. Based on \"seamless_branching.json\", can be user-amended by putting a file with the same name and structure into userdata/addon_data/script.plexmod."
 msgstr ""
+
+msgctxt "#34075"
+msgid "Resume offset adjustment"
+msgstr ""
+
+msgctxt "#34076"
+msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -2.5s"
+msgstr ""
