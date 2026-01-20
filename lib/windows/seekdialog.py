@@ -491,7 +491,13 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.updateProgress()
         self.setBoolProperty("initialized", True)
 
-    def setup(self, duration, meta, offset=0, bif_url=None, title='', title2='', chapters=None, keepMarkerDef=False):
+    def reuseDialog(self):
+        # in case of a reused handler/dialog (consecutive playback), onFirstInit and onReInit won't be called;
+        # setup() will reset certain assumptions, set them here
+        self.setBoolProperty("initialized", True)
+
+    def setup(self, duration, meta, offset=0, bif_url=None, title='', title2='', chapters=None, keepMarkerDef=False,
+              reused=False):
         """
         this is called by our handler and occurs earlier than onFirstInit.
         """
@@ -564,6 +570,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         if self.hasBif:
             self.baseURL = re.sub(r'/\d+\?', '/{0}?', self.bifURL)
+
+        if reused:
+            self.reuseDialog()
         self.update()
 
     def update(self, offset=None, from_seek=False):

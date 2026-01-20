@@ -345,7 +345,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.blackoutDialog = blackoutdialog.BlackoutDialog.create(show=False)
         self.getDialog(setup=True)
         self.dialog.setup(self.duration, meta, int(self.baseOffset * 1000), self.bifURL, self.title, self.title2,
-                          chapters=self.chapters, keepMarkerDef=seeking == self.SEEK_IN_PROGRESS)
+                          chapters=self.chapters, keepMarkerDef=seeking == self.SEEK_IN_PROGRESS, reused=self.reused)
 
     def getDialog(self, setup=False):
         if not self.dialog:
