@@ -2075,18 +2075,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         # Check if this movie needs LAV filters enabled
         if util.CE_SB_LAV_SWITCH and util.getSetting("lav_mode_auto_switch") and self.video.type == 'movie':
             # Extract IMDB ID
-            imdb_id = None
-            guid = self.video.guid
-
-            if "com.plexapp.agents.imdb" in guid:
-                imdb_id = guid.split("?lang=")[0][
-                    guid.index("com.plexapp.agents.imdb://") + len("com.plexapp.agents.imdb://"):]
-            elif "plex://movie" in guid:
-                # For new Plex agent, check guids array
-                for g in self.video.guids:
-                    if g.id.startswith('imdb://'):
-                        imdb_id = g.id.split('imdb://')[1]
-                        break
+            imdb_id = seamless_branching.sbm.get_imdb_id(self.video)
 
             # Get audio stream object
             audio_stream = None

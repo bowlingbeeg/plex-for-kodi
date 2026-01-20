@@ -106,6 +106,21 @@ class SeamlessBranchingManager(object):
             except:
                 util.ERROR("Couldn't read user seamless_branching_user.json")
 
+    def get_imdb_id(self, video):
+        imdb_id = None
+        guid = video.guid
+
+        if "com.plexapp.agents.imdb" in guid:
+            imdb_id = guid.split("?lang=")[0][
+                guid.index("com.plexapp.agents.imdb://") + len("com.plexapp.agents.imdb://"):]
+        elif "plex://movie" in guid:
+            # For new Plex agent, check guids array
+            for g in video.guids:
+                if g.id.startswith('imdb://'):
+                    imdb_id = g.id.split('imdb://')[1]
+                    break
+        return imdb_id
+
     def _is_truehd_or_tms(self, audio_stream):
         """
         Check if audio stream is TrueHD or tms (DD+ with high bitrate).
@@ -138,19 +153,20 @@ class SeamlessBranchingManager(object):
 
         return False
 
-    def is_seamless_branching_movie(self, imdb_id, audio_stream):
+    def is_seamless_branching_movie(self, imdb_id, audio_stream, force_detection=False):
         """
         Determine if a movie requires LAV filter workaround.
 
         Args:
             imdb_id: IMDB ID of the movie (e.g., "tt0468569")
             audio_stream: Audio stream object from playerObject.choice.audioStream
+            [force_detection]: Always return the state even if our current Kodi instance doesn't support SB workarounds
 
         Returns:
             bool: True if LAV filters should be enabled
         """
         # Check all criteria
-        if not util.CE_SB_LAV_SWITCH:
+        if not force_detection and not util.CE_SB_LAV_SWITCH:
             return False
 
         if not imdb_id or imdb_id not in self.seamless_branching_movies:
