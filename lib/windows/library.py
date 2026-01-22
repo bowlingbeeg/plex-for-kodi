@@ -418,6 +418,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.lastNonOptionsFocusID = None
         self.refill = False
         self.subOptionCache = {}
+        self.closing = False
 
         self.dcpjPos = 0
         self.dcpjThread = None
@@ -469,6 +470,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
     @busy.dialog()
     def doClose(self, **kw):
+        self.closing = True
         pnUtil.APP.off("watchlist:modified", self.setWatchlistDirty)
         util.MONITOR.off("library.back_home", self.goHomeRoot)
         self.tasks.kill()
@@ -1670,7 +1672,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             break
 
     def _chunkCallback(self, items, start):
-        if not self.showPanelControl or not items:
+        if not self.showPanelControl or not items or self.closing:
             return
 
         with self.lock:
