@@ -97,6 +97,7 @@ def is_watchlisted(guid, server):
             if child.tag == "UserState":
                 if child.get("watchlistedAt", None):
                     return True
+        return False
 
 
 def wl_wrap(f):
@@ -235,12 +236,13 @@ class WatchlistUtilsMixin(object):
 
     @wl_wrap
     def wl_auto_remove(self, ref):
+        util.LOG("Watchlist: DEBUG: %s, %s, %s %s" % (ref.ratingKey, self.is_watchlisted, ref.isFullyWatched, util.getUserSetting('watchlist_auto_remove', True)))
         if self.is_watchlisted and ref.isFullyWatched and util.getUserSetting('watchlist_auto_remove', True):
             self.removeFromWatchlist(ref)
-            util.DEBUG_LOG("Watchlist: Item {} is fully watched, removed from watchlist", ref.ratingKey)
+            util.LOG("Watchlist: Item {} is fully watched, removed from watchlist", ref.ratingKey)
             return True
         elif not ref.isFullyWatched:
-            util.DEBUG_LOG("Watchlist: Item {} is not fully watched, skipping", ref.ratingKey)
+            util.LOG("Watchlist: Item {} is not fully watched, skipping", ref.ratingKey)
 
     @wl_wrap
     def watchlistItemAvailable(self, item, shortcut_watchlisted=False):
@@ -308,6 +310,9 @@ class WatchlistUtilsMixin(object):
         """
 
         def callback(state):
+            if state is None:
+                util.LOG("Watchlist: Couldn't parse watchlist response, assuming old state")
+                return
             self.is_watchlisted = state
             self.setBoolProperty("is_watchlisted", state)
             util.DEBUG_LOG("Watchlist state for item {}: {}", item.ratingKey, state)
@@ -338,13 +343,13 @@ class WatchlistUtilsMixin(object):
             if wl_action_failed:
                 return self.is_watchlisted
 
-            util.DEBUG_LOG("Watchlist action {} for {} succeeded", method, item.ratingKey)
+            util.LOG("Watchlist action {} for {} succeeded", method, item.ratingKey)
             self.is_watchlisted = method == "addToWatchlist"
             self.setBoolProperty("is_watchlisted", method == "addToWatchlist")
             pnUtil.APP.trigger("watchlist:modified")
             return method == "addToWatchlist"
         except exceptions.BadRequest:
-            util.DEBUG_LOG("Watchlist action {} for {} failed", method, item.ratingKey)
+            util.LOG("Watchlist action {} for {} failed", method, item.ratingKey)
 
     @wl_wrap
     def addToWatchlist(self, item):

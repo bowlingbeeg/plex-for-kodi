@@ -1184,7 +1184,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.cameFrom = "show"
             self.processCommand(opener.open(
                 self.season.parentRatingKey,
-                came_from=self.season.parentRatingKey)
+                came_from=self.season.parentRatingKey,
+                server=self.season.server)
             )
         elif choice['key'] == 'to_section':
             self.cameFrom = "library"
