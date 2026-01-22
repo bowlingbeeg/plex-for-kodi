@@ -838,7 +838,7 @@ class Settings(object):
                     )
                 ).description(T(33088, 'Only applies to video player UI')),
                 OptionsSetting(
-                    'resume_offset', T(34075, ''), -1000,
+                    'resume_offset', T(34075, ''), -2500,
                     [(0, T(32481))] + [
                         (a, T(33091).format(sec_or_ms=a if a > -1000 else "{:.1f}".format(a / 1000),
                                             unit_s_or_ms="ms" if a > -1000 else "s")) for a in
