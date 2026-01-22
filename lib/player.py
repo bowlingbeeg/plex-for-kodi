@@ -280,6 +280,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
+        self.pbStartedRemoved = False
         self.blackoutDialog = None
         self.blackoutShown = False
         self.skipFixForNextSeek = False
@@ -317,6 +318,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
+        self.pbStartedRemoved = False
         self.blackoutShown = False
         self.prePlayVolume = None
 
@@ -559,6 +561,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.pbStartedSet = True
         else:
             util.setGlobalBoolProperty('playback_started_event', False)
+            self.pbStartedRemoved = True
 
     def seekAbsolute(self, seek=None, skip_alt_seek_fix=False):
         self.seekOnStart = seek if seek is not None else self.seekOnStart if self.seekOnStart is not None else None
@@ -653,6 +656,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             if self.pbStartedSet:
                 util.MONITOR.waitFor(0.1)
                 util.setGlobalBoolProperty('playback_started_event', False)
+                self.pbStartedRemoved = True
 
         self.player.trigger('changed.video')
         if self.dialog:
@@ -664,15 +668,18 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.start_blackout()
         # we might've hit onAVChange before hitting onAVStarted
         elif self.blackoutWasWanted and not self.blackout and self.pbStartedSet:
-            util.MONITOR.waitFor(0.1)
-            util.setGlobalBoolProperty('playback_started_event', False)
+            if not self.pbStartedRemoved:
+                util.MONITOR.waitFor(0.1)
+                util.setGlobalBoolProperty('playback_started_event', False)
+                self.pbStartedRemoved = True
         else:
-            if not self.pbStartedSet:
+            if not self.pbStartedSet and not self.pbStartedRemoved:
                 util.setGlobalBoolProperty('playback_started', True)
                 util.setGlobalBoolProperty('playback_started_event', True)
                 self.pbStartedSet = True
                 util.MONITOR.waitFor(0.1)
                 util.setGlobalBoolProperty('playback_started_event', False)
+                self.pbStartedRemoved = True
 
         self.player.trigger('started.video')
 
@@ -1419,6 +1426,10 @@ class SeekPlayerHandler(BasePlayerHandler):
                            self.seekBackTo, self.pausedForSeek)
 
         if self.dialog and getattr(self.dialog, "_ignoreTick", None) is not True:
+            # if we missed removing the playback started event flag, make sure to remove it on the first tick
+            if self.pbStartedSet and not self.pbStartedRemoved:
+                util.setGlobalBoolProperty('playback_started_event', False)
+                self.pbStartedRemoved = True
             self.dialog.tick()
 
     def close(self):
