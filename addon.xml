@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.2.6-beta1"
+       version="1.2.6-beta1.1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,23 +34,11 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Core/Player: Auto switch to LAV Full/SB if possible (CoreELEC U3k B9+ detected)
-- Core: Detect avdvplus as dynamic seamless branching fix enabled build, starting with R2
-- Core: Detect CoreELEC p3i build as auto seamless branching fix capable build
-- Core/Player: Only switch LAV modes if not already LAV Full or SB
-- Core: Re-jig waitForOpen
-- Core/SignIn/Auth: Fix wonky first start of plugin (home shown briefly after device auth and user select)
-- Core/Codecs: Improve JOC audio detection substantially in some cases; lower JOC bitrate likelihood to 736kbit due to Plex server calculation bug (was 768)
-- Home/Main/UserSelect: Refresh home users when receiving a 401 from plex.tv when switching home users, as its protected bit might have changed (pin set), retry two times
-- Main: Allow not showing any played/unplayed indicators at all
-- PostPlay: Fix wrong next-up item after re-playing the previously played item (e.g. played EP2, replaying EP2 from post-play, EP4 will be next up)
-- Player/SeekDialog: Fix marker skip button not showing on consecutive episode playback (introduced with 1.1.4-beta)
-- VideoInfo: Show seamless branching state on audio streams of affected videos
-- Player: Adjust resume point by user setting
-- Settings/Videoplayer: Add setting to adjust resume points negatively on resume, to avoid lost content due to keyframes/seek behaviour (default: -2.5s)
-- Settings/Video: Add setting for auto seamless branching LAV mode fix
-- Settings: Extend User Interface/Played indicators with option "None"
-- AddonSettings: Add "Seamless branching LAV mode (CoreELEC U3k B9+)", default: LAV SB
+- Player: Make sure we unset the playback started event (prevents super rare codec logos shown forever in case of Plextuary Custom Builds)
+- Watchlist: Temporarily enable verbose logging for watchlist events; try fixing TV shows not always being removed
+- Watchlist: Fix watchlisted shows "To Show" menu option error on other than current server
+- LibraryWindow: Fix chunk callback edge case resulting in infinite recursion (rare case, when closing)
+- Settings: Actually use the advertised default of -2.5s for Adjust resume offset
         </news>
         <assets>
             <icon>icon2.png</icon>
