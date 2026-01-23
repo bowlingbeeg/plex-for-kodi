@@ -1235,8 +1235,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         if item.isFullyWatched:
-            guid = item.show().guid if item.TYPE in ('episode', 'season') else item.guid
-            removeFromWatchlistBlind(guid)
+            ref = item.show() if item.TYPE in ('episode', 'season') else item
+            removeFromWatchlistBlind(ref.guid, ref)
         self._updateOnDeckHubs()
 
 

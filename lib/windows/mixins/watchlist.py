@@ -115,7 +115,7 @@ def GUIDToRatingKey(guid):
     return guid.rsplit("/")[-1]
 
 
-def removeFromWatchlistBlind(guid):
+def removeFromWatchlistBlind(guid, ref):
     if not util.getUserSetting("use_watchlist", True):
         return
 
@@ -126,8 +126,11 @@ def removeFromWatchlistBlind(guid):
 
         server = pnUtil.SERVERMANAGER.getDiscoverServer()
 
-        tries = 0
         g = GUIDToRatingKey(guid)
+        if not is_watchlisted(g, server):
+            return
+
+        tries = 0
         while tries < 3:
             server.query("/actions/removeFromWatchlist", ratingKey=g, method="put")
             if not is_watchlisted(g, server):
@@ -142,7 +145,9 @@ def removeFromWatchlistBlind(guid):
         exc = traceback.format_exc()
         util.DEBUG_LOG("Watchlist: Failed to blindly remove {}: {}", guid, exc)
     else:
-        util.DEBUG_LOG("Watchlist: Removed {}", guid)
+        util.DEBUG_LOG("Watchlist: Possibly Removed {}", guid)
+        util.showNotification(T(34077, "{} successfully removed from Watchlist").format(ref.defaultTitle),
+                              time_ms=3000, header=T(34000, "Watchlist"))
 
 
 class WatchlistUtilsMixin(object):
@@ -240,6 +245,8 @@ class WatchlistUtilsMixin(object):
         if self.is_watchlisted and ref.isFullyWatched and util.getUserSetting('watchlist_auto_remove', True):
             self.removeFromWatchlist(ref)
             util.LOG("Watchlist: Item {} is fully watched, removed from watchlist", ref.ratingKey)
+            util.showNotification(T(34077, "{} successfully removed from Watchlist").format(ref.defaultTitle),
+                                  time_ms=3000, header=T(34000, "Watchlist"))
             return True
         elif not ref.isFullyWatched:
             util.LOG("Watchlist: Item {} is not fully watched, skipping", ref.ratingKey)

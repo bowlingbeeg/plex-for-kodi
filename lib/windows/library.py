@@ -627,13 +627,13 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
     def toggleWatched(self, mli, state=None, **kw):
         item = mli.dataSource
-        guid = item.show().guid if item.TYPE in ('episode', 'season') else item.guid
+        wl_ref = item.show() if item.TYPE in ('episode', 'season') else item
         watched = super(LibraryWindow, self).toggleWatched(item)
         if watched is None:
             return
 
         if watched:
-            removeFromWatchlistBlind(guid)
+            removeFromWatchlistBlind(wl_ref.guid, wl_ref)
         self.updateUnwatchedAndProgress(mli)
 
     def itemOptions(self):
@@ -647,7 +647,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         if mli.dataSource.TYPE in ('episode', 'season', 'movie', 'show'):
             options = []
             ds = mli.dataSource
-            guid = mli.dataSource.show().guid if ds.TYPE in ('episode', 'season') else ds.guid
+            wl_ref = ds.show() if ds.TYPE in ('episode', 'season') else ds
 
             if self.section.TYPE != "movies_shows":
                 # we don't want mark watched for watchlist items
@@ -700,7 +700,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                     self.toggleWatched(mli, state=False)
 
                 elif choice["key"] == "remove_from_watchlist":
-                    removeFromWatchlistBlind(guid)
+                    removeFromWatchlistBlind(wl_ref.guid, wl_ref)
                     self.doRefill()
             return True
 

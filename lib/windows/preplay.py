@@ -145,7 +145,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         if self.fromPlayback and self.openedWithAutoPlay and not self.started:
             self.video.reload(checkFiles=1, fromMediaChoice=self.video.mediaChoice is not None, **VIDEO_RELOAD_KW)
             if self.video.isFullyWatched:
-                removeFromWatchlistBlind(self.video.guid)
+                removeFromWatchlistBlind(self.video.guid, self.video)
 
     def refreshInfo(self, from_reinit=False):
         oldFocusId = self.getFocusId()

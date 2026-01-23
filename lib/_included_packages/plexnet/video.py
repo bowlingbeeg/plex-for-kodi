@@ -821,6 +821,10 @@ class Show(CachableItemsMixin, Video, media.RelatedMixin, SectionOnDeckMixin):
     def isLibraryItem(self):
         return True
 
+    @property
+    def defaultTitle(self):
+        return self.title
+
     def seasons(self):
         path = self.key
         return plexobjects.listItems(self.server, path, Season.TYPE, cachable=self.cachable, cache_ref=self.cacheRef,

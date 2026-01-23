@@ -307,7 +307,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if vp:
                 self.show_.reload(checkFiles=1, **VIDEO_RELOAD_KW)
                 if self.show_.isFullyWatched:
-                    removeFromWatchlistBlind(self.show_.guid)
+                    removeFromWatchlistBlind(self.show_.guid, self.show_)
 
     @busy.dialog()
     def _onFirstInit(self):
