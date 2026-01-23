@@ -2134,9 +2134,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         # try to get an early intro offset so we can skip it if necessary
         introOffset = None
         if not offset:
-            # in case we're transcoded, instruct the marker handler to set the marker a skipped, so we don't re-skip it
-            # after seeking
-            probOff = self.handler.getIntroOffset(offset, setSkipped=meta.isTranscoded)
+            probOff = self.handler.getIntroOffset(offset, setSkipped=True)
             if probOff:
                 introOffset = probOff
 
@@ -2166,7 +2164,6 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             if not self.handler.seekOnStart and util.getSetting('seek_back_on_start'):
                 util.DEBUG_LOG("Seek back on start enabled, instructing the SeekPlayerHandler to seek forward, then backwards")
 
-                # fixme: might need a more significant value like 5000
                 to = max(util.addonSettings.altseekValidSeekWindow, 5000)
                 self.handler.ignoreTimelines = True
                 util.DEBUG_LOG("SeekOnStart: Seeking temporarily to: {}", max(to, 1000))
