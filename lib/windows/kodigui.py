@@ -1421,8 +1421,8 @@ class GlobalProperty():
         xbmcgui.Window(10000).setProperty('script.plex.{}'.format(self.prop), self.end or self.old)
 
 
-def waitForVisibility(control):
+def waitForVisibility(control, amount=5):
     tries = 0
-    while not xbmc.getCondVisibility('Control.IsVisible({0})'.format(control)) and tries < util.MONITOR.waitAmount(5):
+    while not xbmc.getCondVisibility('Control.IsVisible({0})'.format(control)) and tries < util.MONITOR.waitAmount(amount):
         util.MONITOR.waitFor()
         tries += 1

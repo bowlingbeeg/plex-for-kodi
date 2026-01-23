@@ -38,8 +38,8 @@ VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1
 
 
 class EpisodeReloadTask(backgroundthread.Task):
-    def setup(self, episode, callback, with_progress=False, set_item_info=False):
-        self.episode = episode
+    def setup(self, mli, callback, with_progress=False, set_item_info=False):
+        self.mli = mli
         self.callback = callback
         self.withProgress = with_progress
         self.setItemInfo = set_item_info
@@ -54,14 +54,17 @@ class EpisodeReloadTask(backgroundthread.Task):
             return
 
         try:
-            self.episode.reload(checkFiles=1, includeChapters=1, fromMediaChoice=self.episode.mediaChoice is not None)
+            episode = self.mli.dataSource
+            episode.reload(checkFiles=1, includeChapters=1, fromMediaChoice=episode.mediaChoice is not None)
             if self.isCanceled():
                 return
-            self.callback(self, self.episode, with_progress=self.withProgress, set_item_info=self.setItemInfo)
+            self.callback(self, self.mli, with_progress=self.withProgress, set_item_info=self.setItemInfo)
         except requests.exceptions.RequestException:
             raise util.NoDataException
         except:
             util.ERROR()
+        finally:
+            self.mli = None
 
 
 class EpisodesPaginator(pagination.MCLPaginator):
@@ -445,7 +448,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if selected:
                 set_focus = self.getPlayButtonID(selected, base=not self.currentItemLoaded
                                                  and self.PLAY_BUTTON_DISABLED_ID or None)
-                kodigui.waitForVisibility(set_focus)
+                kodigui.waitForVisibility(set_focus, amount=10)
                 self.setCondFocusId(set_focus)
 
     @busy.dialog()
@@ -576,8 +579,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                     self.episodeListControl.selectItem(mli.pos())
 
                     tries = 0
-                    while self.episodeListControl.getSelectedPos() != mli.pos() and tries < util.MONITOR.waitAmount(4, interval=0.5):
-                        util.MONITOR.waitFor(0.5)
+                    while self.episodeListControl.getSelectedPos() != mli.pos() and tries < util.MONITOR.waitAmount(4, interval=0.05):
+                        util.MONITOR.waitFor(0.05)
                         self.episodeListControl.selectItem(mli.pos())
                         tries += 1
 
@@ -1516,15 +1519,29 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
     def reloadItems(self, items, with_progress=False, skip_progress_for=None, set_item_info=False):
         tasks = []
+        cur_mli = self.episodeListControl.getSelectedItem()
+
+        # handle our currently selected episode first, synchronously, then use background tasks to load the remaining
+        # episode's details
+        item_progress = with_progress
+        if skip_progress_for:
+            item_progress = False if cur_mli.dataSource.ratingKey in skip_progress_for else with_progress
+
+        cur_mli.dataSource.reload(checkFiles=1, includeChapters=1, fromMediaChoice=cur_mli.dataSource.mediaChoice is not None)
+        self._reloadItem(cur_mli, with_progress=item_progress, set_item_info=set_item_info)
+
         for mli in items:
             if not mli.dataSource:
+                continue
+
+            if mli == cur_mli:
                 continue
 
             item_progress = with_progress
             if skip_progress_for:
                 item_progress = False if mli.dataSource.ratingKey in skip_progress_for else with_progress
 
-            task = EpisodeReloadTask().setup(mli.dataSource, self.reloadItemCallback, with_progress=item_progress,
+            task = EpisodeReloadTask().setup(mli, self.reloadItemCallback, with_progress=item_progress,
                                              set_item_info=set_item_info)
             self.tasks.add(task)
             tasks.append(task)
@@ -1534,53 +1551,53 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     def getPlayButtonID(self, mli, base=None):
         return (base and base or self.PLAY_BUTTON_ID) + (mli.getProperty('media.multiple') and 1000 or 0)
 
-    def reloadItemCallback(self, task, episode, with_progress=False, set_item_info=False):
+    def _reloadItem(self, mli, with_progress=False, set_item_info=False):
+        selected = self.episodeListControl.getSelectedItem()
+
+        episode = mli.dataSource
+        if not episode.mediaChoice:
+            episode.setMediaChoice()
+
+        try:
+            self.setPostReloadItemInfo(episode, mli)
+            if set_item_info:
+                self.setUserItemInfo(mli)
+        except:
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
+            self.doClose()
+
+        if with_progress:
+            self.episodesPaginator.prepareListItem(None, mli)
+        if mli == selected:
+            self.lastItem = mli
+            if with_progress:
+                self.setProgress(mli)
+
+        if not self.currentItemLoaded and (
+                mli == selected or (self.episode and self.episode == mli.dataSource)):
+            self.currentItemLoaded = True
+            self.setBoolProperty('current_item.loaded', True)
+            if not self.lastFocusID or self.lastFocusID in (
+                    self.PLAY_BUTTON_DISABLED_ID, self.PLAY_BUTTON_DISABLED_ID + 1000):
+                # wait for visibility of the button
+                tries = 0
+                PBID = self.getPlayButtonID(mli)
+                while not xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) \
+                        and not util.MONITOR.abortRequested() and tries < util.MONITOR.waitAmount(1.5):
+                    util.MONITOR.waitFor()
+                    tries += 1
+                util.MONITOR.waitFor()
+                if xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) and self.getFocusId() != PBID:
+                    self.setFocusId(PBID)
+
+    def reloadItemCallback(self, task, mli, with_progress=False, set_item_info=False):
         self.tasks.remove(task)
         del task
 
         if self.closing:
             return
 
-        selected = self.episodeListControl.getSelectedItem()
-
-        for mli in self.episodeListControl:
-            if mli.dataSource == episode:
-                if not episode.mediaChoice:
-                    episode.setMediaChoice()
-
-                try:
-                    self.setPostReloadItemInfo(episode, mli)
-                    if set_item_info:
-                        self.setUserItemInfo(mli)
-                except:
-                    util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
-                    self.doClose()
-
-                if with_progress:
-                    self.episodesPaginator.prepareListItem(None, mli)
-                if mli == selected:
-                    self.lastItem = mli
-                    if with_progress:
-                        self.setProgress(mli)
-
-                if not self.currentItemLoaded and (
-                        mli == selected or (self.episode and self.episode == mli.dataSource)):
-                    self.currentItemLoaded = True
-                    self.setBoolProperty('current_item.loaded', True)
-                    if not self.lastFocusID or self.lastFocusID in (
-                            self.PLAY_BUTTON_DISABLED_ID, self.PLAY_BUTTON_DISABLED_ID + 1000):
-                        # wait for visibility of the button
-                        tries = 0
-                        PBID = self.getPlayButtonID(mli)
-                        while not xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) \
-                                and not util.MONITOR.abortRequested() and tries < util.MONITOR.waitAmount(1.5):
-                            util.MONITOR.waitFor()
-                            tries += 1
-                        util.MONITOR.waitFor()
-                        if xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) and self.getFocusId() != PBID:
-                            self.setFocusId(PBID)
-
-                break
+        self._reloadItem(mli, with_progress=with_progress, set_item_info=set_item_info)
 
     def fillExtras(self, has_prev=False):
         items = []
