@@ -63,8 +63,6 @@ class EpisodeReloadTask(backgroundthread.Task):
             raise util.NoDataException
         except:
             util.ERROR()
-        finally:
-            self.mli = None
 
 
 class EpisodesPaginator(pagination.MCLPaginator):
@@ -1028,6 +1026,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
     def episodeListClicked(self, force_episode=None, from_auto_play=False, force_resume_menu=False,
                            start_over=False):
+
         if self.playBtnClicked and not from_auto_play:
             util.DEBUG_LOG("Not honoring play action: currentItemLoaded: {0}, "
                            "playBtnClicked: {1}, from_auto_play: {2}",
@@ -1521,14 +1520,24 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         tasks = []
         cur_mli = self.episodeListControl.getSelectedItem()
 
-        # handle our currently selected episode first, synchronously, then use background tasks to load the remaining
-        # episode's details
-        item_progress = with_progress
-        if skip_progress_for:
-            item_progress = False if cur_mli.dataSource.ratingKey in skip_progress_for else with_progress
+        if cur_mli and cur_mli.dataSource:
+            # handle our currently selected episode first, synchronously, then use background tasks to load the remaining
+            # episode's details
+            item_progress = with_progress
+            if skip_progress_for:
+                item_progress = False if cur_mli.dataSource.ratingKey in skip_progress_for else with_progress
 
-        cur_mli.dataSource.reload(checkFiles=1, includeChapters=1, fromMediaChoice=cur_mli.dataSource.mediaChoice is not None)
-        self._reloadItem(cur_mli, with_progress=item_progress, set_item_info=set_item_info)
+            cur_mli.dataSource.reload(checkFiles=1, includeChapters=1, fromMediaChoice=cur_mli.dataSource.mediaChoice is not None)
+            util.DEBUG_LOG("Episodes: Sync-loading currently selected item: {}", cur_mli.dataSource)
+            self._reloadItem(cur_mli, with_progress=item_progress, set_item_info=set_item_info)
+            util.DEBUG_LOG("Episodes: Currently selected item loaded")
+            self.currentItemLoaded = True
+            self.setBoolProperty('current_item.loaded', True)
+        else:
+            util.LOG("Episodes: There's no current item to be loaded, something's wrong.")
+
+        if not self.hadUserInteraction:
+            self.selectPlayButton()
 
         for mli in items:
             if not mli.dataSource:
@@ -1573,31 +1582,17 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if with_progress:
                 self.setProgress(mli)
 
-        if not self.currentItemLoaded and (
-                mli == selected or (self.episode and self.episode == mli.dataSource)):
-            self.currentItemLoaded = True
-            self.setBoolProperty('current_item.loaded', True)
-            if not self.lastFocusID or self.lastFocusID in (
-                    self.PLAY_BUTTON_DISABLED_ID, self.PLAY_BUTTON_DISABLED_ID + 1000):
-                # wait for visibility of the button
-                tries = 0
-                PBID = self.getPlayButtonID(mli)
-                while not xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) \
-                        and not util.MONITOR.abortRequested() and tries < util.MONITOR.waitAmount(1.5):
-                    util.MONITOR.waitFor()
-                    tries += 1
-                util.MONITOR.waitFor()
-                if xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) and self.getFocusId() != PBID:
-                    self.setFocusId(PBID)
-
     def reloadItemCallback(self, task, mli, with_progress=False, set_item_info=False):
-        self.tasks.remove(task)
-        del task
-
         if self.closing:
             return
 
         self._reloadItem(mli, with_progress=with_progress, set_item_info=set_item_info)
+        try:
+            task.mli = None
+            self.tasks.remove(task)
+            del task
+        except:
+            pass
 
     def fillExtras(self, has_prev=False):
         items = []
