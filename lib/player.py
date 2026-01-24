@@ -606,7 +606,7 @@ class SeekPlayerHandler(BasePlayerHandler):
 
                 doPause = False
 
-                if not skip_alt_seek_fix:
+                if not skip_alt_seek_fix and self.player.playState != "paused":
                     util.DEBUG_LOG("SeekAbsolute: Pausing for seek fix (state: {})", self.player.playState)
                     doPause = True
 
@@ -640,6 +640,8 @@ class SeekPlayerHandler(BasePlayerHandler):
                     self.seekOnStart = None
                     self.seekBackTo = None
                     self.seekingBackTo = False
+                    if doPause:
+                        self.player.control('play')
                     if self.blackout:
                         self.stop_blackout()
             else:
@@ -914,7 +916,8 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def onPlayBackSeek(self, stime, offset):
         def seekBackToStart():
-            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Seeking back to: {}", self.seekBackTo)
+            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Seeking back to: {} after: {} ms",
+                           self.seekBackTo, util.addonSettings.seekbackonstartDelay)
             # Add delay before seeking back to give decoders time to stabilize
             # This is especially important for VC-1 hardware decoding
             util.MONITOR.waitFor(util.addonSettings.seekbackonstartDelay / 1000.0)
