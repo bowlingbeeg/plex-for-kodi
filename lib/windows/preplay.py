@@ -370,11 +370,13 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.delete()
         elif choice['key'] == 'refresh':
             self.video.refresh()
+            self.video.reload(checkFiles=1, **VIDEO_RELOAD_KW)
             self.refreshInfo()
         elif choice["key"] == "cache_reset":
             try:
                 util.DEBUG_LOG('Clearing requests cache for {}...', self.video)
                 self.video.clearCache()
+                self.video.reload(checkFiles=1, **VIDEO_RELOAD_KW)
                 self.refreshInfo()
             except Exception as e:
                 util.DEBUG_LOG("Couldn't clear cache: {}", e)
