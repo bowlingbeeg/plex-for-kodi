@@ -2574,6 +2574,9 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.handler.onPlayBackSeek(time, offset)
 
     def onPlayBackError(self):
+        if not self._ignorePlaybackFailure:
+            self.player.trigger('playback.failed')
+
         if not self.sessionID:
             return
         util.DEBUG_LOG('Player - ERROR: {}', self.handler)
@@ -2587,6 +2590,9 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.close()
 
     def onPlayBackFailed(self):
+        if not self._ignorePlaybackFailure:
+            self.player.trigger('playback.failed')
+
         if not self.sessionID:
             return
         util.DEBUG_LOG('Player - FAILED: {}', self.handler)
