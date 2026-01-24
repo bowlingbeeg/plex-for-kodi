@@ -915,6 +915,9 @@ class SeekPlayerHandler(BasePlayerHandler):
     def onPlayBackSeek(self, stime, offset):
         def seekBackToStart():
             util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Seeking back to: {}", self.seekBackTo)
+            # Add delay before seeking back to give decoders time to stabilize
+            # This is especially important for VC-1 hardware decoding
+            util.MONITOR.waitFor(util.addonSettings.seekbackonstartDelay / 1000.0)
             try:
                 to = self.seekBackTo
                 self.seekBackTo = None
@@ -1162,16 +1165,13 @@ class SeekPlayerHandler(BasePlayerHandler):
         if self.seekingBackTo:
             self.seekingBackTo = False
             self.seekBackToDone = True
-            if self.blackout:
-                self.stop_blackout()
 
         # seek back immediately?
         if self.seekBackTo is not None:
             seekBackToStart()
+            return
         else:
             self.reportedSeekPlayerTime = None
-            if self.blackout:
-                self.stop_blackout()
 
             util.setGlobalProperty('playback_initializing', '', wait=True)
             util.setGlobalProperty('playback_seeking', '', wait=True)
@@ -1179,6 +1179,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         if self.unPauseAfterSeek and not self.seekBackTo:
             self.unPauseAfterSeek = False
             self.player.control('play')
+            util.MONITOR.waitFor(0.1)
+            if self.blackout:
+                util.DEBUG_LOG("Stopping Blackout in onSeekHandler end")
+                self.stop_blackout()
 
     @property
     def subtitleStreamOffset(self):
@@ -1361,7 +1365,7 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def onPlayBackFailed(self):
         # we might've crashed, make sure we set a correct volume again
-        self.ensureCorrectVolume()
+        self.stop_blackout()
         if self.ended:
             return False
 

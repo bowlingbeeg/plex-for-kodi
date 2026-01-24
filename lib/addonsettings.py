@@ -79,6 +79,7 @@ class AddonSettings(object):
         ("coreelec_seek_prefer_reported", True),
         ("coreelec_wait_player_time1", True),
         ("seamless_branching_lav_mode", 4),
+        ("seekbackonstart_delay", 500),
     )
 
     def __init__(self):

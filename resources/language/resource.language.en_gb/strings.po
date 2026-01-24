@@ -2974,3 +2974,11 @@ msgstr ""
 msgctxt "#34077"
 msgid "{} successfully removed from Watchlist"
 msgstr ""
+
+msgctxt "#34078"
+msgid "Seek back on start delay between seeks"
+msgstr ""
+
+msgctxt "#34079"
+msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
+msgstr ""

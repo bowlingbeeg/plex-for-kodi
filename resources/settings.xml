@@ -216,6 +216,18 @@
                     </constraints>
                     <control type="list" format="integer"/>
                 </setting>
+                <setting id="seekbackonstart_delay" type="integer" label="34078" help="34079">
+                    <level>0</level>
+                    <default>500</default>
+                    <constraints>
+                        <minimum>50</minimum>
+                        <step>50</step>
+                        <maximum>10000</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
                 <setting id="show_media_ends_info" type="boolean" label="32540" help="32541">
                     <level>0</level>
                     <default>true</default>
