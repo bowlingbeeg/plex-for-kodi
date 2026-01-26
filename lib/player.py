@@ -101,6 +101,9 @@ class BasePlayerHandler(object):
     def getIntroOffset(self, offset=None, setSkipped=False):
         pass
 
+    def skipMarkersBefore(self, offset):
+        pass
+
     def setup(self, duration, meta, offset, bif_url, **kwargs):
         pass
 
@@ -412,6 +415,9 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def getIntroOffset(self, offset=None, setSkipped=False):
         return self.getDialog().displayMarkers(onlyReturnIntroMD=True, offset=offset, setSkipped=setSkipped)
+
+    def skipMarkersBefore(self, offset):
+        return self.getDialog().displayMarkers(setMarkersSkipped=True, offset=offset)
 
     def next(self, on_end=False):
         hasNext = False
@@ -2162,6 +2168,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 util.DEBUG_LOG("SeekOnStart: Using as SeekOnStart: {0}; offset: {1}", meta.playStart, offset)
                 self.handler.seekOnStart = meta.playStart * 1000
                 self.handler.blackout = self.handler.blackoutWasWanted = blackout
+                self.handler.skipMarkersBefore(meta.playStart * 1000)
             elif introOffset:
                 util.DEBUG_LOG("SeekOnStart: Seeking behind intro after playstart: {}", introOffset)
                 self.handler.seekOnStart = introOffset

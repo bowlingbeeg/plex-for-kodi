@@ -324,43 +324,46 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     @property
     def markers(self):
         if not self._enableMarkerSkip:
-            return None
+            return []
 
-        if self._markers is None and hasattr(self.handler.player.video, "markers"):
-            markers = []
+        if self._markers is None:
+            if hasattr(self.handler.player.video, "markers"):
+                markers = []
 
-            for m in self.handler.player.video.markers:
-                if m.type in MARKERS:
-                    # normalize markers and properties as we modify them later on
-                    final = m.final.asBool()
-                    sto = m.startTimeOffset.asInt()
-                    marker = Marker({
-                        "id": m.id.asInt(),
-                        "final": final,
-                        "type": str(m.type),
-                        "title": "{}@{}{}".format(m.type, m.startTimeOffset.asInt(), final and ",final" or ""),
-                        "startTimeOffset": sto,
-                        "endTimeOffset": m.endTimeOffset.asInt()
-                    })
+                for m in self.handler.player.video.markers:
+                    if m.type in MARKERS:
+                        # normalize markers and properties as we modify them later on
+                        final = m.final.asBool()
+                        sto = m.startTimeOffset.asInt()
+                        marker = Marker({
+                            "id": m.id.asInt(),
+                            "final": final,
+                            "type": str(m.type),
+                            "title": "{}@{}{}".format(m.type, m.startTimeOffset.asInt(), final and ",final" or ""),
+                            "startTimeOffset": sto,
+                            "endTimeOffset": m.endTimeOffset.asInt()
+                        })
 
-                    # skip completely bad markers
-                    if marker.startTimeOffset > self.duration:
-                        continue
+                        # skip completely bad markers
+                        if marker.startTimeOffset > self.duration:
+                            continue
 
-                    # skip intro markers that are too late
-                    if (marker.type == "intro"
-                            and marker.startTimeOffset > util.addonSettings.introMarkerMaxOffset * 1000):
-                        util.DEBUG_LOG("Throwing away intro marker {}, as its start time offset is bigger than the"
-                                       " configured maximum", marker)
-                        continue
+                        # skip intro markers that are too late
+                        if (marker.type == "intro"
+                                and marker.startTimeOffset > util.addonSettings.introMarkerMaxOffset * 1000):
+                            util.DEBUG_LOG("Throwing away intro marker {}, as its start time offset is bigger than the"
+                                           " configured maximum", marker)
+                            continue
 
-                    m = MARKERS[marker.type].copy()
-                    m["marker"] = marker
-                    m["marker_type"] = marker.type
-                    markers.append(m)
+                        m = MARKERS[marker.type].copy()
+                        m["marker"] = marker
+                        m["marker_type"] = marker.type
+                        markers.append(m)
 
-            self._markers = markers
-            util.DEBUG_LOG("Got markers: {}", lambda: list(_m["marker"] for _m in markers))
+                self._markers = markers
+                util.DEBUG_LOG("Got markers: {}", lambda: list(_m["marker"] for _m in markers))
+            else:
+                self._markers = []
 
         return self._markers
 
@@ -2375,7 +2378,18 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             plexapp.util.APP.nowplayingmanager.reset()
 
     def displayMarkers(self, cancelTimer=False, immediate=False, onlyReturnIntroMD=False, setSkipped=False,
-                       offset=None):
+                       offset=None, setMarkersSkipped=False):
+
+        if setMarkersSkipped:
+            cnt = 0
+            for markerDef in self.markers:
+                if markerDef["marker"].startTimeOffset < offset:
+                    markerDef["markerAutoSkipped"] = True
+                    cnt += 1
+            util.DEBUG_LOG("Markers: Skipping {}/{} markers that are before offset {}", cnt,
+                           len(self.markers), offset)
+            return
+
         # intro/credits marker display logic
         markerDef = self.getCurrentMarkerDef(offset=offset)
 
@@ -2557,7 +2571,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
             cancelTick = False
             # don't auto skip while we're initializing and waiting for the handler to seek on start
-            if offset is None and not self.handler.seekOnStart and not self.handler.waitingForSOS and not self.handler.seekBackTo:
+            if (offset is None and not self.handler.seekOnStart and not self.handler.waitingForSOS
+                    and not self.handler.seekBackTo and self.player.playState == self.player.STATE_PLAYING):
                 cancelTick = self.displayMarkers()
 
             if cancelTick:
