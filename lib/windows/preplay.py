@@ -671,12 +671,14 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         if self.fromWatchlist:
             self.setProperty('studios', u' / '.join([r.tag for r in self.video.studios()][:2]))
-        self.setProperty('video.res', self.video.resolutionString())
-        self.setProperty('audio.codec', self.video.audioCodecString())
-        self.setProperty('video.codec', self.video.videoCodecString())
-        self.setProperty('video.rendering', self.video.videoCodecRendering)
-        self.setProperty('audio.channels', self.video.audioChannelsString(metadata.apiTranslate))
-        self.setBoolProperty('media.multiple', len(list(filter(lambda x: x.isAccessible(), self.video.media()))) > 1)
+
+        else:
+            self.setProperty('video.res', self.video.resolutionString())
+            self.setProperty('audio.codec', self.video.audioCodecString())
+            self.setProperty('video.codec', self.video.videoCodecString())
+            self.setProperty('video.rendering', self.video.videoCodecRendering)
+            self.setProperty('audio.channels', self.video.audioChannelsString(metadata.apiTranslate))
+            self.setBoolProperty('media.multiple', len(list(filter(lambda x: x.isAccessible(), self.video.media()))) > 1)
 
         self.populateRatings(self.video, self)
 
