@@ -338,8 +338,6 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
     def onFirstInit(self):
         self._onFirstInit()
-        if not self.hadUserInteraction:
-            self.selectPlayButton()
 
         if self.show_ and not util.getSetting("slow_connection") and \
                 (not self.cameFrom or self.cameFrom not in (self.show_.ratingKey, "postplay")) and \
@@ -446,7 +444,10 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if selected:
                 set_focus = self.getPlayButtonID(selected, base=not self.currentItemLoaded
                                                  and self.PLAY_BUTTON_DISABLED_ID or None)
-                kodigui.waitForVisibility(set_focus, amount=10)
+                if self.getFocusId() == set_focus or self.hadUserInteraction:
+                    return
+
+                kodigui.waitForVisibility(set_focus, amount=2)
                 self.setCondFocusId(set_focus)
 
     @busy.dialog()
@@ -627,12 +628,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.lastFocusID = None
             if not from_reinit:
                 self.currentItemLoaded = False
-
-            # wait for ep list to update
-            waited = 0
-            while self.episodeListControl.getSelectedItem() != selected_new and waited < util.MONITOR.waitAmount(2):
-                util.MONITOR.waitFor()
-                waited += 1
+            util.MONITOR.waitFor(0.05)
 
         self.episode = None
 

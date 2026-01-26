@@ -276,7 +276,7 @@ def _main():
                             signout()
                             break
                         elif closeOption == 'switch':
-                            # store last user ID
+                            background.setBusy(True)
                             util.DEBUG_LOG('Main: Switching users...: {}', plexapp.ACCOUNT.ID)
                             plexapp.ACCOUNT.isAuthenticated = False
                             fromSwitch = True
