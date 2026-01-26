@@ -1187,15 +1187,15 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         elif choice['key'] == 'to_show':
             self.cameFrom = "show"
             self.processCommand(opener.open(
-                self.season.parentRatingKey,
-                came_from=self.season.parentRatingKey,
-                server=self.season.server)
+                mli.dataSource.show().ratingKey,
+                came_from=mli.dataSource.season().ratingKey,
+                server=mli.dataSource.server)
             )
         elif choice['key'] == 'to_section':
             self.cameFrom = "library"
-            section = plexlibrary.LibrarySection.fromFilter(self.show_)
+            section = plexlibrary.LibrarySection.fromFilter(mli.dataSource.show())
             self.processCommand(opener.sectionClicked(section,
-                came_from=self.show_.ratingKey)
+                came_from=mli.dataSource.show().ratingKey)
             )
         elif choice['key'] == 'delete':
             self.delete(mli.dataSource)
