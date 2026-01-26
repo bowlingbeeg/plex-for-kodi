@@ -51,16 +51,15 @@ def dialog(msg='LOADING', condition=None, delay=True, delay_time=1.5):
             try:
                 return func(*args, **kwargs)
             finally:
-                if timer and timer.is_alive():
-                    timer.cancel()
-                    timer.join()
-                del timer
                 w.doClose()
                 try:
                     del w
                 except:
                     pass
-                util.garbageCollect()
+                if timer and timer.is_alive():
+                    timer.cancel()
+                    timer.join()
+                del timer
 
         if condition is not None:
             return condition() and inner or func
