@@ -130,6 +130,8 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             self.watchlistItemAvailable(self.mediaItem, shortcut_watchlisted=self.directlyFromWatchlist)
         if not self.directlyFromWatchlist:
             self.checkIsWatchlisted(self.mediaItem)
+        else:
+            self.setBoolProperty("is_watchlisted", self.is_watchlisted)
 
         self.updateProperties()
         self.setBoolProperty("initialized", True)
@@ -431,7 +433,9 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         w = None
         if self.mediaItem.type == 'show':
             w = episodes.EpisodesWindow.open(season=mli.dataSource, show=self.mediaItem,
-                                             parent_list=self.subItemListControl, from_watchlist=self.fromWatchlist)
+                                             parent_list=self.subItemListControl, from_watchlist=self.fromWatchlist,
+                                             directly_from_watchlist=self.directlyFromWatchlist,
+                                             is_watchlisted=self.is_watchlisted)
             update = True
         elif self.mediaItem.type == 'artist':
             w = tracks.AlbumWindow.open(album=mli.dataSource, parent_list=self.subItemListControl)

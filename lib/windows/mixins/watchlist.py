@@ -231,6 +231,7 @@ class WatchlistUtilsMixin(object):
                     plexapp.util.APP.trigger('change:tempServer', server=server)
 
                 item_open_callback(item=rk, inherit_from_watchlist=False, server=server, is_watchlisted=True,
+                                   directly_from_watchlist=True,
                                    came_from=self.wl_ref)
             finally:
                 if server_differs:

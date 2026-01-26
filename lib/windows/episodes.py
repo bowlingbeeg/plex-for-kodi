@@ -253,6 +253,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.parentList = kwargs.get('parentList')
         self.cameFrom = kwargs.get('came_from')
         self.fromWatchlist = kwargs.get('from_watchlist')
+        self.directlyFromWatchlist = kwargs.get('directly_from_watchlist')
+        self.is_watchlisted = kwargs.get('is_watchlisted', False)
         self.startOver = kwargs.get('start_over')
         self.tasks = backgroundthread.Tasks()
 
@@ -395,6 +397,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if not mli or not self.episodesPaginator:
             return
 
+        self.checkIsWatchlisted(self.show_)
+
         if vp:
             self.show_.reload(checkFiles=1, **VIDEO_RELOAD_KW)
             self.wl_auto_remove(self.show_)
@@ -474,7 +478,6 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.updateProperties()
         self.setBoolProperty("initialized", True)
         self.fillEpisodes(from_redirect=from_redirect)
-
         hasSeasons = self.fillSeasons(self.show_, seasonsFilter=lambda x: len(x) > 1, selectSeason=self.season)
         hasPrev = self.fillExtras(hasSeasons)
 
@@ -482,6 +485,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             hasPrev = True
         hasPrev = self.fillRelated(hasPrev)
         self.fillRoles(hasPrev)
+
+        if not self.directlyFromWatchlist:
+            self.checkIsWatchlisted(self.show_)
 
     def selectEpisode(self, from_reinit=False):
         util.DEBUG_LOG("SelectEpisode called: {}, {}, {}, {}, {}, {}", from_reinit, self.episode, self.season,
