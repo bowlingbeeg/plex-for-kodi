@@ -638,6 +638,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                     self.reportedSeekPlayerTime = None
                     util.DEBUG_LOG("SeekAbsolute: Relative-seeking to offset: {0}, current time: {1}, relative seek: {2}".format(
                         seekSeconds, currentTime, relativeSeekSeconds))
+                    util.MONITOR.waitFor(0.25)
                     xbmc.executebuiltin('Seek({})'.format(relativeSeekSeconds))
                 else:
                     util.DEBUG_LOG(
@@ -1150,7 +1151,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                 if SOSSuccess and ((useSeekFix and origSosDiff > 500) or not useSeekFix):
                     appliedOffset = max(int(getTime() * 1000) if useSeekFix else origSOS, 0)
                     util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Setting dialog offset to {} "
-                                   "(seek fix: {}, origSOSDiff: {}", appliedOffset, useSeekFix, origSosDiff)
+                                   "(seek fix: {}, origSOSDiff: {})", appliedOffset, useSeekFix, origSosDiff)
                     # set to current time if we succeeded, as seekOnStart could've been set to 0 in the meantime by the relative seek
                     self.dialog.offset = appliedOffset
                 elif SOSSuccess:
@@ -1187,11 +1188,10 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         if self.unPauseAfterSeek and not self.seekBackTo:
             self.unPauseAfterSeek = False
-            self.player.control('play')
-            util.MONITOR.waitFor(0.1)
             if self.blackout:
                 util.DEBUG_LOG("Stopping Blackout in onSeekHandler end")
                 self.stop_blackout()
+            self.player.control('play')
 
     @property
     def subtitleStreamOffset(self):
