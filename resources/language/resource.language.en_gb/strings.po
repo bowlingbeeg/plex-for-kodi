@@ -2968,7 +2968,7 @@ msgid "Resume offset adjustment"
 msgstr ""
 
 msgctxt "#34076"
-msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -2.5s"
+msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -3.5s"
 msgstr ""
 
 msgctxt "#34077"

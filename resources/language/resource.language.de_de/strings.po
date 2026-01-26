@@ -3557,8 +3557,8 @@ msgid "Resume offset adjustment"
 msgstr "Wiedergabepunkt anpassen"
 
 msgctxt "#34076"
-msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -2.5s"
-msgstr "Beim Fortsetzen eines Mediums mit Wiedergabepunkt, diesen negativ mit diesem Wert anpassen, um verlorenen Inhalt durch Keyframes/Sprungverhalten zu vermeiden. Standard: -2.5s"
+msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -3.5s"
+msgstr "Beim Fortsetzen eines Mediums mit Wiedergabepunkt, diesen negativ mit diesem Wert anpassen, um verlorenen Inhalt durch Keyframes/Sprungverhalten zu vermeiden. Standard: -3.5s"
 
 msgctxt "#34077"
 msgid "{} successfully removed from Watchlist"

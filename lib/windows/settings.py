@@ -838,14 +838,14 @@ class Settings(object):
                     )
                 ).description(T(33088, 'Only applies to video player UI')),
                 OptionsSetting(
-                    'resume_offset', T(34075, ''), -2500,
+                    'resume_offset', T(34075, "Resume offset adjustment"), -3500,
                     [(0, T(32481))] + [
                         (a, T(33091).format(sec_or_ms=a if a > -1000 else "{:.1f}".format(a / 1000),
                                             unit_s_or_ms="ms" if a > -1000 else "s")) for a in
                         [-100] + list(range(-250, -1000, -250)) + list(range(-1000, -30000, -500))]
                 ).description(T(34076, 'When resuming media with a resume point, negatively adjust it by this '
                                        'amount of milliseconds to avoid lost content due to keyframes/seek behaviour. '
-                                       'Default: -2.5s')),
+                                       'Default: -3.5s')),
                 OptionsSetting(
                     'resume_seek_behind', T(33089, ''), 0,
                     [(0, T(32481))] + [
