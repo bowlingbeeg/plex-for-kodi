@@ -901,9 +901,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         super(HomeWindow, self).doClose(force=force)
 
-    def stopRetryingRequests(self):
-        util.DEBUG_LOG("Stopping request retries")
-        plexnet.asyncadapter.STOP_RETRYING_REQUESTS = True
+    def stopRetryingRequests(self, state=True):
+        util.DEBUG_LOG("{} request retries", state and "Disabling" or "Enabling")
+        plexnet.asyncadapter.STOP_RETRYING_REQUESTS = state
 
     def shutdown(self):
         util.DEBUG_LOG("Home: shutdown called")

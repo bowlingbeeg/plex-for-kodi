@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import requests.exceptions
 import copy
+import threading
 from kodi_six import xbmc
 from kodi_six import xbmcgui
 from collections import OrderedDict
@@ -285,19 +286,36 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.useBGM = False
         PlaybackBtnMixin.reset(self)
 
+    @busy.dialog(delay_time=1.0)
     def doClose(self, **kw):
+        if self.closing:
+            util.LOG("Episodes: Already closing")
+            return
         self.closing = True
         self.episodesPaginator = None
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
         if self.tasks:
-            self.tasks.cancel()
-            self.tasks = None
+            try:
+                windowutils.HOME.stopRetryingRequests()
+                self.tasks.kill()
+
+                if any(not t.finished for t in self.tasks):
+                    util.DEBUG_LOG("Still waiting for tasks to finish")
+                while any(not t.finished for t in self.tasks):
+                    util.MONITOR.waitFor()
+
+                self.tasks = None
+            except:
+                pass
+            finally:
+                windowutils.HOME.stopRetryingRequests(False)
         try:
             player.PLAYER.off('new.video', self.onNewVideo)
             player.PLAYER.off('video.progress', self.onVideoProgress)
         except KeyError:
             pass
+        #super(EpisodesWindow, self).doClose(**kw)
 
     def onBlindClose(self):
         if self.openedWithAutoPlay and not self.started:
@@ -311,7 +329,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 if self.show_.isFullyWatched:
                     removeFromWatchlistBlind(self.show_.guid, self.show_)
 
-    @busy.dialog()
+    @busy.dialog(delay_time=2.5)
     def _onFirstInit(self):
         self.episodeListControl = kodigui.ManagedControlList(self, self.EPISODE_LIST_ID, 5)
         self.progressImageControl = self.getControl(self.PROGRESS_IMAGE_ID)
@@ -1317,7 +1335,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         showTitle = self.show_ and self.show_.title or ''
         self.setBoolProperty('disable_playback', self.fromWatchlist)
         self.setBoolProperty('current_item.loaded', False)
-        self.updateBackgroundFrom(self.season or self.show_)
+        bgt = threading.Thread(target=lambda: self.updateBackgroundFrom(self.season or self.show_), name="EPupdateBackground")
+        bgt.start()
+
         self.setProperty('season.thumb', (self.season or self.show_).thumb.asTranscodedImageURL(*self.POSTER_DIM))
         self.setProperty('show.title', showTitle)
         self.setProperty('season.title', (self.season or self.show_).title)
@@ -1529,9 +1549,14 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if skip_progress_for:
                 item_progress = False if cur_mli.dataSource.ratingKey in skip_progress_for else with_progress
 
-            cur_mli.dataSource.reload(checkFiles=1, includeChapters=1, fromMediaChoice=cur_mli.dataSource.mediaChoice is not None)
-            util.DEBUG_LOG("Episodes: Sync-loading currently selected item: {}", cur_mli.dataSource)
-            self._reloadItem(cur_mli, with_progress=item_progress, set_item_info=set_item_info)
+            try:
+                cur_mli.dataSource.reload(checkFiles=1, includeChapters=1, fromMediaChoice=cur_mli.dataSource.mediaChoice is not None)
+                util.DEBUG_LOG("Episodes: Sync-loading currently selected item: {}", cur_mli.dataSource)
+                self._reloadItem(cur_mli, with_progress=item_progress, set_item_info=set_item_info)
+            except:
+                util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
+                self.doClose()
+                return
             util.DEBUG_LOG("Episodes: Currently selected item loaded")
             self.currentItemLoaded = True
             self.setBoolProperty('current_item.loaded', True)
@@ -1576,6 +1601,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         except:
             util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
             self.doClose()
+            return
 
         if with_progress:
             self.episodesPaginator.prepareListItem(None, mli)
