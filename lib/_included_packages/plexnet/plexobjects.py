@@ -346,6 +346,7 @@ class PlexObject(Checks):
             traceback.print_exc()
             util.ERROR(err=e)
             self.initpath = self.key
+            self.clearCache()
             return self
 
         self.initpath = self.key
