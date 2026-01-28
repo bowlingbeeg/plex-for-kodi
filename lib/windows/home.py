@@ -49,8 +49,10 @@ MOVE_SET = frozenset(
     )
 )
 
+NO_HUB = "__NO_HUB__"
 
 class HubsList(list):
+    identifier = NO_HUB
     def init(self):
         self.lastUpdated = time.time()
         self.invalid = False
@@ -78,6 +80,7 @@ class SectionHubsTask(backgroundthread.Task):
             hubs = HubsList(self.section.server.hubs(self.section.key, count=HUB_PAGE_SIZE,
                                                                       section_ids=self.section_keys,
                                                                       ignore_hubs=self.ignore_hubs)).init()
+            hubs.identifier = self.section.key
             if self.isCanceled():
                 return
             self.callback(self.section, hubs, reselect_pos_dict=self.reselect_pos_dict)
@@ -420,6 +423,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         kodigui.BaseWindow.__init__(self, *args, **kwargs)
         SpoilersMixin.__init__(self, *args, **kwargs)
         self.lastSection = home_section
+        self.lastHubs = None
         self.tasks = []
         self.closeOption = None
         self.hubControls = None
@@ -567,6 +571,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 else:
                     util.DEBUG_LOG("Focus requested on {}, which can't focus. Trying next hub", self.lastFocusID)
                     self.focusFirstValidHub(hubControlIndex)
+
+            elif self.lastFocusID == self.SECTION_LIST_ID:
+                if self.lastHubs != self.lastSection.key:
+                    self.showHubs(self.lastSection)
 
             else:
                 if self.getFocusId() != self.lastFocusID:
@@ -2319,6 +2327,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         if not hasContent:
             self.setBoolProperty('no.content', True)
+
+        # store last visited hubslist identifier (e.g. section key or None for Home)
+        self.lastHubs = hubs.identifier
 
         lastSkip = 0
         if skip:
