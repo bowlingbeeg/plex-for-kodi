@@ -69,7 +69,7 @@ class AddonSettings(object):
         ("altseek_valid_seek_window", 2000),
         ("background_resolution_scale_perc", 100),
         ("osd_hide_delay", 4.0),
-        ("requests_cache_expiry", 168),
+        ("requests_cache_expiry", 72),
         ("playlist_max_size", 500),
         ("max_shutdown_wait", 5),
         ("unlock_res", False),

@@ -688,7 +688,7 @@
                 </setting>
                 <setting id="requests_cache_expiry" type="number" label="33729">
                     <level>0</level>
-                    <default>168</default>
+                    <default>72</default>
                     <constraints>
                         <minimum>0</minimum>
                         <step>1</step>

@@ -38,7 +38,7 @@ WIN_ENOTCONN = 10057
 WIN_EHOSTUNREACH = 10065
 
 MAX_RETRIES = 3
-REQUESTS_CACHE_EXPIRY = 168
+REQUESTS_CACHE_EXPIRY = 72
 
 
 def ABORT_FLAG_FUNCTION():
@@ -383,7 +383,7 @@ class Session(CachedSession):
         kwargs['backend'] = "sqlite"
         kwargs['fast_save'] = True
         if REQUESTS_CACHE_EXPIRY:
-            kwargs['expire_after'] = datetime.timedelta(hours=REQUESTS_CACHE_EXPIRY)  # 7 days
+            kwargs['expire_after'] = datetime.timedelta(hours=REQUESTS_CACHE_EXPIRY)
         CachedSession.__init__(self, *args, **kwargs)
 
         self.mount('https://', AsyncHTTPAdapter(max_retries=StoppableRetry(MAX_RETRIES)))
