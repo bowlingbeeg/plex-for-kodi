@@ -12,11 +12,12 @@ from plexnet.http import GET
 
 class ThemeMusicTask(backgroundthread.Task):
     temp_path = util.translatePath("special://temp/")
-    def setup(self, url, volume, rating_key, is_local=False, fade_fast=False):
+    def setup(self, url, volume, rating_key, is_local=False, server_is_local=False, fade_fast=False):
         self.url = url
         self.volume = volume
         self.rating_key = rating_key
         self.is_local = is_local
+        self.server_is_local = server_is_local
         self.fade_fast = fade_fast
         return self
 
@@ -24,20 +25,24 @@ class ThemeMusicTask(backgroundthread.Task):
         path = self.url
         is_cached = False
         if not self.is_local and util.addonSettings.cacheThemeMusic:
-            fn = os.path.join(self.temp_path, "theme_{}.mp3".format(self.rating_key))
-            if not os.path.exists(fn):  # and not xbmc.getCacheThumbName(tmpFn):
-                try:
-                    r = GET(self.url)
-                    r.raise_for_status()
-                    f = xbmcvfs.File(fn, 'w')
-                    f.write(r.content)
-                    f.close()
-                    path = fn
-                    is_cached = True
-                    util.DEBUG_LOG("Cached theme music for {} to: {}", self.rating_key, path)
-                except:
-                    util.LOG("Couldn't download theme music: {}", self.rating_key)
-                    return
+            if not self.server_is_local:
+                fn = os.path.join(self.temp_path, "theme_{}.mp3".format(self.rating_key))
+                if not os.path.exists(fn):  # and not xbmc.getCacheThumbName(tmpFn):
+                    try:
+                        r = GET(self.url)
+                        r.raise_for_status()
+                        f = xbmcvfs.File(fn, 'w')
+                        f.write(r.content)
+                        f.close()
+                        path = fn
+                        is_cached = True
+                        util.DEBUG_LOG("Cached theme music for {} to: {}", self.rating_key, path)
+                    except:
+                        util.LOG("Couldn't download theme music: {}", self.rating_key)
+                        return
+            else:
+                util.DEBUG_LOG("Not caching theme music for {} as the server is local", self.rating_key)
+
         player.PLAYER.playBackgroundMusic(path, self.volume, self.rating_key, is_local=self.is_local,
                                           is_cached=is_cached, fade=util.addonSettings.themeMusicFade,
                                           fade_fast=self.fade_fast)
@@ -96,7 +101,8 @@ class ThemeMusicMixin(object):
                         break
 
         if theme_url:
-            task = ThemeMusicTask().setup(theme_url, volume, identifier, is_local=is_local, fade_fast=fade_fast)
+            task = ThemeMusicTask().setup(theme_url, volume, identifier, is_local=is_local, fade_fast=fade_fast,
+                                          server_is_local=server.isLocal)
             backgroundthread.BGThreader.addTask(task)
             self.useBGM = True
         else:

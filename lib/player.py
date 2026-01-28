@@ -221,8 +221,8 @@ class BasePlayerHandler(object):
     def getVolume(self):
         return util.rpc.Application.GetProperties(properties=["volume"])["volume"]
 
-    def _setVolume(self, vlm):
-        xbmc.executebuiltin("SetVolume({})".format(vlm), True)
+    def _setVolume(self, vlm, wait=True):
+        xbmc.executebuiltin("SetVolume({})".format(vlm), wait)
 
     def setVolume(self, vol, *args, **kwargs):
         self._setVolume(vol)
@@ -1751,7 +1751,7 @@ class BGMPlayerHandler(BasePlayerHandler):
 
                 util.DEBUG_LOG("BGM: fade {} step {} -> {}",
                                "out" if is_out else "in", step, vol)
-                self._setVolume(vol)
+                self._setVolume(vol, wait=False)
                 util.MONITOR.waitFor(step_delay)
 
             # Guarantee final target (but still not below 1)

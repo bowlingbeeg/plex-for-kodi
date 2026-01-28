@@ -30,6 +30,7 @@ from .mixins.watchlist import WatchlistUtilsMixin
 from .mixins.thememusic import ThemeMusicMixin
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
+from .mixins.tasks import TasksMixin
 
 
 class RelatedPaginator(pagination.BaseRelatedPaginator):
@@ -38,7 +39,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, DeleteMediaMixin, RatingsMixin,
-                 RolesMixin, PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin, CommonMixin,
+                 RolesMixin, PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin, CommonMixin, TasksMixin,
                  playbacksettings.PlaybackSettingsMixin):
     xmlFile = 'script-plex-seasons.xml'
     path = util.ADDON.getAddonInfo('path')
@@ -78,6 +79,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         PlaybackBtnMixin.__init__(self, *args, **kwargs)
         WatchlistUtilsMixin.__init__(self)
         ThemeMusicMixin.__init__(self)
+        TasksMixin.__init__(self)
         self.mediaItem = kwargs.get('media_item')
         self.parentList = kwargs.get('parent_list')
         self.cameFrom = kwargs.get('came_from')
@@ -97,6 +99,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
     def doClose(self, **kw):
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
+        TasksMixin.doClose(self)
 
     def onFirstInit(self):
         self.focusPlayButton()
@@ -135,10 +138,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         self.updateProperties()
         self.setBoolProperty("initialized", True)
-        self.fill()
-        hasPrev = self.fillExtras()
-        hasPrev = self.fillRelated(hasPrev)
-        self.fillRoles(hasPrev)
+        self.batch_simple([(self.fill, None, None),
+                           (self.fillExtras, None, None),
+                           (self.fillRelated, None, None),
+                           (self.fillRoles, None, None)])
 
     def updateProperties(self):
         self.setProperty('title', self.mediaItem.title)
@@ -655,10 +658,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         self.extraListControl.addItems(items)
         return True
 
-    def fillRelated(self, has_prev=False):
+    def fillRelated(self):
         if not self.relatedPaginator.leafCount:
             self.relatedListControl.reset()
-            return has_prev
+            return
 
         items = self.relatedPaginator.paginate()
 
@@ -667,12 +670,12 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         return True
 
-    def fillRoles(self, has_prev=False):
+    def fillRoles(self):
         items = []
         idx = 0
         if not self.mediaItem.roles:
             self.rolesListControl.reset()
-            return has_prev
+            return
 
         roles = self.mediaItem.combined_roles if util.getUserSetting('show_directors', True) else self.mediaItem.roles
 

@@ -26,6 +26,7 @@ from .mixins.thememusic import ThemeMusicMixin
 from .mixins.watchlist import WatchlistUtilsMixin, removeFromWatchlistBlind
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
+from .mixins.tasks import TasksMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1, includeReviews=1)
 
@@ -36,7 +37,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixin, PlaybackBtnMixin, ThemeMusicMixin,
-                    RolesMixin, CommonMixin, WatchlistUtilsMixin):
+                    RolesMixin, CommonMixin, WatchlistUtilsMixin, TasksMixin):
     xmlFile = 'script-plex-pre_play.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -79,6 +80,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         kodigui.ControlledWindow.__init__(self, *args, **kwargs)
         PlaybackBtnMixin.__init__(self)
         WatchlistUtilsMixin.__init__(self)
+        TasksMixin.__init__(self)
         self.video = kwargs.get('video')
         self.parentList = kwargs.get('parent_list')
         self.fromWatchlist = kwargs.get('from_watchlist', False)
@@ -94,13 +96,13 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.initialized = False
         self.relatedPaginator = None
         self.openedWithAutoPlay = False
-        self.needs_related_divider = False
         self.fromPlayback = False
         self.useBGM = False
 
     def doClose(self, **kw):
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
+        TasksMixin.doClose(self)
 
     def onFirstInit(self):
         self.extraListControl = kodigui.ManagedControlList(self, self.EXTRA_LIST_ID, 5)
@@ -160,7 +162,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                 if "watched" in show_reviews and "unwatched" not in show_reviews:
                     self.fillReviews()
 
-            self.fillRelated(self.needs_related_divider)
+            self.fillRelated()
         xbmc.sleep(100)
 
         if oldFocusId == self.PLAY_BUTTON_ID:
@@ -621,11 +623,10 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         self.setInfo()
         self.setBoolProperty("initialized", True)
-        hasRoles = self.fillRoles()
-        hasReviews = self.fillReviews()
-        hasExtras = self.fillExtras()
-        self.needs_related_divider = hasRoles and not hasExtras and not hasReviews
-        self.fillRelated(self.needs_related_divider)
+        self.batch_simple([(self.fillRoles, None, None),
+                           (self.fillReviews, None, None),
+                           (self.fillExtras, None, None),
+                           (self.fillRelated, None, None)])
 
     def setInfo(self, skip_bg=False):
         if not skip_bg:
@@ -731,7 +732,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         mli = kodigui.ManagedListItem(obj.title or '', thumbnailImage=obj.thumb.asTranscodedImageURL(*self.EXTRA_DIM), data_source=obj)
         return mli
 
-    def fillExtras(self, has_prev=False):
+    def fillExtras(self):
         items = []
         idx = 0
 
@@ -767,7 +768,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         return True
 
-    def fillRelated(self, has_prev=False):
+    def fillRelated(self):
         if not self.relatedPaginator.leafCount:
             self.relatedListControl.reset()
             return False
@@ -779,7 +780,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         return True
 
-    def fillRoles(self, has_prev=False):
+    def fillRoles(self):
         items = []
         idx = 0
 
@@ -804,7 +805,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.rolesListControl.addItems(items)
         return True
 
-    def fillReviews(self, has_prev=False):
+    def fillReviews(self):
         items = []
         idx = 0
 

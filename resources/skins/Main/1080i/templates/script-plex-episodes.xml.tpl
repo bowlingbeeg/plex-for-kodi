@@ -396,7 +396,8 @@
         </control>
 
         <control type="image" id="250">
-            <animation effect="zoom" start="0,100" end="100,100" time="1000" center="-1,561" reversible="false" tween="circle" easing="out">WindowOpen</animation>
+            <visible>!String.IsEmpty(Window.Property(current_item.loaded))</visible>
+            <animation effect="zoom" start="0,100" end="100,100" time="1000" center="-1,561" reversible="false" tween="circle" easing="out">Visible</animation>
             <posx>-1</posx>
             <posy>{{ vscale(557) }}</posy>
             <width>1</width>
