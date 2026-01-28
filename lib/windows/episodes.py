@@ -452,7 +452,6 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                          set_item_info=True)
         self.fillSeasons(self.show_, seasonsFilter=lambda x: len(x) > 1, selectSeason=self.season, update=True,
                          do_focus=not self.manuallySelectedSeason)
-        self.fillRelated()
 
     def postSetup(self, select_play_button=True):
         self.checkForHeaderFocus(xbmcgui.ACTION_MOVE_DOWN, initial=True)
