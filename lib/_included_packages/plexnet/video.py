@@ -837,7 +837,8 @@ class Show(CachableItemsMixin, Video, media.RelatedMixin, SectionOnDeckMixin):
     def episodes(self, watched=None, offset=None, limit=None):
         leavesKey = '/library/metadata/%s/allLeaves' % self.ratingKey
         return plexobjects.listItems(self.server, leavesKey, watched=watched, offset=offset, limit=limit,
-                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable)
+                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable,
+                                     excludeAllLeaves=1)
 
     def episode(self, title):
         path = '/library/metadata/%s/allLeaves' % self.ratingKey
@@ -904,7 +905,8 @@ class Season(CachableItemsMixin, Video):
     def episodes(self, watched=None, offset=None, limit=None):
         path = self.key
         return plexobjects.listItems(self.server, path, watched=watched, offset=offset, limit=limit,
-                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable)
+                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable,
+                                     excludeAllLeaves=1)
 
     def episode(self, title):
         path = self.key
