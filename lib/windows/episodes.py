@@ -1558,6 +1558,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 return
             util.DEBUG_LOG("Episodes: Currently selected item loaded")
             self.currentItemLoaded = True
+            self.lastItem = cur_mli
             self.setBoolProperty('current_item.loaded', True)
         else:
             util.LOG("Episodes: There's no current item to be loaded, something's wrong.")
@@ -1587,8 +1588,6 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         return (base and base or self.PLAY_BUTTON_ID) + (mli.getProperty('media.multiple') and 1000 or 0)
 
     def _reloadItem(self, mli, with_progress=False, set_item_info=False):
-        selected = self.episodeListControl.getSelectedItem()
-
         episode = mli.dataSource
         if not episode.mediaChoice:
             episode.setMediaChoice()
@@ -1604,10 +1603,6 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
         if with_progress:
             self.episodesPaginator.prepareListItem(None, mli)
-        if mli == selected:
-            self.lastItem = mli
-            if with_progress:
-                self.setProgress(mli)
 
     def reloadItemCallback(self, task, mli, with_progress=False, set_item_info=False):
         if self.closing:
