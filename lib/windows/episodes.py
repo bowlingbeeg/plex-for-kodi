@@ -6,7 +6,7 @@ from kodi_six import xbmc
 from kodi_six import xbmcgui
 from collections import OrderedDict
 
-from plexnet import plexapp, playlist, plexplayer, plexlibrary, util as pnUtil
+from plexnet import plexapp, playlist, plexplayer, plexlibrary, util as pnUtil, plexobjects
 
 from lib import backgroundthread
 from lib import metadata
@@ -38,11 +38,10 @@ from .mixins.tasks import TasksMixin
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1)
 
 
-class EpisodeReloadTask(backgroundthread.Task):
-    def setup(self, mli, callback, with_progress=False, set_item_info=False):
-        self.mli = mli
+class EpisodesReloadTask(backgroundthread.Task):
+    def setup(self, episodes, callback, set_item_info=False):
+        self.episodes = episodes
         self.callback = callback
-        self.withProgress = with_progress
         self.setItemInfo = set_item_info
         return self
 
@@ -55,11 +54,24 @@ class EpisodeReloadTask(backgroundthread.Task):
             return
 
         try:
-            episode = self.mli.dataSource
-            episode.reload(checkFiles=1, includeChapters=1, fromMediaChoice=episode.mediaChoice is not None)
+            if len(self.episodes) == 1:
+                ep, prog = self.episodes[0]
+                ep.reload(checkFiles=1, includeChapters=1, fromMediaChoice=ep.mediaChoice is not None)
+            else:
+                # fetch data for all episodes in one go
+                epMap = {str(ep.ratingKey): ep for ep, _ in self.episodes}
+                data = plexobjects.listItems(self.episodes[0][0].server, '/library/metadata/{0}'.format(",".join(list(e.ratingKey for e, _ in self.episodes))), return_data=True)
+                rl_cnt = 0
+                for d in data:
+                    ep = epMap.get(d.attrib.get("ratingKey"), None)
+                    if ep:
+                        ep.reload(checkFiles=1, includeChapters=1, fromMediaChoice=ep.mediaChoice is not None, data=d)
+                        rl_cnt += 1
+                util.DEBUG_LOG("EpisodesReloadTask: Reloaded data for {}/{} items", rl_cnt, len(self.episodes))
+
             if self.isCanceled():
                 return
-            self.callback(self, self.mli, with_progress=self.withProgress, set_item_info=self.setItemInfo)
+            self.callback(self, self.episodes, set_item_info=self.setItemInfo)
         except requests.exceptions.RequestException:
             raise util.NoDataException
         except:
@@ -1584,6 +1596,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if not self.hadUserInteraction:
             self.selectPlayButton()
 
+        fetch = []
         for mli in items:
             if not mli.dataSource:
                 continue
@@ -1595,10 +1608,11 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if skip_progress_for:
                 item_progress = False if mli.dataSource.ratingKey in skip_progress_for else with_progress
 
-            task = EpisodeReloadTask().setup(mli, self.reloadItemCallback, with_progress=item_progress,
-                                             set_item_info=set_item_info)
-            self.tasks.add(task)
-            tasks.append(task)
+            fetch.append((mli.dataSource, item_progress))
+
+        task = EpisodesReloadTask().setup(fetch, self.reloadItemsCallback, set_item_info=set_item_info)
+        self.tasks.add(task)
+        tasks.append(task)
 
         backgroundthread.BGThreader.addTasks(tasks)
 
@@ -1627,13 +1641,16 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.episodesPaginator.prepareListItem(None, mli)
 
     @close_safe
-    def reloadItemCallback(self, task, mli, with_progress=False, set_item_info=False):
+    def reloadItemsCallback(self, task, episodes, set_item_info=False):
         if self.closing:
             return
 
-        self._reloadItem(mli, with_progress=with_progress, set_item_info=set_item_info)
+        for ep, with_progress in episodes:
+            # todo: implement hashmap over datasource:mli?
+            mli = self.episodeListControl.getListItemByDataSource(ep)
+            self._reloadItem(mli, with_progress=with_progress, set_item_info=set_item_info)
         try:
-            task.mli = None
+            task.episodes = None
             self.tasks.remove(task)
             del task
         except:
