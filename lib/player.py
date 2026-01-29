@@ -1186,12 +1186,14 @@ class SeekPlayerHandler(BasePlayerHandler):
             util.setGlobalProperty('playback_initializing', '', wait=True)
             util.setGlobalProperty('playback_seeking', '', wait=True)
 
-        if self.unPauseAfterSeek and not self.seekBackTo:
-            self.unPauseAfterSeek = False
+        if not self.seekBackTo:
             if self.blackout:
                 util.DEBUG_LOG("Stopping Blackout in onSeekHandler end")
                 self.stop_blackout()
-            self.player.control('play')
+
+            if self.unPauseAfterSeek:
+                self.unPauseAfterSeek = False
+                self.player.control('play')
 
     @property
     def subtitleStreamOffset(self):
