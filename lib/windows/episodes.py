@@ -281,6 +281,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.directlyFromWatchlist = kwargs.get('directly_from_watchlist')
         self.is_watchlisted = kwargs.get('is_watchlisted', False)
         self.startOver = kwargs.get('start_over')
+        self.debouncing = False
 
     def reset(self, episode, season=None, show=None):
         self.episode = episode
@@ -307,6 +308,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.lastNonOptionsFocusID = None
         self.openedWithAutoPlay = False
         self.useBGM = False
+        self.debouncing = False
         PlaybackBtnMixin.reset(self)
 
     @busy.dialog(delay_time=1.0)
@@ -672,13 +674,19 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
     def onAction(self, action):
         try:
+            if self.debouncing:
+                util.DEBUG_LOG("Already waiting to work on previous input, debouncing.")
+                return
+
             controlID = self.getFocusId()
 
             if not self.initialized and not self.currentItemLoaded:
                 tries = 0
+                self.debouncing = True
                 while not self.initialized and not self.currentItemLoaded and tries < util.MONITOR.waitAmount(4):
                     util.MONITOR.waitFor()
                     tries += 1
+                self.debouncing = False
 
             if not controlID and self.lastFocusID and not action == xbmcgui.ACTION_MOUSE_MOVE:
                 self.setCondFocusId(self.lastFocusID)
