@@ -529,6 +529,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.closeOption = "recompile"
         self.doClose()
 
+    def show(self, **kwargs):
+        super(HomeWindow, self).show(**kwargs)
+        if self.go_root:
+            util.DEBUG_LOG("Home: Go root requested, reinitializing")
+            self.onReInit()
+
     def onReInit(self):
         util.DEBUG_LOG("Home: On ReInit")
         if self._ignoreReInit:
