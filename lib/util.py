@@ -48,7 +48,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 83
+THEME_VERSION = 84
 
 UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
 
@@ -843,7 +843,7 @@ def dumpSettings():
     main_settings_dict = OrderedDict([(k,
                                        OrderedDict([(s.ID, (s.get(as_code=True), s.default))
                                                     for s in settings.Settings.SETTINGS[k][1]
-                                                    if not s.userAware])) for k in sections])
+                                                    if s is not None and not s.userAware])) for k in sections])
     main_revmap = {k: i for i in sections for k in main_settings_dict[i].keys()}
     adv_settings_dict = OrderedDict([(s, (getSetting(s, d), d)) for s, d in AddonSettings._proxiedSettings])
 
