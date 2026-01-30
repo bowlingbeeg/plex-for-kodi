@@ -306,6 +306,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.waitingForSOS = False
         self._lastDuration = 0
         self._subtitleStreamOffset = None
+        self._lastSetEmbeddedSubIdx = None
         self.mode = self.MODE_RELATIVE
         self.ended = False
         self.endedManually = False
@@ -343,6 +344,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.skipPostPlay = False
         self.prePlayWitnessed = False
         self._subtitleStreamOffset = None
+        self._lastSetEmbeddedSubIdx = None
         self.isMapped = is_mapped
         self.playbackID = str(uuid.uuid4())
         self.prePlayVolume = self.getVolume()
@@ -1314,22 +1316,37 @@ class SeekPlayerHandler(BasePlayerHandler):
             subs.init_auto_sync(video=self.player.video)
             path = subs.getSubtitleServerPath(auto_sync=subs.should_auto_sync)
             if self.isDirectPlay:
-                self.player.showSubtitles(False)
                 if path:
+                    self.player.showSubtitles(False)
                     util.DEBUG_LOG('Setting subtitle path: {0} ({1})', plexnetUtil.cleanToken(path), subs)
                     self.player.setSubtitles(path)
                     self.player.showSubtitles(True)
+                    self._lastSetEmbeddedSubIdx = None
 
                 else:
                     # u_til.TEST(subs.__dict__)
                     # u_til.TEST(self.player.video.mediaChoice.__dict__)
 
-                    util.DEBUG_LOG('Enabling embedded subtitles at: {0} ({1})', subs.typeIndex + sso, subs)
-                    self.player.setSubtitleStream(subs.typeIndex + sso)
+                    targetIdx = subs.typeIndex + sso
+                    try:
+                        currentIdx = self.player.getSubtitleStream()
+                    except:
+                        currentIdx = -1
+
+                    if self._lastSetEmbeddedSubIdx == targetIdx or currentIdx == targetIdx:
+                        util.DEBUG_LOG('Embedded subtitle stream already set to: {0} (kodi: {1}), skipping',
+                                       targetIdx, currentIdx)
+                        self._lastSetEmbeddedSubIdx = targetIdx
+                    else:
+                        self.player.showSubtitles(False)
+                        util.DEBUG_LOG('Enabling embedded subtitles at: {0} ({1})', targetIdx, subs)
+                        self.player.setSubtitleStream(targetIdx)
+                        self._lastSetEmbeddedSubIdx = targetIdx
                     self.player.showSubtitles(True)
 
         else:
             self.player.showSubtitles(False)
+            self._lastSetEmbeddedSubIdx = None
 
     def setAudioTrack(self):
         self.player.lastPlayWasBGM = False
