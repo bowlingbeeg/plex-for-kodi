@@ -2598,25 +2598,24 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             util.HUB_ITEM_STATES[hub_item_state_key] = hub_item_states
 
-        if with_progress:
+        if any([with_progress, with_art, ar16x9]):
             for mli in items:
-                mli.setProperty('progress', util.getProgressImage(mli.dataSource))
-        if with_art:
-            for mli in items:
-                extra_opts = {}
-                thumb = mli.dataSource.art
-                # use episode thumbnail for in progress episodes
-                if mli.dataSource.type == 'episode' and util.addonSettings.continueUseThumb and check_spoilers:
-                    # blur them if we don't want any spoilers and the episode hasn't been fully watched
-                    if self.noResumeImages and mli.dataSource._noSpoilers:
-                        extra_opts = {"blur": util.addonSettings.episodeNoSpoilerBlur}
-                    thumb = mli.dataSource.thumb
+                if with_progress:
+                    mli.setProperty('progress', util.getProgressImage(mli.dataSource))
+                if with_art:
+                    extra_opts = {}
+                    thumb = mli.dataSource.art
+                    # use episode thumbnail for in progress episodes
+                    if mli.dataSource.type == 'episode' and util.addonSettings.continueUseThumb and check_spoilers:
+                        # blur them if we don't want any spoilers and the episode hasn't been fully watched
+                        if self.noResumeImages and mli.dataSource._noSpoilers:
+                            extra_opts = {"blur": util.addonSettings.episodeNoSpoilerBlur}
+                        thumb = mli.dataSource.thumb
 
-                mli.setThumbnailImage(thumb.asTranscodedImageURL(*self.THUMB_AR16X9_DIM, **extra_opts))
-                mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
-        if ar16x9:
-            for mli in items:
-                mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
+                    mli.setThumbnailImage(thumb.asTranscodedImageURL(*self.THUMB_AR16X9_DIM, **extra_opts))
+                    mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
+                if ar16x9:
+                    mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
 
         more = hub.more.asBool()
         if more:
