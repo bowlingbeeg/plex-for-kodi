@@ -812,7 +812,12 @@ class Show(CachableItemsMixin, Video, media.RelatedMixin, SectionOnDeckMixin):
 
     @property
     def isWatched(self):
-        return self.viewedLeafCount == self.leafCount
+        if self.viewedLeafCount == self.leafCount:
+            for v in self.onDeck:
+                if v.viewOffset.asInt():
+                    return False
+            return True
+        return False
 
     @property
     def isFullyWatched(self):

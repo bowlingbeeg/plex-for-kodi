@@ -189,7 +189,15 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         leafcount = self.mediaItem.leafCount.asFloat()
         if leafcount:
-            wBase = self.mediaItem.viewedLeafCount.asInt() / leafcount
+            viewed = self.mediaItem.viewedLeafCount.asInt()
+            has_ondeck_progress = False
+            for v in self.mediaItem.onDeck:
+                if v.viewOffset.asInt():
+                    has_ondeck_progress = True
+                    break
+            if has_ondeck_progress and viewed == int(leafcount):
+                viewed -= 1
+            wBase = viewed / leafcount
             for v in self.mediaItem.onDeck:
                 if v.viewOffset:
                     wBase += v.viewOffset.asInt() / v.duration.asFloat() / leafcount
