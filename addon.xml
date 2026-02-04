@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.2.6-beta1.1"
+       version="1.3.17-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,11 +34,49 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Player: Make sure we unset the playback started event (prevents super rare codec logos shown forever in case of Plextuary Custom Builds)
-- Watchlist: Temporarily enable verbose logging for watchlist events; try fixing TV shows not always being removed
-- Watchlist: Fix watchlisted shows "To Show" menu option error on other than current server
-- LibraryWindow: Fix chunk callback edge case resulting in infinite recursion (rare case, when closing)
-- Settings: Actually use the advertised default of -2.5s for Adjust resume offset
+- Home: Reinitialize properly and update hubs when GoHome action was triggered by Home button bind
+- Home: Fix when entering a library quickly without showing its hubs, returning would show the wrong hubs
+- Home: Consolidate multi list iteration for no reason
+- Seasons/Episodes/Movies: Postpone less important tasks to speed up initial load
+- Show/Seasons: Don't show fully watched state when an on-deck episode is being re-watched
+- Episodes: Drastically improve initial loading time of episode view (> x10)
+- Episodes: Clean up now obsolete currentItemLoaded logic in episode reload task
+- Episodes: Reduce wait on initial episode select
+- Episodes: Fix To Show and To Section in rare circumstances
+- Episodes: Be more resilient against missing item data and hung connections when closing window
+- Episodes: Delay initial busy state for 2.5 seconds
+- Episodes: Use thread for changing background on initial load
+- Episodes: Don't refill related items on reinit
+- Episodes: Optimize task load order
+- Episodes: Improve resilience against closing during initial load
+- Episodes: Improve load times by batch fetching all to-be-reloaded episodes' data in one go
+- Episodes: During initial load, wait up to 4 seconds before executing user actions and debounce other input during that time
+- Movies: Reload video info after clearing cache or refreshing metadata PMS-side
+- Movies: Skip cache when reloading video info on reinit (returning from playback) (only when cache active)
+- Watchlist: Carry over watchlist state if visiting directly from watchlist
+- Watchlist/TV: Set correct is_watchlisted state; should fix TV shows not getting automatically removed from watchlist
+- Core/Watchlist: Show notification once an item has been automatically successfully removed from the watchlist
+- Core/Watchlist: Check for item watchlist existence before blindly trying to remove it
+- Watchlist/Movies: Don't attempt to set codec info on watchlist items
+- Player/Seekdialog: Pre-skip markers before the resume point to avoid race conditions with tick()
+- Player: Skip redundant embedded subtitle stream changes during startup
+- Player: Fix permanent blackout regression without alternate seek (introduced with last beta)
+- - Player: Avoid "skipping intro" blip when starting fresh with automatically skipping behind intro on start
+- Core/Player: SeekBackOnStart: Add delay between forward and backward seek to give decoders time to stabilize (fixes VC-1 24p HW stuttering at least); default: 500ms
+- Core/Player/Blackout: Show blackout until seek completely done
+- Core/Player: Fix double pausing on Alternate Seek and edge case (both cosmetic)
+- Core/Player: Don't end up with a broken UI when playback failed due to missing file (wait for the failure dialog to be dismissed by the user, for up to 10 seconds)
+- AddonSettings: Make Seek back on start delay configurable
+- Main/Core: Show busy background on user switch
+- Core/Plexobjects: On data retrieval error, clear cache for item(s)
+- PlexObjects: ListItems() and reload(): Allow returning and using raw etree data instead of parsing elements
+- Core/AddonSettings: Reduce default requests cache expiry from 7 days to 3 (increasing sqlite db size could yield diminishing returns)
+- Core/Mixins: Implement TasksMixin
+- Core/Logging: Don't die on dump config in certain scenarios where a setting might be None
+- Settings: Set "Resume offset adjustment" to -3.5s (was -2.5s)
+- ThemeMusic: Only locally cache theme music if server is remote (not on local LAN nor plex.tv/watchlist)
+- ThemeMusic: When fading, only use sync/wait on final setVolume value, not on the intermediates (reduces blocking)
+- Plexnet/Video: Add excludeAllLeaves=1 to episodes() queries
         </news>
         <assets>
             <icon>icon2.png</icon>
