@@ -124,8 +124,8 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
         if self.codec == "smi":
             query += "&format=srt"
 
-        if self.should_auto_sync and auto_sync in (True, None):
-            query += "&autoAdjustSubtitle=1"
+        #if self.should_auto_sync and auto_sync in (True, None):
+        #    query += "&autoAdjustSubtitle=1"
 
         return self.key + query
 
@@ -133,7 +133,7 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
         if not self.key:
             return None
 
-        return self.getServer().buildUrl(self.getSubtitlePath(auto_sync=auto_sync), True)
+        return self.getServer().buildUrl(self.getSubtitlePath(auto_sync=None), True)
 
     @property
     def embedded(self):

@@ -197,20 +197,19 @@ class SubtitleStream(MediaPartStream):
     def init_auto_sync(self, part=None, video=None):
         if not (part or video):
             return
-        self._should_auto_sync = self.canAutoSync.asBool() and util.INTERFACE.playbackManager(
-            part.media).auto_sync if part and part.media else video.playbackSettings.auto_sync if video else util.INTERFACE.getPreference('auto_sync', user=True)
+        self._should_auto_sync = False
 
     @property
     def should_auto_sync(self):
-        return self.force_auto_sync if self.force_auto_sync is not None else self._should_auto_sync
+        return False
 
     @property
     def should_auto_sync_unforced(self):
-        return self._should_auto_sync
+        return False
 
     @should_auto_sync.setter
     def should_auto_sync(self, value):
-        self._should_auto_sync = value
+        self._should_auto_sync = False
 
 
 class TranscodeSession(plexobjects.PlexObject):

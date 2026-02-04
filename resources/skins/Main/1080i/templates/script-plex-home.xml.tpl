@@ -6694,7 +6694,7 @@
             <align>left</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$ADDON[script.plexmod 32430][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 32430][/UPPERCASE]</label>
         </control>
     </control>
     <control type="group">
@@ -7463,7 +7463,7 @@
         <font>font13</font>
         <align>center</align>
         <textcolor>FFFFFFFF</textcolor>
-        <label>[B]$ADDON[script.plexmod 32452][/B]</label>
+        <label>[B]$ADDON[script.zidooplexmod 32452][/B]</label>
     </control>
     <control type="label">
         <scroll>false</scroll>
@@ -7474,7 +7474,7 @@
         <font>font13</font>
         <align>center</align>
         <textcolor>FFCCCCCC</textcolor>
-        <label>$ADDON[script.plexmod 32453]</label>
+        <label>$ADDON[script.zidooplexmod 32453]</label>
     </control>
 </control>
 
@@ -7491,7 +7491,7 @@
         <font>font13</font>
         <align>center</align>
         <textcolor>FFFFFFFF</textcolor>
-        <label>[B]$ADDON[script.plexmod 34020][/B]</label>
+        <label>[B]$ADDON[script.zidooplexmod 34020][/B]</label>
     </control>
     <control type="label">
         <scroll>false</scroll>
@@ -7502,7 +7502,7 @@
         <font>font13</font>
         <align>center</align>
         <textcolor>FFCCCCCC</textcolor>
-        <label>[B]$ADDON[script.plexmod 34021][/B]</label>
+        <label>[B]$ADDON[script.zidooplexmod 34021][/B]</label>
     </control>
 </control>
 

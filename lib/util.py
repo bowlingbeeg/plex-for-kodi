@@ -54,12 +54,12 @@ UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
 
 MONITOR.wait_interval = UI_INTERVAL
 
-xbmc.log('script.plexmod: Kodi {0}.{1} (build {2}, Python: {3}, '
+xbmc.log('script.zidooplexmod: Kodi {0}.{1} (build {2}, Python: {3}, '
          'High concurrency possible: {4})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER,
                                          PYTHON_VERSION, ENABLE_HIGH_CONCURRENCY),
          xbmc.LOGINFO)
 
-xbmc.log('script.plexmod: UI wait rate is {0} ({1} Hz)'.format(UI_INTERVAL, addonSettings.uiWaitRate),
+xbmc.log('script.zidooplexmod: UI wait rate is {0} ({1} Hz)'.format(UI_INTERVAL, addonSettings.uiWaitRate),
          xbmc.LOGINFO)
 
 def getChannelMapping():
@@ -859,7 +859,7 @@ def dumpSettings():
         all_settings = SETTING_RE.findall(data)
         f.close()
     except:
-        LOG('script.plexmod: No settings.xml found')
+        LOG('script.zidooplexmod: No settings.xml found')
         return
 
     final = OrderedDict({"settings": OrderedDict((k, []) for k in sections), "addon_settings": [], "unspecified": []})

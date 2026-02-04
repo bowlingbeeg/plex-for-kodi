@@ -7,7 +7,7 @@
             <posy>{{ uw_posy|default(0)|vscale }}</posy>
             <width>{{ uw_size }}</width>
             <height>{{ uw_size|vscale }}</height>
-            <texture fallback="script.plex/indicators/{{ indicators.assets.unwatched }}">special://profile/addon_data/script.plexmod/media/{{ indicators.assets.unwatched }}</texture>
+            <texture fallback="script.plex/indicators/{{ indicators.assets.unwatched }}">special://profile/addon_data/script.zidooplexmod/media/{{ indicators.assets.unwatched }}</texture>
         </control>
         {% else %}
         <control type="group">
@@ -30,7 +30,7 @@
                 <posy>{{ (wbg_h / 2 - 8)|vscale }}</posy>
                 <width>16</width>
                 <height>{{ vscale(16) }}</height>
-                <texture fallback="script.plex/indicators/{{ indicators.assets.watched }}">special://profile/addon_data/script.plexmod/media/{{ indicators.assets.watched }}</texture>
+                <texture fallback="script.plex/indicators/{{ indicators.assets.watched }}">special://profile/addon_data/script.zidooplexmod/media/{{ indicators.assets.watched }}</texture>
             </control>
         </control>
         {% endif %}

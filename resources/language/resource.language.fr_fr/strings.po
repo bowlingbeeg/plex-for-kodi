@@ -1875,10 +1875,10 @@ msgstr "Critiques"
 msgctxt "#32954"
 msgid "Needs Kodi restart. WARNING: This will overwrite advancedsettings.xml!\n"
 "\n"
-"To customize other cache/network-related values, copy \"script.plexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
+"To customize other cache/network-related values, copy \"script.zidooplexmod/pm4k_cache_template.xml\" to profile folder and edit it to your liking. (See About section for the file paths)"
 msgstr "Nécessite un redémarrage de Kodi. ATTENTION : Cela va remplacer le fichier advancedsettings.xml !\n"
 "\n"
-"Pour personnaliser d'autres valeurs de cache/relatives au réseau, copier \"script.plexmod/pm4k_cache_template.xml\" dans le dossier profile et modifiez-le selon vos préférences. (Voir la section A propos pour les chemins)"
+"Pour personnaliser d'autres valeurs de cache/relatives au réseau, copier \"script.zidooplexmod/pm4k_cache_template.xml\" dans le dossier profile et modifiez-le selon vos préférences. (Voir la section A propos pour les chemins)"
 
 #: 
 msgctxt "#32955"
@@ -2278,7 +2278,7 @@ msgstr ""
 
 #: 
 msgctxt "#33001"
-msgid "Long-press (or context menu) on a library item or: Honor path_mapping.json in the addon_data/script.plexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
+msgid "Long-press (or context menu) on a library item or: Honor path_mapping.json in the addon_data/script.zidooplexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
 msgstr ""
 
 #: 
@@ -2355,7 +2355,7 @@ msgstr ""
 #: 
 msgctxt "#32984"
 msgid "Sets the theme. Currently only customizes all control buttons. ATTENTION: [I]Might[/I] need an addon restart.\n"
-"In order to customize this, copy one of the xml's in script.plexmod/resources/skins/Main/1080i/templates to addon_data/script.plexmod/templates/{templatename}_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
+"In order to customize this, copy one of the xml's in script.zidooplexmod/resources/skins/Main/1080i/templates to addon_data/script.zidooplexmod/templates/{templatename}_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
 msgstr ""
 
 #: 
@@ -2749,8 +2749,8 @@ msgstr "Saute automatiquement les génériques de début et de fin d'épisode, e
 
 #: 
 msgctxt "#33052"
-msgid "Which CA certificate bundle to use for request HTTPS verification. \"system\" uses the system-provided certificate bundle. \"ACME\" uses an extremely small bundle provided with the addon, which includes root certificates for Letsencrypt (plex.direct) and ZeroSSL. \"custom\" allows for a ca-certificate bundle in userdata/addon_data/script.plexmod/custom_bundle.crt"
-msgstr "Quelle Autorité de Certification utiliser pour l'authentification HTTPS. \"système\" utilise les certificats fournis par le système. \"ACME\" utilise un paquet minimal fourni avec l'extension, incluant les certificats de base pour Letsencrypt (plex.direct) et ZeroSSL. \"personnalisé\" va chercher un paquet de certificats dans /addon_data/script.plexmod/custom_bundle.crt"
+msgid "Which CA certificate bundle to use for request HTTPS verification. \"system\" uses the system-provided certificate bundle. \"ACME\" uses an extremely small bundle provided with the addon, which includes root certificates for Letsencrypt (plex.direct) and ZeroSSL. \"custom\" allows for a ca-certificate bundle in userdata/addon_data/script.zidooplexmod/custom_bundle.crt"
+msgstr "Quelle Autorité de Certification utiliser pour l'authentification HTTPS. \"système\" utilise les certificats fournis par le système. \"ACME\" utilise un paquet minimal fourni avec l'extension, incluant les certificats de base pour Letsencrypt (plex.direct) et ZeroSSL. \"personnalisé\" va chercher un paquet de certificats dans /addon_data/script.zidooplexmod/custom_bundle.crt"
 
 #: 
 msgctxt "#33054"

@@ -468,10 +468,8 @@ AUDIO_CODECS_VERB = {
     'flac': 'FLAC',
     'mp2': 'MP2',
     'mp3': 'MP3',
-    'opus': 'Opus',
     'pcm': 'PCM',
     'truehd': 'TrueHD',
-    'vorbis': 'Vorbis',
     'wmapro': 'WMA Pro',
     'wmav2': 'Windows Media Audio 2',
     'wmavoice': 'WMA Voice'
@@ -479,7 +477,7 @@ AUDIO_CODECS_VERB = {
 
 AUDIO_CODECS = list(AUDIO_CODECS_VERB.keys())
 
-AUDIO_CODECS_TC = ['mp3', 'ac3', 'aac', 'opus', 'vorbis', 'eac3', 'flac', 'alac']
+AUDIO_CODECS_TC = ['mp3', 'ac3', 'aac', 'eac3', 'flac', 'alac']
 
 AUDIO_CODECS_TC_VERB = {codec: AUDIO_CODECS_VERB[codec] for codec in AUDIO_CODECS_TC}
 

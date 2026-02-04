@@ -19,7 +19,7 @@
             <textoffsetx>15</textoffsetx>
             <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
             <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-            <label>[UPPERCASE]$ADDON[script.plexmod 34005][/UPPERCASE]</label>
+            <label>[UPPERCASE]$ADDON[script.zidooplexmod 34005][/UPPERCASE]</label>
         </control>
         <control type="label">
             <width>1160</width>

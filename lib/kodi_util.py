@@ -21,7 +21,7 @@ try:
     KODI_VERSION_MAJOR, KODI_VERSION_MINOR = int(_splitver[0].split("-")[0].strip()), \
                                              int(_splitver[1].split(" ")[0].split("-")[0].strip())
 except:
-    xbmc.log('script.plexmod: Couldn\'t determine Kodi version, assuming 19.4. Got: {}'.format(sys_ver), xbmc.LOGINFO)
+    xbmc.log('script.zidooplexmod: Couldn\'t determine Kodi version, assuming 19.4. Got: {}'.format(sys_ver), xbmc.LOGINFO)
     # assume something "old"
     KODI_VERSION_MAJOR = 19
     KODI_VERSION_MINOR = 4
@@ -35,7 +35,7 @@ if _build:
     except:
         pass
 if not parsedBuild:
-    xbmc.log('script.plexmod: Couldn\'t determine build version, falling back to Kodi version', xbmc.LOGINFO)
+    xbmc.log('script.zidooplexmod: Couldn\'t determine build version, falling back to Kodi version', xbmc.LOGINFO)
 
 # calculate a comparable build number
 KODI_BUILD_NUMBER = int("{0}{1:02d}{2:03d}".format(_bmajor, int(_bminor), int(_bpatch)))

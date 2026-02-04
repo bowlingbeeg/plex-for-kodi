@@ -13,7 +13,7 @@ def main():
         pass
     # This is a hack since it's both a plugin and a script. My Addons and Shortcuts otherwise can't launch the add-on
     ensureHome()
-    xbmc.executebuiltin('RunScript(script.plexmod,fromplugin)')
+    xbmc.executebuiltin('RunScript(script.zidooplexmod,fromplugin)')
 
 
 main()

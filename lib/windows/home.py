@@ -836,46 +836,46 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._updateSourceChanged = value
 
 
-    def doUpdate(self):
-        self._shuttingDown = True
-        self._ignoreTick = True
-        self.stopRetryingRequests()
+    #def doUpdate(self):
+    #    self._shuttingDown = True
+    #    self._ignoreTick = True
+    #    self.stopRetryingRequests()
 
-        self.closeOption = "update"
-        self.unhookSignals()
-        self.doClose()
-        return True
+    #    self.closeOption = "update"
+    #    self.unhookSignals()
+    #    self.doClose()
+    #    return True
 
 
-    def service_responder(self):
-        if util.getGlobalProperty('notify_update'):
-            is_downgrade = bool(util.getGlobalProperty('update_is_downgrade', consume=True))
-            self.showBusy(False)
-            button = optionsdialog.show(
-                T(33670, 'Update available'),
-                T(33671, 'Current: {current_version}\nNew: {new_version}\n\nChangelog:\n{changelog}').format(
-                    current_version=util.ADDON.getAddonInfo('version'),
-                    new_version=util.getGlobalProperty('update_available'),
-                    changelog=util.getGlobalProperty('update_changelog'),
-                ),
-                T(33683, 'Exit, download and install'),
-                T(33684, 'Later') if not is_downgrade else T(32329, 'No'),
-                delay_buttons=1.8, big=True, close_timeout=3600
-            )
-            if button == 0:
-                resp = "commence"
-            else:
-                resp = "cancel"
-            util.setGlobalProperty('update_response', resp, wait=True)
-            util.setGlobalProperty('notify_update', '', wait=True)
+    #def service_responder(self):
+    #    if util.getGlobalProperty('notify_update'):
+    #        is_downgrade = bool(util.getGlobalProperty('update_is_downgrade', consume=True))
+    #        self.showBusy(False)
+    #        button = optionsdialog.show(
+    #            T(33670, 'Update available'),
+    #            T(33671, 'Current: {current_version}\nNew: {new_version}\n\nChangelog:\n{changelog}').format(
+    #                current_version=util.ADDON.getAddonInfo('version'),
+    #                new_version=util.getGlobalProperty('update_available'),
+    #                changelog=util.getGlobalProperty('update_changelog'),
+    #            ),
+    #            T(33683, 'Exit, download and install'),
+    #            T(33684, 'Later') if not is_downgrade else T(32329, 'No'),
+    #            delay_buttons=1.8, big=True, close_timeout=3600
+    #        )
+    #        if button == 0:
+    #            resp = "commence"
+    #        else:
+    #            resp = "cancel"
+    #        util.setGlobalProperty('update_response', resp, wait=True)
+    #        util.setGlobalProperty('notify_update', '', wait=True)
 
-            if resp == "commence":
-                # wait for it to be consumed
-                try:
-                    util.waitForConsumption('update_response', timeout=200)
-                except Exception:
-                    pass
-                return self.doUpdate()
+    #        if resp == "commence":
+    #            # wait for it to be consumed
+    #            try:
+    #                util.waitForConsumption('update_response', timeout=200)
+    #            except Exception:
+    #                pass
+    #            return self.doUpdate()
 
     def tick(self):
         if self._shuttingDown:
@@ -886,9 +886,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             util.DEBUG_LOG("Home: Not ticking, currently moving a section")
             return
 
-        if self.is_active and self.service_responder():
-            util.DEBUG_LOG("Home: Not ticking, service responder signalled positive exit")
-            return
+        #if self.is_active and self.service_responder():
+        #    util.DEBUG_LOG("Home: Not ticking, service responder signalled positive exit")
+        #    return
 
         if self.is_active and self._updateSourceChanged:
             util.setGlobalProperty('update_source_changed', self._updateSourceChanged, wait=True)
@@ -902,7 +902,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         if (self.is_active and not self._checkingForExit and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
-                not xbmc.Player().isPlayingVideo()):
+                not xbmc.Player().isPlayingVideo()) and not player.PLAYER.isPlaying():
             util.DEBUG_LOG("Home: Ticking, section stale, calling showHubs(update=True)")
             self.showHubs(self.lastSection, update=True)
             util.cleanupCacheFolder()
@@ -1322,7 +1322,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def refreshLastSection(self, *args, **kwargs):
         self.enableUpdates()
-        if not xbmc.Player().isPlayingVideo() and not self._shuttingDown and self.is_active:
+        if not xbmc.Player().isPlayingVideo() and not player.PLAYER.isPlaying() and not self._shuttingDown and self.is_active:
             util.LOG("Refreshing last section after wake events")
             self.showHubs(self.lastSection, force=True, update=True)
 
