@@ -1333,7 +1333,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                     except:
                         currentIdx = -1
 
-                    if self._lastSetEmbeddedSubIdx == targetIdx or currentIdx == targetIdx:
+                    if currentIdx == targetIdx:
                         util.DEBUG_LOG('Embedded subtitle stream already set to: {0} (kodi: {1}), skipping',
                                        targetIdx, currentIdx)
                         self._lastSetEmbeddedSubIdx = targetIdx
