@@ -148,7 +148,7 @@ class SeamlessBranchingManager(object):
         # Standard DD+ 5.1/7.1 is typically 384-640kbps
         if codec_lower == 'eac3':
             bitrate = getattr(audio_stream, 'bitrate', None)
-            if bitrate and bitrate >= self.TMS_EAC3_MIN_BITRATE:
+            if bitrate and bitrate.asInt() >= self.TMS_EAC3_MIN_BITRATE:
                 return True
 
         return False
