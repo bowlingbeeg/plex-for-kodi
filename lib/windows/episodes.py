@@ -53,11 +53,15 @@ class EpisodesReloadTask(backgroundthread.Task):
             # Could happen during sign-out for instance
             return
 
+        epLen = len(self.episodes)
+        if not epLen:
+            return
+
         try:
-            if len(self.episodes) == 1:
+            if epLen == 1:
                 ep, prog = self.episodes[0]
                 ep.reload(checkFiles=1, includeChapters=1, fromMediaChoice=ep.mediaChoice is not None)
-            else:
+            elif epLen > 1:
                 # fetch data for all episodes in one go
                 epMap = {str(ep.ratingKey): ep for ep, _ in self.episodes}
                 data = plexobjects.listItems(self.episodes[0][0].server, '/library/metadata/{0}'.format(",".join(list(e.ratingKey for e, _ in self.episodes))), return_data=True)
@@ -68,11 +72,13 @@ class EpisodesReloadTask(backgroundthread.Task):
                         ep.reload(checkFiles=1, includeChapters=1, fromMediaChoice=ep.mediaChoice is not None, data=d)
                         rl_cnt += 1
                 util.DEBUG_LOG("EpisodesReloadTask: Reloaded data for {}/{} items", rl_cnt, len(self.episodes))
+            else:
+                return
 
             if self.isCanceled():
                 return
             self.callback(self, self.episodes, set_item_info=self.setItemInfo)
-        except requests.exceptions.RequestException:
+        except (requests.exceptions.RequestException, IndexError):
             raise util.NoDataException
         except:
             util.ERROR()
