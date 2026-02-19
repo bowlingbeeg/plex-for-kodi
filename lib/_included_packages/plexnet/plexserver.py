@@ -182,28 +182,29 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
 
         self.currentHubs = {} if self.currentHubs is None else self.currentHubs
 
-        newCW = util.INTERFACE.getPreference('hubs_use_new_continue_watching', False) and not search_query \
-            and not section
+        # Check if we should use the new combined Continue Watching hub or the old separate hubs
+        use_new_cw = util.INTERFACE.getPreference('use_new_cw', True)
 
-        if newCW:
-            # home, add continueWatching
+        # For Home section, optionally use the combined continueWatching hub (like modern Plex clients)
+        # This replaces the old separate home.continue and home.ondeck hubs
+        if use_new_cw and not search_query and not section:
             cq = '/hubs/continueWatching'
             if section_ids:
                 cq += util.joinArgs(params)
 
             cdata = self.query(cq, params=params)
-            ccontainer = plexobjects.PlexContainer(cdata, initpath=cq, server=self, address=cq)
-            self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
-            hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
+            if cdata and len(cdata) > 0:
+                ccontainer = plexobjects.PlexContainer(cdata, initpath=cq, server=self, address=cq)
+                self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
+                hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
 
         if data:
             for elem in data:
                 hubIdent = elem.attrib.get('hubIdentifier')
                 self.currentHubs["{}:{}".format(section, hubIdent)] = elem.attrib.get('title')
 
-                # if we've added continueWatching, which combines continue and ondeck, skip those two hubs
-                if newCW and hubIdent and \
-                        (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
+                # Skip old-style continue/ondeck hubs when using combined continueWatching
+                if use_new_cw and hubIdent and (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
                     continue
 
                 if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:

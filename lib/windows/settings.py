@@ -700,6 +700,15 @@ class Settings(object):
                 ).description(
                     T(33078, "")
                 ),
+                OptionsSetting(
+                    'hub_count',
+                    T(34087, 'Hub Count'),
+                    8,
+                    ((6, '6'), (8, '8'), (10, '10'), (12, '12'), (16, '16')),
+                    theme_relevant=True
+                ).description(
+                    T(34088, 'Number of hub rows displayed on the home screen. More rows require more memory.')
+                ),
                 BoolUserSetting(
                     'use_watchlist', T(34007, 'Use Watchlist'), True
                 ).description(
@@ -750,11 +759,6 @@ class Settings(object):
                     [(g, g) for g in genres.GENRES_TV]
                 ).description(T(33017, "")),
                 BoolSetting(
-                    'hubs_use_new_continue_watching', T(32998, ''), True
-                ).description(
-                    T(32999, "")
-                ),
-                BoolSetting(
                     'home_confirm_actions', T(33663, 'Home: Confirm item actions'), True
                 ).description(
                     T(33664, "When acting on items in the Home view, such as mark played, hide from continue "
@@ -765,6 +769,12 @@ class Settings(object):
                 ).description(
                     T(33741, "Use season thumbnails/posters when displaying episodes in hubs instead of "
                              "the TV show's.")
+                ),
+                BoolSetting(
+                    'use_new_cw', T(32998, 'Use new Continue Watching hub on Home'), True
+                ).description(
+                    T(32999, "Instead of separating Continue Watching and On Deck hubs, behave like the modern "
+                             "Plex clients, which combine those two types of hubs into one Continue Watching hub.")
                 ),
                 BoolSetting(
                     'hubs_round_robin', T(33043, ''), False

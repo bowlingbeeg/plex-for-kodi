@@ -2982,3 +2982,39 @@ msgstr ""
 msgctxt "#34079"
 msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
 msgstr ""
+
+msgctxt "#34080"
+msgid "Manage Hubs"
+msgstr ""
+
+msgctxt "#34081"
+msgid "Reset to Default"
+msgstr ""
+
+msgctxt "#34082"
+msgid "Manage Hubs: {}"
+msgstr ""
+
+msgctxt "#34083"
+msgid "Move Up"
+msgstr ""
+
+msgctxt "#34084"
+msgid "Move Down"
+msgstr ""
+
+msgctxt "#34085"
+msgid "Disable"
+msgstr ""
+
+msgctxt "#34086"
+msgid "Choose action"
+msgstr ""
+
+msgctxt "#34087"
+msgid "Hub Count"
+msgstr ""
+
+msgctxt "#34088"
+msgid "Number of hub rows displayed on the home screen. More rows require more memory."
+msgstr ""
