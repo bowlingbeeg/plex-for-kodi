@@ -84,6 +84,10 @@ def render_templates(theme=None, templates=None, force=False):
                     'prev_group_id': 500 + i - 1,
                 })
 
+            # Pre-calculate grouplist height to fit all hubs
+            # Content: section bar (200) + hubs (hub_count × 535) + dummy (100) + gaps ((hub_count+1) × 20)
+            grouplist_height = 320 + 555 * hub_count
+
             overrides = {
                 "core": {
                     "resolution": DISPLAY_RESOLUTION,
@@ -91,6 +95,7 @@ def render_templates(theme=None, templates=None, force=False):
                     "hub_count": hub_count,
                     "hubs": hubs,
                     "animation_indexes": animation_indexes,
+                    "grouplist_height": grouplist_height,
                 },
                 "indicators": {
                     "START": {

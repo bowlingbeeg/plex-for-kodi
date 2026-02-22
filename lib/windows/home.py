@@ -531,10 +531,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     break
 
             # Check poster/square prefixes from HUB_DISPLAY_DEFAULTS
+            # Also set ar16x9 flags if the display type is ar16x9
             if not identifier_has_known_prefix:
-                for prefix in self.HUB_DISPLAY_DEFAULTS:
+                for prefix, display_type in self.HUB_DISPLAY_DEFAULTS.items():
                     if identifier.startswith(prefix):
                         identifier_has_known_prefix = True
+                        if display_type == 'ar16x9':
+                            flags['ar16x9'] = True
+                            flags['with_art'] = True
                         break
 
         # Only detect from hub content if identifier doesn't have a known prefix
@@ -563,37 +567,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         'show': 'poster',
         'season': 'poster',
     }
-
-    # Home hub identifiers that should be HIDDEN by default (merged recently added views)
-    # Users can enable these via Manage Hubs if they prefer the merged view
-    # Also includes playlists which can cause scrolling issues when empty
-    HOME_HUBS_HIDDEN_BY_DEFAULT = {
-        'home.movies.recent',
-        'home.television.recent',
-        'home.music.recent',
-        'home.videos.recent',
-        'home.photos.recent',
-        'playlists.audio',
-        'playlists.video',
-    }
-
-    # Per-library hub identifier patterns that should be shown on Home by default
-    # These replace the merged "Recently Added" hubs
-    # Using a pattern match instead of exact list to handle all library types
-    LIBRARY_HUBS_FOR_HOME_DEFAULT_PATTERNS = (
-        '.recentlyadded',  # Matches movie.recentlyadded, show.recentlyadded, etc.
-        '.recent.added',   # Matches music.recent.added (music libraries use different format)
-    )
-
-    @classmethod
-    def isLibraryHubForHomeDefault(cls, identifier):
-        """Check if a library hub identifier should be shown on Home by default."""
-        if not identifier:
-            return False
-        for pattern in cls.LIBRARY_HUBS_FOR_HOME_DEFAULT_PATTERNS:
-            if identifier.endswith(pattern):
-                return True
-        return False
 
     THUMB_POSTER_DIM = util.scaleResolution(244, 361)
     THUMB_AR16X9_DIM = util.scaleResolution(532, 299)
@@ -874,8 +847,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.hubSettings = {}
         try:
             loaded = json.loads(data)
+
             # Convert "__home__" key back to None (JSON doesn't support None keys)
             for key, value in loaded.items():
+                if key == '_version':
+                    continue  # Skip legacy version key
                 if key == '__home__':
                     self.hubSettings[None] = value
                 else:
@@ -886,18 +862,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             util.ERROR()
 
     def saveHubSettings(self):
-        if self.hubSettings:
-            setting_key = 'hub.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:],
-                                                      plexapp.ACCOUNT.ID)
-            # Convert None key to "__home__" for JSON storage
-            to_save = {}
-            for key, value in self.hubSettings.items():
-                if key is None:
-                    to_save['__home__'] = value
-                else:
-                    to_save[key] = value
-            json_str = json.dumps(to_save)
-            util.setSetting(setting_key, json_str)
+        setting_key = 'hub.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:],
+                                                  plexapp.ACCOUNT.ID)
+        # Convert None key to "__home__" for JSON storage
+        to_save = {}
+        for key, value in self.hubSettings.items():
+            if key is None:
+                to_save['__home__'] = value
+            else:
+                to_save[key] = value
+        json_str = json.dumps(to_save)
+        util.setSetting(setting_key, json_str)
 
     @staticmethod
     def inferDisplayType(hub):
@@ -934,6 +909,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         'home.music.': 'square',
         'home.photos.': 'square',
         'home.videos.': 'ar16x9',
+        # Old-style split Continue Watching hub (episodes only)
+        'home.continue': 'ar16x9',
         # Hub prefixed variants
         'hub.tv.': 'poster',
         'hub.show.': 'poster',
@@ -1073,12 +1050,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         section_config = self.hubSettings.get(config_key) if self.hubSettings else None
 
         if not section_config or not section_config.get('custom'):
-            # No custom config - use smart defaults for Home section
-            if section_key is None:
-                # Hide merged "Recently Added" hubs by default on Home
-                # Users see per-library hubs instead
-                if identifier in self.HOME_HUBS_HIDDEN_BY_DEFAULT:
-                    return True
+            # No custom config - show all native hubs from Plex
             return False
 
         # Build catalog_id for this hub in this section
@@ -1134,6 +1106,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         # On Deck comes right after Continue Watching
                         user_order['home.ondeck'] = cw_order + 0.5
 
+        # Pre-compute hub index lookup for O(1) access instead of O(n) per hub
+        hubs_list = list(hubs)
+        hub_index = {id(hub): idx for idx, hub in enumerate(hubs_list)}
+
         def get_order(hub):
             identifier = hub.getCleanHubIdentifier(is_home=is_home)
 
@@ -1147,13 +1123,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if catalog_id in user_order:
                 return (0, user_order[catalog_id])  # User-ordered hubs first
 
-            # Fall back to server order (use index in original list)
-            try:
-                return (1, list(hubs).index(hub))
-            except (ValueError, TypeError):
-                return (1, 999)
+            # Fall back to server order (use pre-computed index)
+            return (1, hub_index.get(id(hub), 999))
 
-        return sorted(hubs, key=get_order)
+        return sorted(hubs_list, key=get_order)
 
     def showHubSettingsDialog(self, section):
         """Show dialog to manage hubs for the given section."""
@@ -1199,19 +1172,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 is_enabled = catalog_id in configured_catalog_ids
             else:
                 hub_source_key = hub_info.get('source_section_key')
-                hub_identifier = hub_info.get('identifier', '')
 
                 if section_key is None:
-                    # Home section defaults:
-                    # - Hide merged Recently Added hubs
-                    # - Show per-library Recently Added hubs
-                    # - Show other native Home hubs
-                    if hub_source_key is None:
-                        # Native Home hub - check if it's hidden by default
-                        is_enabled = hub_identifier not in self.HOME_HUBS_HIDDEN_BY_DEFAULT
-                    else:
-                        # Cross-section hub - enable if it's a Recently Added hub
-                        is_enabled = self.isLibraryHubForHomeDefault(hub_identifier)
+                    # Home section - all native Plex Home hubs are enabled by default
+                    is_enabled = (hub_source_key is None)
                 else:
                     # Library section - native hubs enabled by default (compare as strings)
                     is_enabled = (str(hub_source_key) == str(section_key) if hub_source_key is not None else False)
@@ -1252,24 +1216,26 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         options.append(make_option(cat_id, hub_info, True, position=idx + 1))
                         enabled_hubs_shown.add(cat_id)
         else:
-            # No custom config - show enabled hubs in default order (alphabetically by title within source groups)
-            enabled_list = []
-            for catalog_id, (is_enabled, hub_info) in hub_states.items():
-                if is_enabled:
-                    enabled_list.append((catalog_id, hub_info))
+            # No custom config - show enabled hubs in ACTUAL SCREEN ORDER from sectionHubs
+            # This ensures the dialog matches what the user sees on screen
+            ordered_catalog_ids = []
 
-            # Sort enabled hubs by source section, then by title
-            def enabled_sort_key(x):
-                cat_id, info = x
-                source = info.get('source_section_title', 'Unknown')
-                title = info.get('title', '')
-                if source == section_title:
-                    return (0, title)
-                if source == 'Home':
-                    return (1, title)
-                return (2, source, title)
+            # Get hubs in screen order from sectionHubs
+            cached_hubs = self.sectionHubs.get(section_key, [])
+            is_home = section_key is None
 
-            for idx, (catalog_id, hub_info) in enumerate(sorted(enabled_list, key=enabled_sort_key)):
+            for hub in cached_hubs:
+                identifier = hub.getCleanHubIdentifier(is_home=is_home)
+                if is_home:
+                    catalog_id = identifier
+                else:
+                    catalog_id = '{}:{}'.format(section_key, identifier)
+                if catalog_id in hub_states:
+                    is_enabled, hub_info = hub_states[catalog_id]
+                    if is_enabled:
+                        ordered_catalog_ids.append((catalog_id, hub_info))
+
+            for idx, (catalog_id, hub_info) in enumerate(ordered_catalog_ids):
                 options.append(make_option(catalog_id, hub_info, True, position=idx + 1))
                 enabled_hubs_shown.add(catalog_id)
 
@@ -1322,13 +1288,26 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 align_items="left",
                 close_only_with_back=True,
                 options_callback=self.onHubSettingToggle,
-                dialog_props=self.carriedProps
+                dialog_props=self.carriedProps,
+                move_mode_callback=self._onHubMoveCallback
             )
         except Exception as e:
             util.ERROR('Hub Settings: Error showing dropdown: {}'.format(e))
             return
 
-        # Handle final choice (Reset)
+        # Handle reopen request (e.g., after Reset to Defaults)
+        if choice and choice.get('reopen'):
+            # Preserve the flag so refresh happens after reopen
+            settings_changed = self._hubsSettingsChanged
+            # Recursively reopen the dialog to show fresh state
+            self.showHubSettingsDialog(section)
+            # Restore flag and force refresh
+            self._hubsSettingsChanged = settings_changed
+            if settings_changed:
+                self.showHubs(self.lastSection, update=False, force=True)
+            return
+
+        # Handle final choice (Reset) - legacy path, kept for safety
         if choice and choice.get('key') == 'reset_hubs':
             self.resetSectionHubs(section_key)
             self._hubsSettingsChanged = True
@@ -1348,7 +1327,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def onHubSettingToggle(self, optionsList, mli):
         """Callback when a hub is toggled in the settings dialog."""
         choice = mli.dataSource
-        if not choice or choice.get('key') != 'toggle_hub':
+        if not choice:
+            return
+
+        # Handle Reset to Defaults - close dialog and reopen to show fresh state
+        if choice.get('key') == 'reset_hubs':
+            section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
+            self.resetSectionHubs(section_key)
+            self._hubsSettingsChanged = True
+            # Return special value to close dialog, then reopen it
+            return 'close_and_reopen'
+
+        if choice.get('key') != 'toggle_hub':
             return
 
         catalog_id = choice.get('catalog_id', choice.get('identifier'))
@@ -1356,21 +1346,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
         is_currently_enabled = choice.get('enabled', False)
 
-        # If hub is currently enabled, show options menu (Move Up, Move Down, Disable)
+        # If hub is currently enabled, enter move mode for pick-and-place reordering
         if is_currently_enabled:
-            action = self._showHubActionMenu(choice, section_key, optionsList)
-            if action == 'move_up':
-                self._moveHubInOrder(catalog_id, section_key, direction=-1)
+            # Ensure custom config exists before entering move mode
+            config_created = self._ensureCustomConfigExists(section_key)
+            if config_created:
+                # Refresh dialog to show position numbers now that config exists
                 self._refreshHubSettingsDialog(optionsList, section_key)
-                return
-            elif action == 'move_down':
-                self._moveHubInOrder(catalog_id, section_key, direction=1)
-                self._refreshHubSettingsDialog(optionsList, section_key)
-                return
-            elif action == 'disable':
-                new_enabled = False
-            else:
-                return  # Cancelled
+
+            # Store references for move mode
+            self._movingHubCatalogId = catalog_id
+            self._movingHubSectionKey = section_key
+            self._movingHubOptionsList = optionsList
+
+            # Signal dropdown to enter move mode
+            return 'enter_move_mode'
         else:
             new_enabled = True
 
@@ -1391,43 +1381,29 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         section_config = self.hubSettings[config_key]
 
         if need_init:
-            # First customization - initialize with default enabled hubs
+            # First customization - initialize with default enabled hubs IN SCREEN ORDER
+            # Use sectionHubs (actual display order) instead of availableHubs (discovery order)
             section_config['custom'] = True
             section_config['hubs'] = []
+            is_home = section_key is None
 
-            if section_key is None:
-                # Home section: use smart defaults
-                # - Native Home hubs EXCEPT hidden-by-default merged ones
-                # - Per-library Recently Added hubs
-                for cat_id, hub_info in self.availableHubs.items():
-                    hub_source_key = hub_info.get('source_section_key')
-                    hub_identifier = hub_info.get('identifier', '')
+            # Get hubs from sectionHubs in their actual display order
+            cached_hubs = self.sectionHubs.get(section_key, [])
 
-                    should_enable = False
-                    if hub_source_key is None:
-                        # Native Home hub - enable unless hidden by default
-                        should_enable = hub_identifier not in self.HOME_HUBS_HIDDEN_BY_DEFAULT
-                    else:
-                        # Cross-section hub - enable if it's a Recently Added hub
-                        should_enable = self.isLibraryHubForHomeDefault(hub_identifier)
+            # Add all native hubs in screen order (same logic for Home and libraries)
+            for hub in cached_hubs:
+                hub_identifier = hub.getCleanHubIdentifier(is_home=is_home)
+                if is_home:
+                    cat_id = hub_identifier
+                else:
+                    cat_id = '{}:{}'.format(section_key, hub_identifier)
 
-                    if should_enable:
-                        section_config['hubs'].append({
-                            'catalog_id': cat_id,
-                            'identifier': hub_identifier,
-                            'order': len(section_config['hubs'])
-                        })
-            else:
-                # Library section: enable all native hubs
-                for cat_id, hub_info in self.availableHubs.items():
-                    hub_source_key = hub_info.get('source_section_key')
-                    # Compare as strings to handle int/string mismatch
-                    if str(hub_source_key) == str(section_key) if hub_source_key is not None else False:
-                        section_config['hubs'].append({
-                            'catalog_id': cat_id,
-                            'identifier': hub_info.get('identifier', cat_id),
-                            'order': len(section_config['hubs'])
-                        })
+                if cat_id in self.availableHubs:
+                    section_config['hubs'].append({
+                        'catalog_id': cat_id,
+                        'identifier': hub_identifier,
+                        'order': len(section_config['hubs'])
+                    })
 
         # Find and update the hub in the config
         hub_found = False
@@ -1459,8 +1435,133 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Mark that settings changed - refresh will happen after dialog closes
         self._hubsSettingsChanged = True
 
+    def _onHubMoveCallback(self, action, mli, old_pos, new_pos):
+        """Handle move mode callbacks from the dropdown dialog.
+
+        Args:
+            action: 'move', 'confirm', or 'cancel'
+            mli: The ManagedListItem being moved
+            old_pos: Original position (or position before this move)
+            new_pos: New position (or target position)
+        """
+        section_key = getattr(self, '_movingHubSectionKey', None)
+        catalog_id = getattr(self, '_movingHubCatalogId', None)
+        optionsList = getattr(self, '_movingHubOptionsList', None)
+
+        if action == 'move':
+            # Update the underlying data order to match the visual order
+            if catalog_id:
+                self._moveHubToPosition(catalog_id, section_key, old_pos, new_pos, optionsList)
+            # Don't clear references - more moves may follow
+            return
+        elif action == 'confirm':
+            # Finalize the move - save settings and refresh display
+            if optionsList:
+                self._refreshHubSettingsDialog(optionsList, section_key)
+            self.saveHubSettings()
+            self._hubsSettingsChanged = True
+
+            # Show disable option if user confirmed without moving (second click pattern)
+            if old_pos == new_pos and mli:
+                choice = mli.dataSource
+                if choice and choice.get('enabled'):
+                    self._showDisableConfirmation(choice, section_key, optionsList)
+        elif action == 'cancel':
+            # Restore original position - the dropdown already moved the item back visually
+            # We need to restore the data order as well
+            if catalog_id and optionsList:
+                self._restoreHubOrder(section_key, optionsList)
+
+        # Clear move mode references only on confirm/cancel, not on move
+        self._movingHubCatalogId = None
+        self._movingHubSectionKey = None
+        self._movingHubOptionsList = None
+
+    def _moveHubToPosition(self, catalog_id, section_key, from_visual_pos, to_visual_pos, optionsList):
+        """Move a hub from one visual position to another in the settings.
+
+        The visual position directly maps to the config index for enabled hubs since
+        both lists have enabled hubs in order starting from position 0.
+        """
+        if not self.hubSettings or from_visual_pos == to_visual_pos:
+            return
+
+        config_key = str(section_key) if section_key is not None else None
+        section_config = self.hubSettings.get(config_key)
+        if not section_config or not section_config.get('custom'):
+            return
+
+        hubs = section_config.get('hubs', [])
+
+        # Visual position maps directly to config index for enabled hubs
+        from_idx = from_visual_pos
+        to_idx = to_visual_pos
+
+        # Clamp to valid range
+        if from_idx < 0 or from_idx >= len(hubs):
+            return
+        if to_idx < 0 or to_idx >= len(hubs):
+            return
+
+        # Remove the hub from its current position and insert at new position
+        hub = hubs.pop(from_idx)
+        hubs.insert(to_idx, hub)
+
+        # Update order values
+        for idx, hub_config in enumerate(hubs):
+            hub_config['order'] = idx
+
+    def _restoreHubOrder(self, section_key, optionsList):
+        """Restore hub order from saved settings after a cancelled move."""
+        # Reload settings and refresh the display
+        self.loadHubSettings()
+        if optionsList:
+            self._refreshHubSettingsDialog(optionsList, section_key)
+
+    def _showDisableConfirmation(self, choice, section_key, optionsList):
+        """Show disable confirmation when user clicks on a hub without moving it."""
+        hub_title = choice.get('hub_info', {}).get('title', choice.get('identifier', 'Hub'))
+        catalog_id = choice.get('catalog_id', choice.get('identifier'))
+
+        # Show simple disable confirmation
+        result = optionsdialog.show(
+            header=hub_title,
+            info=T(34086, 'Choose action'),
+            button0=T(34085, 'Disable'),
+        )
+
+        if result == 0:
+            # Disable the hub
+            self._disableHub(catalog_id, section_key)
+            if optionsList:
+                self._refreshHubSettingsDialog(optionsList, section_key)
+            self._hubsSettingsChanged = True
+
+    def _disableHub(self, catalog_id, section_key):
+        """Disable a hub by removing it from the enabled list."""
+        if not self.hubSettings:
+            return
+
+        config_key = str(section_key) if section_key is not None else None
+        section_config = self.hubSettings.get(config_key)
+        if not section_config or not section_config.get('custom'):
+            return
+
+        hubs = section_config.get('hubs', [])
+        for hub_config in hubs[:]:  # Iterate over a copy
+            if hub_config.get('catalog_id') == catalog_id:
+                hubs.remove(hub_config)
+                break
+
+        # Update order values
+        for idx, hub_config in enumerate(hubs):
+            hub_config['order'] = idx
+
+        self.saveHubSettings()
+
     def _showHubActionMenu(self, choice, section_key, optionsList):
-        """Show action menu for an enabled hub: Move Up, Move Down, Disable."""
+        """Show action menu for an enabled hub: Move Up, Move Down, Disable.
+        NOTE: This is now only used as fallback - pick-and-place is the primary UX."""
         hub_title = choice.get('hub_info', {}).get('title', choice.get('identifier', 'Hub'))
 
         # Ensure custom config exists before checking move capabilities
@@ -1526,34 +1627,24 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         section_config['custom'] = True
         section_config['hubs'] = []
 
-        if config_key is None:
-            # Home section: use smart defaults
-            for cat_id, hub_info in self.availableHubs.items():
-                hub_source_key = hub_info.get('source_section_key')
-                hub_identifier = hub_info.get('identifier', '')
+        # Build config in SCREEN ORDER (from sectionHubs) to match what user sees
+        is_home = config_key is None
+        cached_hubs = self.sectionHubs.get(section_key, [])
 
-                should_enable = False
-                if hub_source_key is None:
-                    should_enable = hub_identifier not in self.HOME_HUBS_HIDDEN_BY_DEFAULT
-                else:
-                    should_enable = self.isLibraryHubForHomeDefault(hub_identifier)
+        # Add all native hubs in screen order (same logic for Home and libraries)
+        for hub in cached_hubs:
+            hub_identifier = hub.getCleanHubIdentifier(is_home=is_home)
+            if is_home:
+                cat_id = hub_identifier
+            else:
+                cat_id = '{}:{}'.format(section_key, hub_identifier)
 
-                if should_enable:
-                    section_config['hubs'].append({
-                        'catalog_id': cat_id,
-                        'identifier': hub_identifier,
-                        'order': len(section_config['hubs'])
-                    })
-        else:
-            # Library section: enable all native hubs
-            for cat_id, hub_info in self.availableHubs.items():
-                hub_source_key = hub_info.get('source_section_key')
-                if hub_source_key == section_key or str(hub_source_key) == str(section_key):
-                    section_config['hubs'].append({
-                        'catalog_id': cat_id,
-                        'identifier': hub_info.get('identifier', cat_id),
-                        'order': len(section_config['hubs'])
-                    })
+            if cat_id in self.availableHubs:
+                section_config['hubs'].append({
+                    'catalog_id': cat_id,
+                    'identifier': hub_identifier,
+                    'order': len(section_config['hubs'])
+                })
 
         self.saveHubSettings()
         self._hubsSettingsChanged = True
@@ -1633,9 +1724,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         config_key = str(section_key) if section_key is not None else None
         # Get the current hub configuration
         section_config = self.hubSettings.get(config_key, {}) if self.hubSettings else {}
-        configured_hubs = section_config.get('hubs', []) if section_config.get('custom') else []
+        has_custom_config = section_config.get('custom', False)
+        configured_hubs = section_config.get('hubs', []) if has_custom_config else []
 
-        # Build a map of catalog_id to order for enabled hubs
+        # Build a map of catalog_id to order for enabled hubs (only when custom config exists)
         enabled_order = {}
         for idx, hub_config in enumerate(configured_hubs):
             cat_id = hub_config.get('catalog_id', hub_config.get('identifier'))
@@ -1648,7 +1740,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 continue
 
             catalog_id = ds.get('catalog_id', ds.get('identifier'))
-            is_enabled = catalog_id in enabled_order
+            hub_info = ds.get('hub_info', {})
+            hub_source_key = hub_info.get('source_section_key')
+            hub_identifier = hub_info.get('identifier', '')
+
+            if has_custom_config:
+                # Custom config: enabled if in the configured list
+                is_enabled = catalog_id in enabled_order
+            else:
+                # Default state: all native hubs for the current section are enabled
+                if section_key is None:
+                    # Home section - all native Plex Home hubs enabled
+                    is_enabled = (hub_source_key is None)
+                else:
+                    # Library section - native hubs enabled by default
+                    is_enabled = (str(hub_source_key) == str(section_key) if hub_source_key is not None else False)
 
             # Update enabled state
             ds['enabled'] = is_enabled
@@ -1656,12 +1762,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             mli.setProperty('indicator', indicator)
             mli.setThumbnailImage(indicator)
 
-            # Update display to show position for enabled hubs
-            hub_info = ds.get('hub_info', {})
+            # Update display to show position for enabled hubs (only with custom config)
             base_title = hub_info.get('title', catalog_id)
             source_label = hub_info.get('source_section_title', 'Unknown')
 
-            if is_enabled:
+            if has_custom_config and is_enabled:
                 position = enabled_order[catalog_id]
                 display_title = u'{}. {} [{}]'.format(position, base_title, source_label)
             else:
@@ -1731,79 +1836,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         return enabled
 
-    def _getDefaultHomeHubs(self, native_hubs):
-        """Get default hubs for Home section - per-library Recently Added instead of merged.
-
-        Returns native Home hubs (minus hidden-by-default merged ones) plus
-        per-library Recently Added hubs from each library section.
-        """
-        combined = []
-
-        # Add native Home hubs except hidden-by-default ones
-        for hub in native_hubs:
-            identifier = hub.getCleanHubIdentifier(is_home=True)
-            is_hidden = identifier in self.HOME_HUBS_HIDDEN_BY_DEFAULT
-            if not is_hidden:
-                combined.append(hub)
-
-        # Get all library sections that need to be fetched
-        try:
-            all_sections = plexapp.SERVERMANAGER.selectedServer.library.sections()
-        except Exception as e:
-            all_sections = []
-
-        # Helper to check if section is cached (handles int/string key mismatch)
-        def is_section_cached(key):
-            if key in self.sectionHubs:
-                return True
-            str_key = str(key) if key is not None else None
-            for cached_key in self.sectionHubs:
-                if str(cached_key) if cached_key is not None else None == str_key:
-                    return True
-            return False
-
-        # Log current cache state
-
-        missing_sections = []
-        cached_sections = []
-        for section in all_sections:
-            if is_section_cached(section.key):
-                cached_sections.append(section.key)
-            else:
-                missing_sections.append(section.key)
-
-
-        # Trigger fetch for missing library sections
-        if missing_sections:
-            self.fetchMissingSections(missing_sections)
-
-        # Find library sections that have Recently Added hubs cached
-        for section_key, section_hubs in self.sectionHubs.items():
-            if section_key is None or not section_hubs:
-                continue  # Skip Home section
-
-            hub_identifiers = [h.getCleanHubIdentifier(is_home=False) for h in section_hubs]
-
-            for hub in section_hubs:
-                identifier = hub.getCleanHubIdentifier(is_home=False)
-                matches_pattern = self.isLibraryHubForHomeDefault(identifier)
-                # Include per-library Recently Added hubs
-                if matches_pattern:
-                    hub._crossSectionSource = section_key
-                    hub._catalogId = '{}:{}'.format(section_key, identifier)
-                    combined.append(hub)
-
-        result = HubsList(combined)
-        result.lastUpdated = native_hubs.lastUpdated
-        result.invalid = native_hubs.invalid
-
-        native_count = len([h for h in combined if h.__dict__.get('_crossSectionSource') is None])
-        per_lib_count = len([h for h in combined if h.__dict__.get('_crossSectionSource') is not None])
-        for h in combined:
-            src = h.__dict__.get('_crossSectionSource', 'native')
-
-        return result
-
     def getCombinedHubsForSection(self, section, include_cross_section=True):
         """Get combined list of hubs for a section, including cross-section hubs if enabled."""
         section_key = section.key
@@ -1816,18 +1848,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Check if we have custom config with cross-section hubs
         if not include_cross_section:
-            # For Home with no custom config, still filter out hidden-by-default hubs
-            if section_key is None:
-                filtered = []
-                for hub in native_hubs:
-                    identifier = hub.getCleanHubIdentifier(is_home=True)
-                    if identifier not in self.HOME_HUBS_HIDDEN_BY_DEFAULT:
-                        filtered.append(hub)
-                if len(filtered) != len(native_hubs):
-                    result = HubsList(filtered)
-                    result.lastUpdated = native_hubs.lastUpdated
-                    result.invalid = native_hubs.invalid
-                    return result
             return native_hubs
 
         # Normalize key to string (hubSettings uses string keys)
@@ -1837,10 +1857,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             section_config = self.hubSettings.get(config_key)
 
         if not section_config or not section_config.get('custom'):
-            # For Home with no custom config, filter hidden-by-default hubs
-            # and include per-library Recently Added hubs
-            if section_key is None:
-                return self._getDefaultHomeHubs(native_hubs)
+            # No custom config - show native hubs from Plex as-is
             return native_hubs
 
         # Get enabled hub catalog_ids
@@ -1961,13 +1978,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def fetchMissingSections(self, section_keys):
         """Trigger background fetch for missing section hubs."""
-        try:
-            all_sections = plexapp.SERVERMANAGER.selectedServer.library.sections()
-        except:
-            all_sections = []
-
-        sections_by_key = {str(s.key): s for s in all_sections}
-        sections_by_key[None] = home_section
+        # Use sections from sectionList to avoid expensive network call
+        sections_by_key = {None: home_section}
+        if hasattr(self, 'sectionList') and self.sectionList:
+            for mli in self.sectionList:
+                if mli.dataSource and hasattr(mli.dataSource, 'key'):
+                    sections_by_key[str(mli.dataSource.key)] = mli.dataSource
 
         for section_key in section_keys:
             section_obj = sections_by_key.get(str(section_key) if section_key else None)
@@ -3591,6 +3607,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
         with self.lock:
+            # First, find and update the hub in its source section's sectionHubs
+            hub_source_section = None
             for mli in self.sectionList:
                 section = mli.dataSource
                 if not section:
@@ -3598,17 +3616,44 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
                 hubs = self.sectionHubs.get(section.key, ())
                 if not hubs:
-                    util.LOG("Hubs for {} not found/no data", section.key)
                     continue
 
                 for idx, ihub in enumerate(hubs):
                     if ihub == hub:
-                        if self.lastSection == section:
-                            util.DEBUG_LOG('Hub {0} updated - refreshing section: {1}'.format(hub.hubIdentifier,
-                                                                                              repr(section.title)))
-                            hubs[idx] = hub
-                            self.showHub(hub, items=items, reselect_pos=reselect_pos)
-                            return
+                        hubs[idx] = hub
+                        hub_source_section = section
+                        break
+                if hub_source_section:
+                    break
+
+            if not hub_source_section:
+                util.DEBUG_LOG('Hub {0} not found in any sectionHubs'.format(hub.hubIdentifier))
+                return
+
+            # Now check if this hub is currently displayed (either on its own section
+            # or as a cross-section hub on the current section like Home)
+            # Check by looking for the hub in hubControls
+            hub_slot_index = None
+            for slot_idx, hubCtrl in enumerate(self.hubControls):
+                if hubCtrl.dataSource == hub:
+                    hub_slot_index = slot_idx
+                    break
+
+            if hub_slot_index is not None:
+                # Hub is currently displayed - determine correct is_home flag
+                # Use the hub's cross-section source if set, otherwise use lastSection
+                cross_source = hub.__dict__.get('_crossSectionSource')
+                if cross_source is not None:
+                    is_home = cross_source is None
+                else:
+                    is_home = self.lastSection.key is None if self.lastSection else False
+
+                util.DEBUG_LOG('Hub {0} updated - refreshing (slot {1}, is_home={2})'.format(
+                    hub.hubIdentifier, hub_slot_index, is_home))
+                self.showHub(hub, items=items, reselect_pos=reselect_pos,
+                             is_home=is_home, hub_index=hub_slot_index)
+            else:
+                util.DEBUG_LOG('Hub {0} updated but not currently displayed'.format(hub.hubIdentifier))
 
     def extendHubCallback(self, hub, items, reselect_pos=None):
         util.DEBUG_LOG('ExtendHub called: {0} [{1}] (reselect: {2})'.format(hub.hubIdentifier, len(hub.items),
@@ -3835,6 +3880,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     hidden_count += 1
                     continue
 
+            # Skip hubs with no content - they don't take a slot, but will appear
+            # automatically when they have content on the next refresh.
+            # This prevents empty hubs from breaking the scroll animation chain.
+            if not hub.items:
+                continue
+
             # Determine display type for this hub and set as window property for skin
             display_type = self.getHubDisplayType(hub, identifier)
             self.setProperty('hub.display.4{0:02d}'.format(hub_index), display_type)
@@ -3923,7 +3974,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         return mli
 
     def createEpisodeListItem(self, obj, wide=False):
-        mli = self.createGrandparentedListItem(obj, *self.THUMB_POSTER_DIM)
+        mli = self.createGrandparentedListItem(obj, *(self.THUMB_AR16X9_DIM if wide else self.THUMB_POSTER_DIM))
         if obj.index:
             subtitle = u'{0} \u2022 {1}'.format(T(32310, 'S').format(obj.parentIndex), T(32311, 'E').format(obj.index))
         else:
@@ -3953,7 +4004,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         return mli
 
     def createMovieListItem(self, obj, wide=False):
-        mli = kodigui.ManagedListItem(obj.defaultTitle, obj.year, thumbnailImage=obj.defaultThumb.asTranscodedImageURL(*self.THUMB_POSTER_DIM), data_source=obj)
+        if wide:
+            thumb = obj.defaultArt.asTranscodedImageURL(*self.THUMB_AR16X9_DIM)
+        else:
+            thumb = obj.defaultThumb.asTranscodedImageURL(*self.THUMB_POSTER_DIM)
+        mli = kodigui.ManagedListItem(obj.defaultTitle, obj.year, thumbnailImage=thumb, data_source=obj)
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie.png')
         if not obj.isWatched:
             mli.setProperty('unwatched', '1')

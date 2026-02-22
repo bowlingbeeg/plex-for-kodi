@@ -690,7 +690,14 @@ class BaseHub(plexobjects.PlexObject):
 
     def getCleanHubIdentifier(self, is_home=False):
         if not self._identifier:
-            self._identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
+            # For collection hubs, only strip one suffix to preserve unique collection ID
+            # e.g., custom.collection.1.37180.37180 -> custom.collection.1.37180
+            if 'collection' in self.hubIdentifier:
+                self._identifier = re.sub(r'\.\d+$', '', self.hubIdentifier)
+            else:
+                # Strip two suffixes for regular hubs (section + instance)
+                self._identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
+
             if is_home and self._identifier == 'movie.recentlyreleased':
                 self._identifier = 'home.VIRTUAL.movies.recentlyreleased'
         return self._identifier

@@ -48,6 +48,13 @@ class DropdownDialog(kodigui.BaseDialog):
         self.onCloseCallback = kwargs.get('onclose_callback')
         self.choice = None
 
+        # Moving mode support
+        self.movingItem = None  # ManagedListItem being moved
+        self.initialMovingPos = None  # Original position for cancel/restore
+        self.moveModeCallback = kwargs.get('move_mode_callback')  # Callback for move operations
+        self.moveUpperBound = None  # First position that can't be moved to (separator boundary)
+        self._justEnteredMoveMode = False  # Flag to skip the SELECT that entered move mode
+
     @property
     def x(self):
         return min(self.width - self.dropWidth - self.borderOff, self.pos[0])
@@ -109,6 +116,24 @@ class DropdownDialog(kodigui.BaseDialog):
 
         controlID = self.getFocusId()
 
+        # Handle moving mode actions
+        if self.movingItem is not None:
+            if action in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                self._handleMoveAction(action)
+                return
+            elif action == xbmcgui.ACTION_SELECT_ITEM:
+                # Skip the SELECT that triggered entering move mode (onClick and onAction both fire)
+                if self._justEnteredMoveMode:
+                    self._justEnteredMoveMode = False
+                    return
+                self._confirmMove()
+                return
+            elif action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU):
+                self._cancelMove()
+                return
+            # Ignore other actions while moving
+            return
+
         if self.roundRobin and action in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN) and \
                 controlID == self.OPTIONS_LIST_ID:
             to_pos = None
@@ -139,7 +164,124 @@ class DropdownDialog(kodigui.BaseDialog):
 
         kodigui.BaseDialog.onAction(self, action)
 
+    def enterMoveMode(self, mli):
+        """Enter moving mode for the given list item."""
+        if not mli:
+            return False
+
+        pos = self.optionsList.getManagedItemPosition(mli)
+        if pos is None:
+            return False
+
+        # Only allow entering move mode for items within the movable range
+        if self.moveUpperBound is not None and pos >= self.moveUpperBound:
+            return False
+
+        # Don't allow move mode if there's only one movable item
+        if self.moveUpperBound is not None and self.moveUpperBound <= 1:
+            return False
+
+        self.movingItem = mli
+        self.initialMovingPos = pos
+        self._justEnteredMoveMode = True  # Skip the next SELECT action (same click triggers both onClick and onAction)
+        mli.setProperty('moving', '1')
+        self.setProperty('moving', '1')
+        return True
+
+    def _handleMoveAction(self, action):
+        """Handle Up/Down arrow keys while in moving mode."""
+        if not self.movingItem:
+            return
+
+        current_pos = self.optionsList.getManagedItemPosition(self.movingItem)
+        if current_pos is None:
+            return
+
+        # Calculate target position
+        if action == xbmcgui.ACTION_MOVE_UP:
+            target_pos = current_pos - 1
+        else:  # ACTION_MOVE_DOWN
+            target_pos = current_pos + 1
+
+        # Find valid position (skip separators)
+        target_pos = self._findValidMovePosition(current_pos, target_pos, action)
+        if target_pos is None or target_pos == current_pos:
+            return
+
+        # Move the item
+        self.optionsList.moveItem(self.movingItem, target_pos)
+        self.optionsList.selectItem(target_pos)
+
+        # Notify callback of move (for live position updates)
+        if self.moveModeCallback:
+            self.moveModeCallback('move', self.movingItem, current_pos, target_pos)
+
+    def _findValidMovePosition(self, current_pos, target_pos, action):
+        """Find a valid position to move to, staying within movable bounds."""
+        # Determine the valid range for moving
+        # Items can only move within positions 0 to (moveUpperBound - 1)
+        upper_bound = self.moveUpperBound if self.moveUpperBound is not None else self.optionsList.size()
+
+        # Check bounds and handle wrapping
+        if target_pos < 0:
+            # Wrap to last movable position
+            target_pos = upper_bound - 1
+        elif target_pos >= upper_bound:
+            # Wrap to first position
+            target_pos = 0
+
+        return target_pos
+
+    def _confirmMove(self):
+        """Confirm the move and exit moving mode."""
+        if not self.movingItem:
+            return
+
+        mli = self.movingItem
+        old_pos = self.initialMovingPos
+        new_pos = self.optionsList.getManagedItemPosition(mli)
+
+        # Clear moving state
+        mli.setProperty('moving', '')
+        self.setProperty('moving', '')
+        self.movingItem = None
+        self.initialMovingPos = None
+
+        # Notify callback of confirmed move
+        if self.moveModeCallback:
+            self.moveModeCallback('confirm', mli, old_pos, new_pos)
+
+    def _cancelMove(self):
+        """Cancel the move and restore original position."""
+        if not self.movingItem:
+            return
+
+        mli = self.movingItem
+        old_pos = self.initialMovingPos
+
+        # Restore original position
+        if old_pos is not None:
+            self.optionsList.moveItem(mli, old_pos)
+            self.optionsList.selectItem(old_pos)
+
+        # Clear moving state
+        mli.setProperty('moving', '')
+        self.setProperty('moving', '')
+        self.movingItem = None
+        self.initialMovingPos = None
+
+        # Notify callback of cancelled move
+        if self.moveModeCallback:
+            self.moveModeCallback('cancel', mli, old_pos, old_pos)
+
+    def isMoving(self):
+        """Return True if currently in moving mode."""
+        return self.movingItem is not None
+
     def onClick(self, controlID):
+        # If in move mode, let onAction handle it (onClick and onAction both fire for Enter)
+        if self.movingItem is not None:
+            return
         if controlID == self.OPTIONS_LIST_ID:
             self.setChoice()
         else:
@@ -194,7 +336,16 @@ class DropdownDialog(kodigui.BaseDialog):
 
         self.choice = choice
         if self.optionsCallback:
-            self.optionsCallback(self.optionsList, mli)
+            result = self.optionsCallback(self.optionsList, mli)
+            # Check if callback wants to enter move mode
+            if result == 'enter_move_mode':
+                self.enterMoveMode(mli)
+                return
+            # Check if callback wants to close and reopen the dialog
+            if result == 'close_and_reopen':
+                self.choice = {'reopen': True}
+                self.doClose()
+                return
 
         del mli
 
@@ -206,6 +357,9 @@ class DropdownDialog(kodigui.BaseDialog):
         options = []
         sids = None
         hadSub = False
+        self.moveUpperBound = None  # Reset move boundary tracking
+        first_separator_seen = False
+
         if self.selectItem:
             sids = self.selectItem.copy()
             sids["indicator"] = ''
@@ -227,6 +381,11 @@ class DropdownDialog(kodigui.BaseDialog):
             else:
                 if items:
                     items[-1].setProperty('separator', '1')
+                    # Track the first separator as the move boundary
+                    # Items before this can be moved, items at/after cannot
+                    if not first_separator_seen:
+                        self.moveUpperBound = len(items)
+                        first_separator_seen = True
 
         self.options = options
 
@@ -290,7 +449,8 @@ def showDropdown(
     open_sublists=False,
     is_sub_list=False,
     onclose_callback=None,
-    dialog_props=None
+    dialog_props=None,
+    move_mode_callback=None
 ):
 
     if header:
@@ -313,6 +473,7 @@ def showDropdown(
             is_sub_list=is_sub_list,
             onclose_callback=onclose_callback,
             dialog_props=dialog_props,
+            move_mode_callback=move_mode_callback,
         )
     else:
         pos = pos or (810, 400)
@@ -334,6 +495,7 @@ def showDropdown(
             is_sub_list=is_sub_list,
             onclose_callback=onclose_callback,
             dialog_props=dialog_props,
+            move_mode_callback=move_mode_callback,
         )
     choice = w.choice
     w = None
