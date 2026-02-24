@@ -1000,7 +1000,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 hubs = section.server.hubs(section_key, count=HUB_PAGE_SIZE)
 
                 # For Home section in old Continue Watching mode, split the combined hub
-                if section_key is None and not util.getSetting('use_new_cw', True):
+                if section_key is None and not util.getSetting('hubs_use_new_continue_watching', False):
                     hubs = self.splitContinueWatchingHub(hubs)
 
                 for hub in hubs:
@@ -1088,7 +1088,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Handle Continue Watching mode switch for Home section ordering
         # Map order from old identifiers to new or vice versa
         if section_key is None:  # Home section only
-            use_new_cw = util.getSetting('use_new_cw', True)
+            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
             if use_new_cw:
                 # Using new combined mode - inherit order from old-style hubs
                 if 'home.continue' in user_order and 'continueWatching' not in user_order:
@@ -1275,7 +1275,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # This fixes the dialog showing the wrong enabled state after switching CW modes,
         # and ensures _moveHubToPosition can find hubs by index (it requires an explicit entry).
         if section_key is None and has_custom_config and configured_hubs:
-            use_new_cw = util.getSetting('use_new_cw', True)
+            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
             configured_ids = {h.get('catalog_id', h.get('identifier')) for h in configured_hubs}
             if use_new_cw and ('home.continue' in configured_ids or 'home.ondeck' in configured_ids) \
                     and 'continueWatching' not in configured_ids:
@@ -1787,10 +1787,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         enabled = {h.get('catalog_id', h.get('identifier')) for h in section_config.get('hubs', [])}
 
         # Handle Continue Watching mode switch for Home section
-        # When use_new_cw setting changes, the hub identifiers change but the saved config
+        # When hubs_use_new_continue_watching setting changes, the hub identifiers change but the saved config
         # might have the old identifiers. Map between them so hubs stay enabled.
         if section_key is None:  # Home section only
-            use_new_cw = util.getSetting('use_new_cw', True)
+            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
             if use_new_cw:
                 # Using new combined mode - if old-style hubs are in config, also enable new style
                 if 'home.continue' in enabled or 'home.ondeck' in enabled:
@@ -1909,7 +1909,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Handle Continue Watching mode switch for Home section ordering
         # Map order from old identifiers to new or vice versa
         if section_key is None:  # Home section only
-            use_new_cw = util.getSetting('use_new_cw', True)
+            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
             if use_new_cw:
                 # Using new combined mode - inherit order from old-style hubs
                 if 'home.continue' in catalog_id_to_order and 'continueWatching' not in catalog_id_to_order:
@@ -2089,7 +2089,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         plexapp.util.APP.on('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.on('change:hub_season_thumbnails', self.setDirty)
         plexapp.util.APP.on('change:use_watchlist', self.setDirty)
-        plexapp.util.APP.on('change:use_new_cw', self.onContinueWatchingModeChanged)
+        plexapp.util.APP.on('change:hubs_use_new_continue_watching', self.onContinueWatchingModeChanged)
         plexapp.util.APP.on('change:force_pd_mapping', self.setHostsDirty)
         plexapp.util.APP.on('change:debug', self.setDebugFlag)
         plexapp.util.APP.on('change:update_source', self.updateSourceChanged)
@@ -2640,7 +2640,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def splitContinueWatchingHub(self, hubs):
         """Split the 'continueWatching' hub into 'home.continue' and 'home.ondeck' for old mode.
 
-        When use_new_cw=False, the server still returns the combined 'continueWatching' hub.
+        When hubs_use_new_continue_watching=False, the server still returns the combined 'continueWatching' hub.
         This method splits it into two separate display hubs:
         - home.continue: Episodes only (uses 16x9 thumbnails)
         - home.ondeck: Movies and shows (uses poster layout)
@@ -3495,7 +3495,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             # For Home section in old Continue Watching mode, split the combined hub
             # into separate home.continue (episodes) and home.ondeck (movies/shows) hubs
-            if is_home and not util.getSetting('use_new_cw', True):
+            if is_home and not util.getSetting('hubs_use_new_continue_watching', False):
                 hubs_to_sort = self.splitContinueWatchingHub(hubs)
             else:
                 hubs_to_sort = hubs

@@ -771,7 +771,7 @@ class Settings(object):
                              "the TV show's.")
                 ),
                 BoolSetting(
-                    'use_new_cw', T(32998, 'Use new Continue Watching hub on Home'), True
+                    'hubs_use_new_continue_watching', T(32998, 'Use new Continue Watching hub on Home'), False
                 ).description(
                     T(32999, "Instead of separating Continue Watching and On Deck hubs, behave like the modern "
                              "Plex clients, which combine those two types of hubs into one Continue Watching hub.")
