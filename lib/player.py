@@ -488,9 +488,10 @@ class SeekPlayerHandler(BasePlayerHandler):
             if delete:
                 d = self.dialog
                 self.dialog = None
-                d.doClose(delete=delete)
-                del d
-                util.garbageCollect()
+                if d:
+                    d.doClose(delete=delete)
+                    del d
+                    util.garbageCollect()
 
     def seek(self, offset, settings_changed=False, seeking=SEEK_IN_PROGRESS, skip_alt_seek_fix=False):
         util.DEBUG_LOG(
