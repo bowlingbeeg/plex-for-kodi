@@ -753,6 +753,8 @@ def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
     except util.NoDataException:
         raise
     finally:
+        # codec teardown might show a spinner, wait a short while
+        util.MONITOR.waitFor(0.5)
         util.DEBUG_LOG("VideoPlayer Window exit")
         if w.playbackFailed:
             util.DEBUG_LOG("VideoPlayer: Playback failed, checking and waiting for open dialogs to close")
