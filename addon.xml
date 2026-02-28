@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.3.18-beta1"
+       version="1.3.18-beta2"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Player: Don't error on close when seekdialog is already deleted
-- Player: After playback, wait 0.5s to allow for enough time for codec teardown (might hang with a black screen due to kodi dialogs otherwise)
-- SeekDialog: Don't react to SELECT/ENTER events on skip marker buttons during seek
+- SeekDialog: Fix skipping marker button not doing anything
         </news>
         <assets>
             <icon>icon2.png</icon>
