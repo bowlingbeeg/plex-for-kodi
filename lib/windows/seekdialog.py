@@ -649,7 +649,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 passThroughMain = False
                 if controlID == self.SKIP_MARKER_BUTTON_ID:
                     if action == xbmcgui.ACTION_SELECT_ITEM:
-                        if self._seeking:
+                        if self._applyingSeek:
                             return
 
                         markerDef = self._currentMarker
