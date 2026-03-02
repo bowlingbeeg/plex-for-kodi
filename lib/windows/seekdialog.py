@@ -126,6 +126,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     PLAYLIST_BUTTON_ID = 410
     OPTIONS_BUTTON_ID = 411
     SUBTITLE_BUTTON_ID = 412
+    VS10_BUTTON_ID = 413
 
     BIG_SEEK_GROUP_ID = 500
     BIG_SEEK_LIST_ID = 501
@@ -454,6 +455,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.setBoolProperty('nav.repeat', showRepeat)
         self.setBoolProperty('nav.ffwdrwd', showFfwdRwd)
         self.setBoolProperty('nav.shuffle', showShuffle)
+        self.setBoolProperty('nav.vs10', True)
         navPlaylist = util.getSetting('video_show_playlist')
         self.setBoolProperty('nav.playlist', (navPlaylist == "eponly" and
                                               ((self.player.video and self.player.video.type == 'episode') or (self.handler and self.handler.playlist))) or
@@ -1024,6 +1026,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.handleDialog(self.optionsButtonClicked)
         elif controlID == self.SUBTITLE_BUTTON_ID:
             self.handleDialog(self.subtitleButtonClicked)
+        elif controlID == self.VS10_BUTTON_ID:
+            self.handleDialog(self.vs10ButtonClicked)
         elif controlID == self.BIG_SEEK_LIST_ID:
             self.bigSeekSelected()
         elif controlID == self.SKIP_BACK_BUTTON_ID:
@@ -1557,6 +1561,36 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             else:
                 self.doSeek(self.trueOffset(), settings_changed=True)
             self.lastSubtitleNavAction = "auto_sync"
+
+    def vs10ButtonClicked(self):
+        # amlogic.vs10.mode.raw values: 0/1 = Dolby Vision, 2 = HDR10, 3 = SDR, 5 = Original
+        current_mode = xbmc.getInfoLabel('Player.Process(amlogic.vs10.mode.raw)')
+        check = 'script.plex/home/device/check.png'
+
+        options = [
+            {'key': 'dv',           'display': 'Dolby Vision',  'indicator': current_mode in ('0', '1') and check or ''},
+            {'key': 'hdr10',        'display': 'HDR10',          'indicator': current_mode == '2' and check or ''},
+            {'key': 'sdr',          'display': 'SDR',            'indicator': current_mode == '3' and check or ''},
+            {'key': 'original',     'display': 'Original',       'indicator': current_mode == '5' and check or ''},
+            {'key': 'process_info', 'display': 'Player Info',    'indicator': '', 'separator': True},
+        ]
+
+        choice = dropdown.showDropdown(
+            options,
+            # Position above the VS10 button (one slot right of the subtitle button)
+            (1360 - self.subtitleButtonLeft + self.NAVBAR_BTN_SIZE, 1060),
+            pos_is_bottom=True,
+            close_on_playback_ended=True,
+            with_indicator=True
+        )
+
+        if not choice:
+            return
+
+        if choice['key'] == 'process_info':
+            xbmc.executebuiltin('ActivateWindow(playerprocessinfo)')
+        else:
+            xbmc.executebuiltin('Action(vs10.{})'.format(choice['key']))
 
     def toggleSubtitles(self):
         """
