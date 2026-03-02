@@ -10,8 +10,8 @@
     </animation>
 
     <!-- Subsequent hubs use consistent slide distance -->
-    {% for anim in core.animation_indexes %}
-    <animation type="Conditional" condition="Integer.IsGreater(Window.Property(hub.focus),{{ anim.index }}) + Control.IsVisible({{ anim.prev_group_id }})" reversible="true">
+    {% for i in range(1, core.hub_count) %}
+    <animation type="Conditional" condition="Integer.IsGreater(Window.Property(hub.focus),{{ i }}) + Control.IsVisible({{ i + 499 }})" reversible="true">
         <effect type="slide" end="0,{{ vscale(-555) }}" time="200" tween="sine" easing="inout"/>
     </animation>
     {% endfor %}
@@ -20,7 +20,9 @@
     <posx>0</posx>
     <posy>{{ vscale(96) }}</posy>
     <width>2130</width>
-    <height>{{ vscale(core.grouplist_height) }}</height>
+    {% with n = core.hub_count %}{% with grouplist_height = n * 555 + 320 %}
+    <height>{{ vscale(grouplist_height) }}</height>
+    {% endwith %}{% endwith %}
     <itemgap>20</itemgap>
     <orientation>vertical</orientation>
     <usecontrolcoords>true</usecontrolcoords>
@@ -240,10 +242,11 @@
     </control>
 
     <!-- DYNAMIC HUB ROWS - Generated from hub_count setting -->
-    {% for hub in core.hubs %}
-    <control type="group" id="{{ hub.group_id }}">
-        <visible>Integer.IsGreater(Container({{ hub.hub_id }}).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>{{ hub.hub_id }}</defaultcontrol>
+    {% for i in range(core.hub_count) %}
+    {% with group_id = i + 500 & hub_id = i + 400 %}
+    <control type="group" id="{{ group_id }}">
+        <visible>Integer.IsGreater(Container({{ hub_id }}).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
+        <defaultcontrol>{{ hub_id }}</defaultcontrol>
         <width>1920</width>
         <height>{{ vscale(535) }}</height>
         <control type="image">
@@ -264,15 +267,15 @@
             <align>left</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.{{ hub.hub_id }})][/UPPERCASE]</label>
+            <label>[UPPERCASE]$INFO[Window.Property(hub.{{ hub_id }})][/UPPERCASE]</label>
         </control>
-        <control type="list" id="{{ hub.hub_id }}">
+        <control type="list" id="{{ hub_id }}">
             <posx>0</posx>
             <posy>{{ vscale(29) }}</posy>
             <width>1920</width>
             <height>{{ vscale(515) }}</height>
-            <onup>{{ hub.prev_hub_id }}</onup>
-            <ondown>{{ hub.next_hub_id }}</ondown>
+            <onup>{% if loop.is_first %}101{% else %}{{ hub_id - 1 }}{% endif %}</onup>
+            <ondown>{% if loop.is_last %}{{ hub_id }}{% else %}{{ hub_id + 1 }}{% endif %}</ondown>
             <onright>noop</onright>
             <onleft>noop</onleft>
             <scrolltime>200</scrolltime>
@@ -289,6 +292,7 @@
             {% include "includes/hub_focusedlayout_ar16x9.xml.tpl" %}
         </control>
     </control>
+    {% endwith %}
     {% endfor %}
 
     <control type="label">

@@ -1,5 +1,5 @@
-<!-- Square focused layout (244x244) - uses hub.hub_id parameter -->
-<focusedlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ hub.hub_id }}),square)">
+<!-- Square focused layout (244x244) - uses hub_id variable -->
+<focusedlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ hub_id }}),square)">
     <control type="group">
         <posx>55</posx>
         <posy>{{ vscale(72) }}</posy>
@@ -9,7 +9,7 @@
             <posx>0</posx>
             <posy>0</posy>
             <control type="image">
-                <visible>Control.HasFocus({{ hub.hub_id }})</visible>
+                <visible>Control.HasFocus({{ hub_id }})</visible>
                 <posx>-40</posx>
                 <posy>{{ vscale(-40) }}</posy>
                 <width>324</width>
@@ -82,7 +82,7 @@
                     </control>
                 </control>
                 <control type="label">
-                    <scroll>Control.HasFocus({{ hub.hub_id }})</scroll>
+                    <scroll>Control.HasFocus({{ hub_id }})</scroll>
                     <posx>0</posx>
                     <posy>{{ vscale(254) }}</posy>
                     <width>244</width>
@@ -93,8 +93,8 @@
                     <label>$INFO[ListItem.Label]</label>
                 </control>
                 <control type="label">
-                    <scroll>Control.HasFocus({{ hub.hub_id }})</scroll>
-                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ hub.hub_id }}))</visible>
+                    <scroll>Control.HasFocus({{ hub_id }})</scroll>
+                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ hub_id }}))</visible>
                     <posx>0</posx>
                     <posy>{{ vscale(281) }}</posy>
                     <width>244</width>
@@ -106,7 +106,7 @@
                 </control>
             </control>
             <control type="image">
-                <visible>Control.HasFocus({{ hub.hub_id }})</visible>
+                <visible>Control.HasFocus({{ hub_id }})</visible>
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>254</width>

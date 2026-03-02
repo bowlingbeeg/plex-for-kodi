@@ -1,41 +1,10 @@
 # coding=utf-8
 
-def _generate_hub_defaults(hub_count=8):
-    """Generate default hub configurations for templates."""
-    hubs = []
-    for i in range(hub_count):
-        hub_id = 400 + i
-        hubs.append({
-            'index': i,
-            'hub_id': hub_id,
-            'group_id': 500 + i,
-            'spacer_id': 600 + i,
-            'is_first': i == 0,
-            'is_last': i == hub_count - 1,
-            'prev_hub_id': 101 if i == 0 else hub_id - 1,
-            'next_hub_id': hub_id if i == hub_count - 1 else hub_id + 1,
-        })
-    return hubs
-
-
-def _generate_animation_defaults(hub_count=8):
-    """Generate default animation index configurations for templates."""
-    animation_indexes = []
-    for i in range(1, hub_count):
-        animation_indexes.append({
-            'index': i,
-            'prev_group_id': 500 + i - 1,
-        })
-    return animation_indexes
-
-
 TEMPLATE_CONTEXTS = {
     "core": {
         "resolution": (1920, 1080),
         "needs_scaling": False,
         "hub_count": 8,  # Default number of hub rows on home screen
-        "hubs": _generate_hub_defaults(8),
-        "animation_indexes": _generate_animation_defaults(8),
     },
     "indicators": {
         "base": {

@@ -1,5 +1,5 @@
-<!-- Poster item layout (244x361) - uses hub.hub_id parameter -->
-<itemlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ hub.hub_id }}),poster)">
+<!-- Poster item layout (244x361) - uses hub_id variable -->
+<itemlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ hub_id }}),poster)">
     <control type="group">
         <posx>55</posx>
         <posy>{{ vscale(72) }}</posy>
@@ -81,7 +81,7 @@
             </control>
             <control type="label">
                 <scroll>false</scroll>
-                <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ hub.hub_id }}))</visible>
+                <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ hub_id }}))</visible>
                 <posx>0</posx>
                 <posy>{{ vscale(398) }}</posy>
                 <width>244</width>

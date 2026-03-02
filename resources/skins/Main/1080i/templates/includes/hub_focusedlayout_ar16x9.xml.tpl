@@ -1,5 +1,5 @@
-<!-- 16x9 focused layout (532x299) - uses hub.hub_id parameter -->
-<focusedlayout width="575" condition="String.IsEqual(Window.Property(hub.display.{{ hub.hub_id }}),ar16x9)">
+<!-- 16x9 focused layout (532x299) - uses hub_id variable -->
+<focusedlayout width="575" condition="String.IsEqual(Window.Property(hub.display.{{ hub_id }}),ar16x9)">
     <control type="group">
         <posx>55</posx>
         <posy>{{ vscale(72) }}</posy>
@@ -9,7 +9,7 @@
             <posx>0</posx>
             <posy>0</posy>
             <control type="image">
-                <visible>Control.HasFocus({{ hub.hub_id }})</visible>
+                <visible>Control.HasFocus({{ hub_id }})</visible>
                 <posx>-40</posx>
                 <posy>{{ vscale(-40) }}</posy>
                 <width>622</width>
@@ -82,7 +82,7 @@
                     </control>
                 </control>
                 <control type="label">
-                    <scroll>Control.HasFocus({{ hub.hub_id }})</scroll>
+                    <scroll>Control.HasFocus({{ hub_id }})</scroll>
                     <posx>0</posx>
                     <posy>{{ vscale(309) }}</posy>
                     <width>532</width>
@@ -93,8 +93,8 @@
                     <label>$INFO[ListItem.Label]</label>
                 </control>
                 <control type="label">
-                    <scroll>Control.HasFocus({{ hub.hub_id }})</scroll>
-                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ hub.hub_id }}))</visible>
+                    <scroll>Control.HasFocus({{ hub_id }})</scroll>
+                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ hub_id }}))</visible>
                     <posx>0</posx>
                     <posy>{{ vscale(336) }}</posy>
                     <width>532</width>
@@ -107,7 +107,7 @@
                 {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True & scale="medium" %}
             </control>
             <control type="image">
-                <visible>Control.HasFocus({{ hub.hub_id }})</visible>
+                <visible>Control.HasFocus({{ hub_id }})</visible>
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>542</width>

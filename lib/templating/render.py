@@ -61,41 +61,11 @@ def render_templates(theme=None, templates=None, force=False):
             watch_state_type = getSetting('watched_indicators', 'modern_2024')
             hub_count = getSetting('hub_count', 8)
 
-            # Pre-calculate hub configurations for template (ibis doesn't support arithmetic)
-            hubs = []
-            for i in range(hub_count):
-                hub_id = 400 + i
-                hubs.append({
-                    'index': i,
-                    'hub_id': hub_id,
-                    'group_id': 500 + i,
-                    'spacer_id': 600 + i,
-                    'is_first': i == 0,
-                    'is_last': i == hub_count - 1,
-                    'prev_hub_id': 101 if i == 0 else hub_id - 1,
-                    'next_hub_id': hub_id if i == hub_count - 1 else hub_id + 1,
-                })
-
-            # Pre-calculate animation indexes for focus animations (starts at 1)
-            animation_indexes = []
-            for i in range(1, hub_count):
-                animation_indexes.append({
-                    'index': i,
-                    'prev_group_id': 500 + i - 1,
-                })
-
-            # Pre-calculate grouplist height to fit all hubs
-            # Content: section bar (200) + hubs (hub_count × 535) + dummy (100) + gaps ((hub_count+1) × 20)
-            grouplist_height = 320 + 555 * hub_count
-
             overrides = {
                 "core": {
                     "resolution": DISPLAY_RESOLUTION,
                     "needs_scaling": NEEDS_SCALING,
                     "hub_count": hub_count,
-                    "hubs": hubs,
-                    "animation_indexes": animation_indexes,
-                    "grouplist_height": grouplist_height,
                 },
                 "indicators": {
                     "START": {
