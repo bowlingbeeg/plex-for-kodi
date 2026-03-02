@@ -455,7 +455,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.setBoolProperty('nav.repeat', showRepeat)
         self.setBoolProperty('nav.ffwdrwd', showFfwdRwd)
         self.setBoolProperty('nav.shuffle', showShuffle)
-        self.setBoolProperty('nav.vs10', True)
+        # VS10 mode switcher: show on CoreELEC Amlogic builds (U3k, avdvplus, p3i, CPM)
+        self.setBoolProperty('nav.vs10', util.CE_VS10)
         navPlaylist = util.getSetting('video_show_playlist')
         self.setBoolProperty('nav.playlist', (navPlaylist == "eponly" and
                                               ((self.player.video and self.player.video.type == 'episode') or (self.handler and self.handler.playlist))) or
