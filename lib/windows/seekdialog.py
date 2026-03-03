@@ -1588,7 +1588,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                      ref="_current_subtitle_idx"):
         self.handler.setSubtitles(do_sleep=do_sleep, honor_forced_subtitles_override=honor_forced_subtitles_override,
                                   honor_deselect_subtitles=honor_deselect_subtitles, ref=ref)
-        if self.player.video.current_subtitle_is_embedded:
+        if self.player.video.current_subtitle_is_embedded and util.CE_NEEDS_EMBEDDED_SEEKBACK:
             # this is an embedded stream, seek back a second after setting the subtitle due to long standing kodi
             # issue: https://github.com/xbmc/xbmc/issues/21086
             util.DEBUG_LOG("Switching embedded subtitle stream, seeking due to Kodi issue #21086")
