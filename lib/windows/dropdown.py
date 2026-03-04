@@ -54,6 +54,7 @@ class DropdownDialog(kodigui.BaseDialog):
         self.moveModeCallback = kwargs.get('move_mode_callback')  # Callback for move operations
         self.moveUpperBound = None  # First position that can't be moved to (separator boundary)
         self._justEnteredMoveMode = False  # Flag to skip the SELECT that entered move mode
+        self._adjustedY = None  # Actual y position used after overflow adjustment (set in onFirstInit)
 
     @property
     def x(self):
@@ -94,6 +95,7 @@ class DropdownDialog(kodigui.BaseDialog):
         if y == "middle":
             y = util.vperci(util.vscale(ol_height))
 
+        self._adjustedY = int(y)
         self.getControl(100).setPosition(self.x, int(y))
         if self.header:
             shadowControl.setPosition(-60, util.vscalei(-106))
@@ -164,7 +166,7 @@ class DropdownDialog(kodigui.BaseDialog):
 
         kodigui.BaseDialog.onAction(self, action)
 
-    def enterMoveMode(self, mli):
+    def enterMoveMode(self, mli, skip_first_select=True):
         """Enter moving mode for the given list item."""
         if not mli:
             return False
@@ -183,7 +185,7 @@ class DropdownDialog(kodigui.BaseDialog):
 
         self.movingItem = mli
         self.initialMovingPos = pos
-        self._justEnteredMoveMode = True  # Skip the next SELECT action (same click triggers both onClick and onAction)
+        self._justEnteredMoveMode = skip_first_select  # Skip SELECT only for direct clicks (not sub-menu)
         mli.setProperty('moving', '1')
         self.setProperty('moving', '1')
         return True
@@ -317,34 +319,67 @@ class DropdownDialog(kodigui.BaseDialog):
             return
 
         if self.suboptionCallback:
-            options = self.suboptionCallback(choice)
+            options = self.suboptionCallback(mli.dataSource)
             if options:
                 sub_select = None
                 if self.selectItem and self.selectItem.get("sub"):
                     sub_select = self.selectItem["sub"]
 
+                # Position sub-menu to the right of the main list, aligned with the selected item.
+                # Container(id).Position returns the cursor row within the VISIBLE area (0 = top
+                # visible item), which correctly accounts for scroll — unlike getSelectedPos()
+                # which returns the absolute index.
+                try:
+                    visual_row = int(xbmc.getInfoLabel('Container({}).Position'.format(self.OPTIONS_LIST_ID)))
+                    if visual_row < 0:
+                        raise ValueError('negative')
+                except (ValueError, TypeError):
+                    visual_row = self.optionsList.getSelectedPos()
+                list_y = self._adjustedY if self._adjustedY is not None else int(self.y)
+                sub_x = self.x + self.dropWidth - 40  # between content edge and shadow edge of main list
+                sub_y = list_y + visual_row * self.optionHeight
+
                 # disable scrollbar temporarily
                 oldprop = self.getBoolProperty('scroll')
                 self.setBoolProperty('scroll', False)
-                sub = showDropdown(options, (self.x + 290, self.y + 10), close_direction='left',
-                                   with_indicator=True, select_item=sub_select, is_sub_list=True)
+                sub = showDropdown(options, (sub_x, sub_y), close_direction='left',
+                                   with_indicator=True, select_item=sub_select, is_sub_list=True,
+                                   dialog_props=self.dialogProps)
+                if self.dialogProps:
+                    win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
+                    for key, value in self.dialogProps.items():
+                        win.setProperty(key, value)
                 self.setBoolProperty('scroll', oldprop)
                 if not sub:
                     return
 
                 choice['sub'] = sub
+                mli.dataSource['sub'] = sub  # Propagate to dataSource so optionsCallback can read it
 
         self.choice = choice
         if self.optionsCallback:
             result = self.optionsCallback(self.optionsList, mli)
             # Check if callback wants to enter move mode
             if result == 'enter_move_mode':
-                self.enterMoveMode(mli)
+                self.enterMoveMode(mli)  # skip_first_select=True (direct click)
+                return
+            elif result == 'enter_move_mode_sub':
+                self.enterMoveMode(mli, skip_first_select=False)  # came via sub-menu
                 return
             # Check if callback wants to close and reopen the dialog
             if result == 'close_and_reopen':
                 self.choice = {'reopen': True}
                 self.doClose()
+                return
+            # Check if callback wants to rebuild the list in place
+            elif isinstance(result, tuple) and result[0] == 'rebuild':
+                _, new_options, focus_pos = result
+                self.options = new_options
+                prev_select_index = self.selectIndex
+                self.selectIndex = focus_pos
+                self.selectItem = None
+                self.showOptions()
+                self.selectIndex = prev_select_index
                 return
 
         del mli
@@ -375,6 +410,7 @@ class DropdownDialog(kodigui.BaseDialog):
                 ds["indicator"] = ''
                 item = kodigui.ManagedListItem(o['display'], thumbnailImage=o.get('indicator', ''), data_source=ds)
                 item.setProperty('with.indicator', self.withIndicator and '1' or '')
+                item.setProperty('has.submenu', '1' if o.get('has_submenu') else '')
                 item.setProperty('align', self.alignItems)
                 items.append(item)
                 options.append(o)

@@ -128,7 +128,9 @@
             </control>
             <control type="group">
                 <visible>!String.IsEmpty(ListItem.Property(with.indicator))</visible>
+                <!-- Label: narrow when submenu chevron is shown, full-width otherwise -->
                 <control type="label">
+                    <visible>String.IsEmpty(ListItem.Property(has.submenu))</visible>
                     <posx>60</posx>
                     <posy>0</posy>
                     <width>520</width>
@@ -140,6 +142,30 @@
                     <scroll>true</scroll>
                     <scrollspeed>20</scrollspeed>
                     <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>490</width>
+                    <height>{{ vscale(66) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <scroll>true</scroll>
+                    <scrollspeed>20</scrollspeed>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <!-- Submenu chevron -->
+                <control type="image">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>558</posx>
+                    <posy>{{ vscale(22) }}</posy>
+                    <width>18</width>
+                    <height>{{ vscale(22) }}</height>
+                    <texture colordiffuse="80FFFFFF">script.plex/indicators/chevron-white.png</texture>
+                    <aspectratio>keep</aspectratio>
                 </control>
                 <control type="image">
                     <posx>20</posx>
@@ -256,7 +282,9 @@
             </control>
             <control type="group">
                 <visible>!String.IsEmpty(ListItem.Property(with.indicator))</visible>
+                <!-- Label: narrow when submenu chevron is shown, full-width otherwise -->
                 <control type="label">
+                    <visible>String.IsEmpty(ListItem.Property(has.submenu))</visible>
                     <posx>60</posx>
                     <posy>0</posy>
                     <width>520</width>
@@ -268,6 +296,30 @@
                     <scroll>true</scroll>
                     <scrollspeed>20</scrollspeed>
                     <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>490</width>
+                    <height>{{ vscale(66) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FF000000</textcolor>
+                    <scroll>true</scroll>
+                    <scrollspeed>20</scrollspeed>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <!-- Submenu chevron -->
+                <control type="image">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>558</posx>
+                    <posy>{{ vscale(22) }}</posy>
+                    <width>18</width>
+                    <height>{{ vscale(22) }}</height>
+                    <texture colordiffuse="80000000">script.plex/indicators/chevron-white.png</texture>
+                    <aspectratio>keep</aspectratio>
                 </control>
                 <control type="image">
                     <posx>20</posx>

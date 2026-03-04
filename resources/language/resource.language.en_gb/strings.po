@@ -3011,6 +3011,10 @@ msgctxt "#34086"
 msgid "Choose action"
 msgstr ""
 
+msgctxt "#34089"
+msgid "Move"
+msgstr ""
+
 msgctxt "#34087"
 msgid "Hub Count"
 msgstr ""
