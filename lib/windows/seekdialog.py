@@ -607,9 +607,11 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.idleTime = None
 
             lastAction = self._lastAction
+            lastActionID = self._lastAction[0] if self._lastAction else None
             self._lastAction = currentAction = (action.getId(), controlID)
 
             cancelActions = (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP)
+
 
             if not self._ignoreInput:
                 if action.getId() in KEY_MOVE_SET:
@@ -748,6 +750,13 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                     #     self.seekForward(60000)
                     # elif action == xbmcgui.ACTION_MOVE_DOWN:
                     #     self.seekBack(60000)
+
+                # pressed UP on the non-chpter big seek list
+                elif controlID == self.BIG_SEEK_LIST_ID:
+                    if action == xbmcgui.ACTION_MOVE_UP and (lastAction == currentAction or lastActionID != xbmcgui.ACTION_MOVE_UP) and not self.showChapters and (
+                                self.getProperty('show.markerSkip') or self.getProperty('show.markerSkip_OSDOnly')):
+                        self.setFocusId(self.SKIP_MARKER_BUTTON_ID)
+                        return
 
                 # don't auto-apply the currently selected seek when pressing down
                 elif controlID == self.PLAY_PAUSE_BUTTON_ID and self.previousFocusID == self.MAIN_BUTTON_ID \
@@ -1588,7 +1597,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                      ref="_current_subtitle_idx"):
         self.handler.setSubtitles(do_sleep=do_sleep, honor_forced_subtitles_override=honor_forced_subtitles_override,
                                   honor_deselect_subtitles=honor_deselect_subtitles, ref=ref)
-        if self.player.video.current_subtitle_is_embedded:
+        if self.player.video.current_subtitle_is_embedded and util.CE_NEEDS_EMBEDDED_SEEKBACK:
             # this is an embedded stream, seek back a second after setting the subtitle due to long standing kodi
             # issue: https://github.com/xbmc/xbmc/issues/21086
             util.DEBUG_LOG("Switching embedded subtitle stream, seeking due to Kodi issue #21086")
