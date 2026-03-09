@@ -732,6 +732,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
     def searchButtonClicked(self):
         self.processCommand(search.dialog(self, section_id=self.section.key))
 
+    def browseGenres(self):
+        from . import genres as genres_window
+        self.processCommand(opener.handleOpen(genres_window.GenreBrowserWindow, section=self.section))
+
     def keyClicked(self):
         li = self.keyListControl.getSelectedItem()
         if not li:
@@ -818,8 +822,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             for t in ('show', 'episode', 'collection'):
                 options.append({'type': t, 'display': TYPE_PLURAL.get(t, t)})
         elif self.section.TYPE == 'movie':
-            for t in ('movie', 'collection', 'folder'):
+            for t in ('movie', 'collection'):
                 options.append({'type': t, 'display': TYPE_PLURAL.get(t, t)})
+            options.append({'type': 'browse_genres', 'display': T(34080, 'Categories')})
+            options.append({'type': 'folder', 'display': TYPE_PLURAL.get('folder', 'folder')})
         elif self.section.TYPE == 'artist':
             for t in ('artist', 'album', 'collection', 'track'):
                 options.append({'type': t, 'display': TYPE_PLURAL.get(t, t)})
@@ -842,6 +848,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             return
 
         choice = result['type']
+
+        if choice == 'browse_genres':
+            self.browseGenres()
+            return
 
         if choice == ITEM_TYPE:
             return
