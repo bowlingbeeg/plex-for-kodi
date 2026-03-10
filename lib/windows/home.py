@@ -59,42 +59,6 @@ class HubsList(list):
         return self
 
 
-class SplitHub:
-    """A wrapper hub that presents a subset of another hub's items with a different identifier.
-
-    Used to split the combined 'continueWatching' hub into separate 'home.continue' (episodes)
-    and 'home.ondeck' (movies/shows) hubs for the old Continue Watching display mode.
-    """
-    TYPE = "Hub"
-
-    def __init__(self, source_hub, items, identifier, title):
-        self._source = source_hub
-        self.items = items
-        self.hubIdentifier = identifier
-        self.title = title
-        self._identifier = identifier
-        # Copy essential attributes from source hub
-        self.server = getattr(source_hub, 'server', None)
-        self.key = getattr(source_hub, 'key', None)
-        self.type = getattr(source_hub, 'type', None)
-        self.hubKey = getattr(source_hub, 'hubKey', None)
-        self.more = len(items) > 0
-        self.size = len(items)
-
-    def getCleanHubIdentifier(self, is_home=False):
-        """Return the clean identifier for this split hub."""
-        return self._identifier
-
-    def __getattr__(self, name):
-        """Proxy attribute access to the source hub for any missing attributes."""
-        if name.startswith('_') or name in ('items', 'hubIdentifier', 'title', '_identifier',
-                                             'server', 'key', 'type', 'hubKey', 'more', 'size'):
-            raise AttributeError(name)
-        return getattr(self._source, name)
-
-    def __repr__(self):
-        return '<SplitHub:{} items={}>'.format(self._identifier, len(self.items))
-
 
 class SectionHubsTask(backgroundthread.Task):
     def setup(self, section, callback, section_keys=None, ignore_hubs=None, reselect_pos_dict=None):
@@ -999,10 +963,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 # Fetch hubs for this section
                 hubs = section.server.hubs(section_key, count=HUB_PAGE_SIZE)
 
-                # For Home section in old Continue Watching mode, split the combined hub
-                if section_key is None and not util.getSetting('hubs_use_new_continue_watching', False):
-                    hubs = self.splitContinueWatchingHub(hubs)
-
                 for hub in hubs:
                     clean_identifier = hub.getCleanHubIdentifier(is_home=(section_key is None))
 
@@ -1085,24 +1045,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 cat_id = hub_config.get('catalog_id', hub_config.get('identifier'))
                 user_order[cat_id] = hub_config.get('order', idx)
 
-        # Handle Continue Watching mode switch for Home section ordering
-        # Map order from old identifiers to new or vice versa
+        # When CW mode changes, map order between old/new identifiers so user ordering is preserved.
         if section_key is None:  # Home section only
-            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
-            if use_new_cw:
-                # Using new combined mode - inherit order from old-style hubs
+            use_new_continue_watching = util.getSetting('hubs_use_new_continue_watching', False)
+            if use_new_continue_watching:
                 if 'home.continue' in user_order and 'continueWatching' not in user_order:
                     user_order['continueWatching'] = user_order['home.continue']
                 elif 'home.ondeck' in user_order and 'continueWatching' not in user_order:
                     user_order['continueWatching'] = user_order['home.ondeck']
             else:
-                # Using old split mode - inherit order from new-style hub
                 if 'continueWatching' in user_order:
                     cw_order = user_order['continueWatching']
                     if 'home.continue' not in user_order:
                         user_order['home.continue'] = cw_order
                     if 'home.ondeck' not in user_order:
-                        # On Deck comes right after Continue Watching
                         user_order['home.ondeck'] = cw_order + 0.5
 
         # Pre-compute hub index lookup for O(1) access instead of O(n) per hub
@@ -1271,15 +1227,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         has_custom_config = section_config.get('custom', False)
         configured_hubs = section_config.get('hubs', []) if has_custom_config else []
 
-        # Normalize CW mode in config: migrate stale hub IDs to match current setting.
-        # This fixes the dialog showing the wrong enabled state after switching CW modes,
-        # and ensures _moveHubToPosition can find hubs by index (it requires an explicit entry).
+        # Normalize CW identifiers in config to match the current mode, so Manage Hubs shows
+        # the correct enabled state and _moveHubToPosition can find entries by catalog_id.
         if section_key is None and has_custom_config and configured_hubs:
-            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
+            use_new_continue_watching = util.getSetting('hubs_use_new_continue_watching', False)
             configured_ids = {h.get('catalog_id', h.get('identifier')) for h in configured_hubs}
-            if use_new_cw and ('home.continue' in configured_ids or 'home.ondeck' in configured_ids) \
+            if use_new_continue_watching and ('home.continue' in configured_ids or 'home.ondeck' in configured_ids) \
                     and 'continueWatching' not in configured_ids:
-                # Old-style split hubs in config but new CW mode is active: collapse to continueWatching
+                # Old-style split hubs in config but new CW mode active: collapse to continueWatching
                 old_entries = [h for h in configured_hubs
                                if h.get('catalog_id') in ('home.continue', 'home.ondeck')]
                 min_order = min(h.get('order', 999) for h in old_entries)
@@ -1291,9 +1246,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     h['order'] = i
                 section_config['hubs'] = new_hubs
                 self.saveHubSettings()
-            elif not use_new_cw and 'continueWatching' in configured_ids \
+            elif not use_new_continue_watching and 'continueWatching' in configured_ids \
                     and 'home.continue' not in configured_ids and 'home.ondeck' not in configured_ids:
-                # New-style combined hub in config but old CW mode is active: expand to split hubs
+                # Combined hub in config but old CW mode active: expand to split hubs
                 cw_entry = next(h for h in configured_hubs if h.get('catalog_id') == 'continueWatching')
                 cw_order = cw_entry.get('order', 0)
                 new_hubs = [h for h in configured_hubs if h.get('catalog_id') != 'continueWatching']
@@ -1786,17 +1741,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         enabled = {h.get('catalog_id', h.get('identifier')) for h in section_config.get('hubs', [])}
 
-        # Handle Continue Watching mode switch for Home section
-        # When hubs_use_new_continue_watching setting changes, the hub identifiers change but the saved config
-        # might have the old identifiers. Map between them so hubs stay enabled.
+        # When CW mode changes, the hub identifiers change but saved config may have old ones.
+        # Map between them so hubs stay enabled after switching modes.
         if section_key is None:  # Home section only
-            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
-            if use_new_cw:
-                # Using new combined mode - if old-style hubs are in config, also enable new style
+            use_new_continue_watching = util.getSetting('hubs_use_new_continue_watching', False)
+            if use_new_continue_watching:
                 if 'home.continue' in enabled or 'home.ondeck' in enabled:
                     enabled.add('continueWatching')
             else:
-                # Using old split mode - if new-style hub is in config, also enable old style
                 if 'continueWatching' in enabled:
                     enabled.add('home.continue')
                     enabled.add('home.ondeck')
@@ -1906,26 +1858,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         configured_hubs = section_config.get('hubs', [])
         catalog_id_to_order = {h.get('catalog_id', h.get('identifier')): i for i, h in enumerate(configured_hubs)}
 
-        # Handle Continue Watching mode switch for Home section ordering
-        # Map order from old identifiers to new or vice versa
+        # When CW mode changes, map order between old/new identifiers so user ordering is preserved.
         if section_key is None:  # Home section only
-            use_new_cw = util.getSetting('hubs_use_new_continue_watching', False)
-            if use_new_cw:
-                # Using new combined mode - inherit order from old-style hubs
+            use_new_continue_watching = util.getSetting('hubs_use_new_continue_watching', False)
+            if use_new_continue_watching:
                 if 'home.continue' in catalog_id_to_order and 'continueWatching' not in catalog_id_to_order:
                     catalog_id_to_order['continueWatching'] = catalog_id_to_order['home.continue']
                 elif 'home.ondeck' in catalog_id_to_order and 'continueWatching' not in catalog_id_to_order:
                     catalog_id_to_order['continueWatching'] = catalog_id_to_order['home.ondeck']
             else:
-                # Using old split mode - inherit order from new-style hub
                 if 'continueWatching' in catalog_id_to_order:
                     cw_order = catalog_id_to_order['continueWatching']
                     if 'home.continue' not in catalog_id_to_order:
                         catalog_id_to_order['home.continue'] = cw_order
                     if 'home.ondeck' not in catalog_id_to_order:
-                        # On Deck comes right after Continue Watching
                         catalog_id_to_order['home.ondeck'] = cw_order + 0.5
-
 
         def get_order(hub):
             cat_id = getattr(hub, '_catalogId', None)
@@ -2636,42 +2583,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 self.showHubs(self.lastSection, force=True)
         except Exception as e:
             util.ERROR("Error in onContinueWatchingModeChanged: {}".format(e))
-
-    def splitContinueWatchingHub(self, hubs):
-        """Split the 'continueWatching' hub into 'home.continue' and 'home.ondeck' for old mode.
-
-        When hubs_use_new_continue_watching=False, the server still returns the combined 'continueWatching' hub.
-        This method splits it into two separate display hubs:
-        - home.continue: Episodes only (uses 16x9 thumbnails)
-        - home.ondeck: Movies and shows (uses poster layout)
-
-        Returns a new list of hubs with the split hubs replacing the original.
-        """
-        result = []
-        for hub in hubs:
-            identifier = hub.getCleanHubIdentifier(is_home=True)
-            if identifier == 'continueWatching' and hub.items:
-                # Split into episodes (Continue Watching) and non-episodes (On Deck)
-                episodes = []
-                non_episodes = []
-                for item in hub.items:
-                    item_type = getattr(item, 'type', None)
-                    if item_type == 'episode':
-                        episodes.append(item)
-                    else:
-                        non_episodes.append(item)
-
-
-                # Create split hubs only if they have items
-                if episodes:
-                    continue_hub = SplitHub(hub, episodes, 'home.continue', T(32463, 'Continue Watching'))
-                    result.append(continue_hub)
-                if non_episodes:
-                    ondeck_hub = SplitHub(hub, non_episodes, 'home.ondeck', T(32331, 'On Deck'))
-                    result.append(ondeck_hub)
-            else:
-                result.append(hub)
-        return result
 
     def setDebugFlag(self, *args, **kwargs):
         util.DEBUG = util.getSetting("debug")
@@ -3493,15 +3404,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             update = bool(self.sectionHubs.get(section.key))
             is_home = section.key is None
 
-            # For Home section in old Continue Watching mode, split the combined hub
-            # into separate home.continue (episodes) and home.ondeck (movies/shows) hubs
-            if is_home and not util.getSetting('hubs_use_new_continue_watching', False):
-                hubs_to_sort = self.splitContinueWatchingHub(hubs)
-            else:
-                hubs_to_sort = hubs
-
             # Sort hubs: user-defined order > server order
-            sorted_hubs = HubsList(self.sortHubsByUserOrder(hubs_to_sort, is_home=is_home, section_key=section.key))
+            sorted_hubs = HubsList(self.sortHubsByUserOrder(hubs, is_home=is_home, section_key=section.key))
             sorted_hubs.lastUpdated = hubs.lastUpdated
             sorted_hubs.invalid = hubs.invalid
             sorted_hubs.identifier = hubs.identifier
@@ -4109,10 +4013,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         urls = []
 
         hub_is_watchlist = hub.is_watchlist
-
-        # Debug: log item types for tv.recentlyadded hubs
-        if identifier and 'recentlyadded' in identifier:
-            item_types = [obj.type for obj in (hubitems or hub.items)[:3]]  # First 3 items
 
         for obj in hubitems or hub.items:
             if not self.backgroundSet and not use_reselect_pos:
