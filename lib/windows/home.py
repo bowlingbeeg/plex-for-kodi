@@ -1842,7 +1842,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 else:
                     catalog_id = '{}:{}'.format(source_key, clean_id)
 
-
                 if catalog_id not in enabled_catalog_ids:
                     continue
 
@@ -1898,6 +1897,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             for mli in self.sectionList:
                 if mli.dataSource and hasattr(mli.dataSource, 'key'):
                     sections_by_key[str(mli.dataSource.key)] = mli.dataSource
+
+        # Also include hidden libraries so cross-section hubs can still be fetched
+        if hasattr(self, 'allSections'):
+            for key, section_obj in self.allSections.items():
+                if key not in sections_by_key:
+                    sections_by_key[key] = section_obj
 
         for section_key in section_keys:
             section_obj = sections_by_key.get(str(section_key) if section_key else None)
@@ -3442,30 +3447,29 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                             pass
 
     def _scheduleHomeRefresh(self):
-        """Schedule a debounced Home refresh using BGThreader."""
-        # Mark that refresh is needed - the task will check this
-        self._homeRefreshScheduled = time.time()
+        """Schedule a debounced Home refresh using BGThreader.
 
+        Multiple calls within 0.5s are batched into a single refresh.
+        The task always refreshes after the delay - this avoids a race where
+        a second call updates _homeRefreshScheduled but no new task is created,
+        causing the existing task to skip the refresh entirely.
+        """
         # Only add task if one isn't already pending
         if not getattr(self, '_homeRefreshTaskPending', False):
             self._homeRefreshTaskPending = True
 
             class HomeRefreshTask(backgroundthread.Task):
-                def setup(task_self, window, scheduled_time):
+                def setup(task_self, window):
                     task_self.window = window
-                    task_self.scheduled_time = scheduled_time
                     return task_self
 
                 def run(task_self):
                     # Wait a bit for more callbacks to come in
                     util.MONITOR.waitForAbort(0.5)
                     task_self.window._homeRefreshTaskPending = False
+                    task_self.window._doHomeRefresh()
 
-                    # Only refresh if this is still the most recent schedule
-                    if getattr(task_self.window, '_homeRefreshScheduled', 0) <= task_self.scheduled_time:
-                        task_self.window._doHomeRefresh()
-
-            backgroundthread.BGThreader.addTask(HomeRefreshTask().setup(self, self._homeRefreshScheduled))
+            backgroundthread.BGThreader.addTask(HomeRefreshTask().setup(self))
 
     def _doHomeRefresh(self):
         """Perform the actual Home refresh."""
@@ -3568,7 +3572,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         self.wantedSections = []
+        self.allSections = {}  # All libraries including hidden, for cross-section hub fetching
         for section in _sections:
+            self.allSections[str(section.key)] = section
             if section.key in self.librarySettings and not self.librarySettings[section.key].get("show", True):
                 self.anyLibraryHidden = True
                 continue
