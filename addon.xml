@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.3.18-beta2"
+       version="1.3.19"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,7 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- SeekDialog: Fix skipping marker button not doing anything
+- for changelog see forum thread or github
         </news>
         <assets>
             <icon>icon2.png</icon>

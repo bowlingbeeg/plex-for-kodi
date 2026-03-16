@@ -48,7 +48,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 86
+THEME_VERSION = 87
 
 UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
 
@@ -123,6 +123,7 @@ DEBUG = addonSettings.debug
 
 
 hasCustomBGColour = False
+useSolidBackground = False
 if KODI_VERSION_MAJOR > 18:
     useSolidBackground = not addonSettings.dynamicBackgrounds and addonSettings.backgroundColour
     hasCustomBGColour = useSolidBackground and addonSettings.backgroundColour != "-"
