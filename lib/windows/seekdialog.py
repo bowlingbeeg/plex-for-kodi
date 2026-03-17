@@ -751,13 +751,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                     # elif action == xbmcgui.ACTION_MOVE_DOWN:
                     #     self.seekBack(60000)
 
-                # pressed UP on the non-chpter big seek list
-                elif controlID == self.BIG_SEEK_LIST_ID:
-                    if action == xbmcgui.ACTION_MOVE_UP and (lastAction == currentAction or lastActionID != xbmcgui.ACTION_MOVE_UP) and not self.showChapters and (
-                                self.getProperty('show.markerSkip') or self.getProperty('show.markerSkip_OSDOnly')):
-                        self.setFocusId(self.SKIP_MARKER_BUTTON_ID)
-                        return
-
                 # don't auto-apply the currently selected seek when pressing down
                 elif controlID == self.PLAY_PAUSE_BUTTON_ID and self.previousFocusID == self.MAIN_BUTTON_ID \
                         and action == xbmcgui.ACTION_MOVE_DOWN:
@@ -816,6 +809,12 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                             self.showPPIDialog()
                         return
                 elif controlID == self.BIG_SEEK_LIST_ID:
+                    # pressed UP on the non-chpter big seek list
+                    if action == xbmcgui.ACTION_MOVE_UP and (
+                            lastAction == currentAction or lastActionID != xbmcgui.ACTION_MOVE_UP) and not self.showChapters and (
+                            self.getProperty('show.markerSkip') or self.getProperty('show.markerSkip_OSDOnly')):
+                        self.setFocusId(self.SKIP_MARKER_BUTTON_ID)
+                        return
                     if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_BIG_STEP_FORWARD):
                         return self.updateBigSeek(changed=True)
                     elif action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_BIG_STEP_BACK):
@@ -1687,6 +1686,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.updateProgress(set_to_current=False, no_osd=True)
         elif self.showChapters:
             # when hovering chapters, show its corresponding time on the timeline, but don't act like we're seeking
+            util.DEBUG_LOG("BROLLER: %s" % self.bigSeekControl.getSelectedItem().dataSource)
             self.updateProgress(set_to_current=False, offset=self.bigSeekControl.getSelectedItem().dataSource,
                                 onlyTimeIndicator=True, no_osd=True)
         self.resetSkipSteps()
