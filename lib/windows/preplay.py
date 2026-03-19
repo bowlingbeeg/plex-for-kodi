@@ -4,7 +4,7 @@ import os
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexplayer, media, util as pnUtil, plexapp, plexlibrary, playlist, playqueue
+from plexnet import plexplayer, media, plexobjects, util as pnUtil, plexapp, plexlibrary, playlist, playqueue
 
 from lib import metadata
 from lib import util
@@ -36,6 +36,44 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
         return self.parentWindow.video.getRelated(offset=offset, limit=amount)
 
 
+class CollectionPaginator(pagination.BaseRelatedPaginator):
+    initialPageSize = 10
+    pageSize = 8
+    orphans = 4
+    thumbFallback = 'script.plex/thumb_fallbacks/movie.png'
+
+    def setup(self, server, path):
+        self._server = server
+        self._path = path
+        return self
+
+    @property
+    def initialPage(self):
+        data = self.getData(self.offset, self.initialPageSize)
+        if data:
+            self._lastAmount = self._currentAmount
+            self._currentAmount = len(data)
+            return data
+
+    def getData(self, offset, amount):
+        items = plexobjects.listItems(self._server, self._path, offset=offset, limit=amount)
+        if not self.leafCount:
+            self.leafCount = int(items.totalSize or 0) or len(items)
+        return items
+
+    def createListItem(self, item):
+        return kodigui.ManagedListItem(
+            item.title or '',
+            thumbnailImage=item.defaultThumb.asTranscodedImageURL(*self.parentWindow.RELATED_DIM),
+            data_source=item
+        )
+
+    def prepareListItem(self, item, mli):
+        mli.setProperty('unwatched', not item.isWatched and '1' or '')
+        mli.setBoolProperty('watched', item.isFullyWatched)
+        mli.setProperty('progress', util.getProgressImage(item))
+
+
 class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixin, PlaybackBtnMixin, ThemeMusicMixin,
                     RolesMixin, CommonMixin, WatchlistUtilsMixin, TasksMixin):
     xmlFile = 'script-plex-pre_play.xml'
@@ -57,6 +95,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     REVIEWS_LIST_ID = 401
     EXTRA_LIST_ID = 402
     RELATED_LIST_ID = 403
+    COLLECTION_LIST_IDS = [404, 405, 406]
 
     OPTIONS_GROUP_ID = 200
     PROGRESS_IMAGE_ID = 250
@@ -95,6 +134,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.lastNonOptionsFocusID = None
         self.initialized = False
         self.relatedPaginator = None
+        self.collectionPaginators = [None, None, None]
         self.openedWithAutoPlay = False
         self.fromPlayback = False
         self.useBGM = False
@@ -109,6 +149,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.relatedListControl = kodigui.ManagedControlList(self, self.RELATED_LIST_ID, 5)
         self.rolesListControl = kodigui.ManagedControlList(self, self.ROLES_LIST_ID, 5)
         self.reviewsListControl = kodigui.ManagedControlList(self, self.REVIEWS_LIST_ID, 5)
+        self.collectionListControls = [kodigui.ManagedControlList(self, lid, 5) for lid in self.COLLECTION_LIST_IDS]
         self.setBoolProperty("is_watchlisted", self.is_watchlisted)
 
         self.progressImageControl = self.getControl(self.PROGRESS_IMAGE_ID)
@@ -224,6 +265,13 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                     return
                 elif action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT):
                     self.updateBackgroundFrom(self.relatedListControl.getSelectedItem().dataSource)
+
+            if controlID in self.COLLECTION_LIST_IDS:
+                idx = self.COLLECTION_LIST_IDS.index(controlID)
+                paginator = self.collectionPaginators[idx]
+                if paginator and paginator.boundaryHit:
+                    paginator.paginate()
+                    return
         except:
             util.ERROR()
 
@@ -236,6 +284,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.openItem(self.extraListControl)
         elif controlID == self.RELATED_LIST_ID:
             self.openItem(self.relatedListControl)
+        elif controlID in self.COLLECTION_LIST_IDS:
+            self.openItem(self.collectionListControls[self.COLLECTION_LIST_IDS.index(controlID)])
         elif controlID == self.ROLES_LIST_ID:
             if self.fromWatchlist:
                 return
@@ -626,7 +676,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.batch_simple([(self.fillRoles, None, None),
                            (self.fillReviews, None, None),
                            (self.fillExtras, None, None),
-                           (self.fillRelated, None, None)])
+                           (self.fillRelated, None, None),
+                           (self.fillCollections, None, None)])
 
     def setInfo(self, skip_bg=False):
         if not skip_bg:
@@ -779,6 +830,33 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             return False
 
         return True
+
+    def fillCollections(self):
+        collections = self.video.collections() if self.video.type == 'movie' and self.video.collections else []
+        section_id = self.video.getLibrarySectionId()
+
+        for i, list_control in enumerate(self.collectionListControls):
+            if i >= len(collections):
+                list_control.reset()
+                self.setProperty('collection.header.{0}'.format(i), '')
+                self.collectionPaginators[i] = None
+                continue
+
+            collection = collections[i]
+            path = '/library/sections/{0}/all?type=1&{1}'.format(section_id, collection.filter)
+            paginator = CollectionPaginator(list_control, parent_window=self, leaf_count=0)
+            paginator.setup(self.video.server, path)
+            try:
+                paginator.paginate()
+            except Exception:
+                util.ERROR()
+                list_control.reset()
+                self.setProperty('collection.header.{0}'.format(i), '')
+                self.collectionPaginators[i] = None
+                continue
+
+            self.collectionPaginators[i] = paginator
+            self.setProperty('collection.header.{0}'.format(i), collection.tag)
 
     def fillRoles(self):
         items = []
