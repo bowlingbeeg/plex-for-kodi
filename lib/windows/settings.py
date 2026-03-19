@@ -1070,7 +1070,7 @@ class Settings(object):
                                        "wait for item refreshes and waits for the buffer to fill when starting "
                                        "playback.")),
                 BoolSetting(
-                    'onss_library_back_home', T(34064, 'Return to Home on Screensaver'), True
+                    'onss_library_back_home', T(34064, 'Return to Home on Screensaver'), util.CE_NEEDS_HOME_ON_SCREENSAVER
                 ).description(T(34065, 'When Kodi starts its screensaver, and we are in a library view, '
                                        'return to home. This saves idle energy as the library views are very heavy '
                                        'on the CPU even on idle due to a Kodi bug.'),),

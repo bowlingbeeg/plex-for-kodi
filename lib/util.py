@@ -655,9 +655,11 @@ CE_AVD_SB_LAV_MIN = 20251221124544  # R2
 CE_P3I_EMBED_FIXED = 20260204135007 # T2
 CE_SB_LAV_SWITCH = False
 CE_NEEDS_EMBEDDED_SEEKBACK = True
+CE_NEEDS_HOME_ON_SCREENSAVER = True
 
 def getCoreELEC():
-    global platform, device, platform_version, vendor, model, CE_SB_LAV_SWITCH, CE_NEEDS_EMBEDDED_SEEKBACK
+    global platform, device, platform_version, vendor, model, CE_SB_LAV_SWITCH, CE_NEEDS_EMBEDDED_SEEKBACK, \
+           CE_NEEDS_HOME_ON_SCREENSAVER
     try:
         stdout = subprocess.check_output('lsb_release', shell=True).decode()
         match = re.search(r'CoreELEC', stdout)
@@ -680,6 +682,7 @@ def getCoreELEC():
 
             elif "p3i_" in stdout:
                 CE_SB_LAV_SWITCH = True
+                CE_NEEDS_HOME_ON_SCREENSAVER = False
                 LOG("CoreELEC p3i build with LAV filters found. List-based fixing seamless branching possible.")
                 CE_NEEDS_EMBEDDED_SEEKBACK = int(stdout.split("_")[-1]) < CE_P3I_EMBED_FIXED
                 if not CE_NEEDS_EMBEDDED_SEEKBACK:
