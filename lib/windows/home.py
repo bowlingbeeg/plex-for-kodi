@@ -3747,6 +3747,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if combined_hubs is not None and len(combined_hubs) > 0:
             hubs = combined_hubs
 
+        # On Home, append library name to hubs where it's not already in the title
+        is_home = section.key is None
+        for hub in hubs:
+            hub.__dict__.pop('_displayTitle', None)  # Clear stale display titles
+            if is_home and hub.title:
+                source_key = hub.__dict__.get('_crossSectionSource')
+                if source_key is None and hub.hubIdentifier:
+                    parts = hub.hubIdentifier.rsplit('.', 2)
+                    if len(parts) >= 2 and parts[-2].isdigit():
+                        source_key = parts[-2]
+                if source_key is not None:
+                    section_obj = self.allSections.get(str(source_key))
+                    if section_obj and section_obj.title.lower() not in hub.title.lower():
+                        hub._displayTitle = u'{} \u2014 {}'.format(hub.title, section_obj.title)
+
         # Sequential slot assignment - hubs are assigned to slots in order
         # Display type is determined per-hub and set as a window property for the skin
         hasContent = False
@@ -4011,7 +4026,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not hubitems:
             hub.reset()
 
-        self.setProperty('hub.4{0:02d}'.format(index), hub.title or kwargs.get('title'))
+        display_title = hub.__dict__.get('_displayTitle') or hub.title or kwargs.get('title')
+        self.setProperty('hub.4{0:02d}'.format(index), display_title)
         self.setProperty('hub.text2lines.4{0:02d}'.format(index), text2lines and '1' or '')
 
         use_reselect_pos = False
