@@ -1705,6 +1705,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             del self.hubSettings[config_key]
             self.saveHubSettings()
 
+    def hasCrossSectionHubs(self, section_key):
+        """Check if a section has any cross-section hubs configured."""
+        required = self.getRequiredSourceSections(section_key)
+        str_key = str(section_key) if section_key is not None else None
+        for source in required:
+            str_source = str(source) if source is not None else None
+            if str_source != str_key:
+                return True
+        return False
+
     def getRequiredSourceSections(self, section_key):
         """Get list of source section keys needed for this section's custom hub config."""
         required = set()
@@ -2169,7 +2179,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Cancel any pending Home refresh
         self._homeRefreshScheduled = 0
-        self._homeNeedsRefresh = False
 
         #if self.sectionChangeThread and self.sectionChangeThread.isAlive():
         #    self.sectionChangeThread.join(timeout=2.0)
@@ -2597,7 +2606,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         section = kwargs.pop("section", None)
         self.showSections(focus_section=section or home_section)
         self.backgroundSet = False
-        self.showHubs(section if section else home_section)
+        # Don't call showHubs() here — showSections() just cleared sectionHubs,
+        # so there's nothing to draw. Let background tasks call showHubs() via
+        # sectionHubsCallback when data actually arrives.
 
     def disableUpdates(self, *args, **kwargs):
         util.LOG("Sleep event, stopping updates")
@@ -3385,7 +3396,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             # Cancel any pending Home refresh when switching sections
             self._homeRefreshScheduled = 0
-            self._homeNeedsRefresh = False
 
             self.setProperty('hub.focus', '')
             if util.addonSettings.dynamicBackgrounds:
@@ -3417,34 +3427,36 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             self.sectionHubs[section.key] = sorted_hubs
             self.setBoolProperty('loading.content', False)
-            if self.lastSection == section:
-                self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
-                # If this is Home completing and library sections already finished, check if refresh needed
-                if section.key is None:
+
+            on_home = self.lastSection and self.lastSection.key is None
+            has_cross = self.hasCrossSectionHubs(None) if on_home else False
+
+            if is_home:
+                if has_cross:
+                    # Cross-section hubs need library data — defer drawing until all libraries complete
                     pending = getattr(self, '_pendingLibrarySections', -1)
-                    needs_refresh = getattr(self, '_homeNeedsRefresh', False)
-                    if pending == 0 and needs_refresh:
-                        self._homeNeedsRefresh = False
-                        self.showHubs(section, update=False)
-            # Track library section completion for Home refresh
-            if section.key is not None:
+                    if pending == 0:
+                        # All libraries already done, draw now
+                        self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
+                    # else: wait for library tasks to finish
+                else:
+                    # No cross-section hubs — draw immediately
+                    self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
+            else:
+                # Library section completed
+                if self.lastSection == section:
+                    # User is viewing this library section — draw it
+                    self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
+
+                # Track library section completion
                 pending = getattr(self, '_pendingLibrarySections', 0)
                 if pending > 0:
                     self._pendingLibrarySections = pending - 1
 
-                # If we're on Home, mark that Home needs refresh (works for both default and custom config)
-                # Custom config might include hubs from this library section
-                if self.lastSection and self.lastSection.key is None:
-                    self._homeNeedsRefresh = True
-
-                # When all library sections are complete and Home needs refresh, do it
-                if self._pendingLibrarySections == 0 and getattr(self, '_homeNeedsRefresh', False):
-                    if self.lastSection and self.lastSection.key is None:
-                        if self.sectionHubs.get(None) is not None:
-                            self._homeNeedsRefresh = False  # Only clear flag if we actually refresh
-                            self.showHubs(self.lastSection, update=False)
-                        else:
-                            pass
+                # When all libraries are done and we're on Home with cross-section hubs, draw once
+                if self._pendingLibrarySections == 0 and on_home and has_cross:
+                    if self.sectionHubs.get(None) is not None:
+                        self.showHubs(self.lastSection, update=False)
 
     def _scheduleHomeRefresh(self):
         """Schedule a debounced Home refresh using BGThreader.
@@ -3591,11 +3603,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.wantedSections = None
 
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
+            # Include hidden sections that are needed for cross-section hubs
+            fetch_sections = list(sections)
+            required_sources = self.getRequiredSourceSections(None)  # Home's required sources
+            for source_key in required_sources:
+                str_key = str(source_key) if source_key is not None else None
+                if str_key and str_key in self.allSections:
+                    if not any(str(s.key) == str_key for s in fetch_sections):
+                        fetch_sections.append(self.allSections[str_key])
+
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
-                          for s in [home_section] + sections if not s.server.DEFER_HUBS]
-            # Track pending library sections for Home refresh after all complete
-            self._pendingLibrarySections = len([s for s in sections if not s.server.DEFER_HUBS])
-            self._homeNeedsRefresh = False
+                          for s in [home_section] + fetch_sections if not s.server.DEFER_HUBS]
+            # Track pending library sections for cross-section hub rendering
+            self._pendingLibrarySections = len([s for s in fetch_sections if not s.server.DEFER_HUBS])
             backgroundthread.BGThreader.addTasks(self.tasks)
 
         show_pm_indicator = util.getSetting('path_mapping_indicators')
