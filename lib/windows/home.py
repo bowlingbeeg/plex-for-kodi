@@ -61,11 +61,10 @@ class HubsList(list):
 
 
 class SectionHubsTask(backgroundthread.Task):
-    def setup(self, section, callback, section_keys=None, ignore_hubs=None, reselect_pos_dict=None):
+    def setup(self, section, callback, section_keys=None, reselect_pos_dict=None):
         self.section = section
         self.callback = callback
         self.section_keys = section_keys
-        self.ignore_hubs = ignore_hubs
         self.reselect_pos_dict = reselect_pos_dict
         return self
 
@@ -79,8 +78,7 @@ class SectionHubsTask(backgroundthread.Task):
 
         try:
             hubs = HubsList(self.section.server.hubs(self.section.key, count=HUB_PAGE_SIZE,
-                                                                      section_ids=self.section_keys,
-                                                                      ignore_hubs=self.ignore_hubs)).init()
+                                                                      section_ids=self.section_keys)).init()
             hubs.identifier = self.section.key
             if self.isCanceled():
                 return
@@ -1929,8 +1927,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if already_fetching:
                 continue
 
-            task = SectionHubsTask().setup(section_obj, self.crossSectionHubsCallback, self.wantedSections,
-                                           ignore_hubs=self.ignoredHubs)
+            task = SectionHubsTask().setup(section_obj, self.crossSectionHubsCallback, self.wantedSections)
             self.tasks.append(task)
             backgroundthread.BGThreader.addTask(task)
 
@@ -2000,10 +1997,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             hub_control = self.hubControls[hub_focus]
             hub = hub_control.dataSource
             return hub
-
-    @property
-    def ignoredHubs(self):
-        return [combo for combo, data in self.hubSettings.items() if not data.get("show", True)]
 
     def updateProperties(self, *args, **kwargs):
         self.setBoolProperty('bifurcation_lines', util.getSetting('hubs_bifurcation_lines'))
@@ -2539,7 +2532,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         #    for mli in self.sectionList:
         #        if mli.dataSource is not None and mli.dataSource != self.lastSection:
         #            sections.add(mli.dataSource)
-        #    tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
+        #    tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections)
         #             for s in [self.lastSection] + list(sections) if not s.server.DEFER_HUBS and s != self.lastSection]
         #else:
         # fetch hubs we need to update
@@ -2819,28 +2812,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                                 'display': T(33029, "Show library: {}").format(T(34000, 'Watchlist'))
                                 })
 
-            if self.hubSettings:
-                had_hidden_hub = False
-                hidden_hubs_opts = []
-                for section_hub_key in self.ignoredHubs:
-                    if not section_hub_key.startswith("None:"):
-                        continue
-
-                    hub_title = section_hub_key
-                    if plexapp.SERVERMANAGER.selectedServer.currentHubs:
-                        hub_title = plexapp.SERVERMANAGER.selectedServer.currentHubs.get(section_hub_key,
-                                                                                         section_hub_key)
-                    hidden_hubs_opts.append({'key': 'show',
-                                    'hub_ident': section_hub_key,
-                                    'display': T(33041, "Show hub: {}").format(hub_title)
-                                    }
-                                   )
-                    had_hidden_hub = True
-
-                if had_section and had_hidden_hub:
-                    options.append(dropdown.SEPARATOR)
-                options += hidden_hubs_opts
-
             # Add Manage Hubs option
             if options:
                 options.append(dropdown.SEPARATOR)
@@ -2888,21 +2859,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 options.append({'key': 'section_cache_reset', 'display': T(33721, "Clear library cache (not items)")})
                 options.append(dropdown.SEPARATOR)
 
-            if self.hubSettings:
-                for section_hub_key in self.ignoredHubs:
-                    if not section_hub_key.startswith("{}:".format(section.key)):
-                        continue
-
-                    hub_title = section_hub_key
-                    if plexapp.SERVERMANAGER.selectedServer.currentHubs:
-                        hub_title = plexapp.SERVERMANAGER.selectedServer.currentHubs.get(section_hub_key,
-                                                                                         section_hub_key)
-                    options.append({'key': 'show',
-                                    'hub_ident': section_hub_key,
-                                    'display': T(33041, "Show hub: {}").format(hub_title)
-                                    }
-                                   )
-
             # Add Manage Hubs option (not applicable to watchlist - it has no library hubs)
             if section != watchlist_section:
                 options.append(dropdown.SEPARATOR)
@@ -2945,12 +2901,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.saveLibrarySettings()
             return self.sectionList[self.sectionList.prev()].dataSource
         elif choice["key"] == "show":
-            if "hub_ident" in choice:
-                if choice["hub_ident"] in self.hubSettings:
-                    self.hubSettings[choice["hub_ident"]]['show'] = True
-                    self.saveHubSettings()
-                    return self.lastSection
-            elif "section_id" in choice:
+            if "section_id" in choice:
                 if choice["section_id"] in self.librarySettings:
                     self.librarySettings[choice["section_id"]]['show'] = True
                     self.saveLibrarySettings()
@@ -3012,28 +2963,43 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not mli:
             return
 
-        if mli.dataSource is None or mli.dataSource == kodigui.DUMMY_DATA_SOURCE:
+        if mli.dataSource is None or mli.dataSource is kodigui.DUMMY_DATA_SOURCE:
             return
 
         ds = mli.dataSource
 
-        section_hub_key = "{}:{}".format(self.lastSection.key, hub.hubIdentifier)
+        # Determine the hub's source section and catalog_id
+        is_home = self.lastSection.key is None
+        cross_source = hub.__dict__.get('_crossSectionSource')
+        hub_source_key = cross_source if cross_source is not None else self.lastSection.key
+        hub_is_home = hub_source_key is None
+        clean_identifier = hub.getCleanHubIdentifier(is_home=hub_is_home)
 
-        hub_title = section_hub_key
-        if plexapp.SERVERMANAGER.selectedServer.currentHubs:
-            hub_title = plexapp.SERVERMANAGER.selectedServer.currentHubs.get(section_hub_key,
-                                                                             section_hub_key)
+        # Build catalog_id for Manage Hubs integration
+        if hub_is_home:
+            catalog_id = clean_identifier
+        else:
+            catalog_id = '{}:{}'.format(hub_source_key, clean_identifier)
 
-        clean_identifier = hub.getCleanHubIdentifier()
+        hub_title = hub.__dict__.get('_displayTitle') or hub.title or clean_identifier
 
         select_base = 0
 
         options = []
         has_prev = False
-        # Don't allow hiding the main continue watching / on deck hubs
+        # Don't allow disabling the main continue watching / on deck hubs
         if hub.hubIdentifier not in ("continueWatching", "home.continue", "home.ondeck"):
-            options.append({'key': 'hide', 'display': T(33659, "Hide Hub: {}").format(hub_title)})
+            options.append({'key': 'disable_hub', 'display': T(33659, "Disable Hub: {}").format(hub_title)})
             has_prev = True
+
+            # Offer "Add to Home" when viewing a library section (not Home)
+            if not is_home:
+                # Check if this hub is already on Home
+                home_config = self.hubSettings.get(None, {}) if self.hubSettings else {}
+                home_hubs = home_config.get('hubs', []) if home_config.get('custom') else []
+                already_on_home = any(h.get('catalog_id') == catalog_id for h in home_hubs)
+                if not already_on_home:
+                    options.append({'key': 'add_to_home', 'display': 'Add to Home: {}'.format(hub_title)})
 
         if ds.TYPE in ('episode', 'season', 'movie', 'show'):
             if has_prev:
@@ -3093,12 +3059,24 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not choice:
             return
 
-        elif choice["key"] == "hide":
-            if section_hub_key not in self.hubSettings:
-                self.hubSettings[section_hub_key] = {}
-            self.hubSettings[section_hub_key]['show'] = False
+        elif choice["key"] == "disable_hub":
+            # Disable hub via Manage Hubs settings (same as disabling in the dialog)
+            section_key = self.lastSection.key
+            self._ensureCustomConfigExists(section_key)
+            self._disableHub(catalog_id, section_key)
+            self.showHubs(self.lastSection, update=False, force=True)
+            return
+
+        elif choice["key"] == "add_to_home":
+            # Add this hub to Home as a cross-section hub
+            self._ensureCustomConfigExists(None)  # None = Home section
+            home_config = self.hubSettings.get(None, {})
+            hubs_list = home_config.get('hubs', [])
+            # Add at the end
+            new_order = max((h.get('order', 0) for h in hubs_list), default=-1) + 1
+            hubs_list.append({'catalog_id': catalog_id, 'order': new_order})
             self.saveHubSettings()
-            return self.lastSection
+            return
 
         elif choice["key"] in ("mark_watched", "mark_unwatched"):
             if util.getSetting('home_confirm_actions'):
@@ -3612,7 +3590,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     if not any(str(s.key) == str_key for s in fetch_sections):
                         fetch_sections.append(self.allSections[str_key])
 
-            self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
+            self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections)
                           for s in [home_section] + fetch_sections if not s.server.DEFER_HUBS]
             # Track pending library sections for cross-section hub rendering
             self._pendingLibrarySections = len([s for s in fetch_sections if not s.server.DEFER_HUBS])
@@ -3734,8 +3712,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if section.key in self.sectionHubs:
                     self.sectionHubs[section.key] = None
             task = SectionHubsTask().setup(section, self.sectionHubsCallback, self.wantedSections,
-                                           reselect_pos_dict=rpd,
-                                           ignore_hubs=self.ignoredHubs)
+                                           reselect_pos_dict=rpd)
             self.tasks.append(task)
             backgroundthread.BGThreader.addTask(task)
             return
