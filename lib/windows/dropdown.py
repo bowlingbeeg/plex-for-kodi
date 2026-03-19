@@ -94,6 +94,11 @@ class DropdownDialog(kodigui.BaseDialog):
         else:
             shadowControl.setHeight(height)
         self.optionsList.setHeight(ol_height)
+        if self.getBoolProperty('scroll'):
+            try:
+                self.getControl(self.SCROLLBAR_ID).setHeight(ol_height)
+            except:
+                pass
 
         if y == "middle":
             y = util.vperci(util.vscale(ol_height))
@@ -169,6 +174,10 @@ class DropdownDialog(kodigui.BaseDialog):
         elif self.suboptionCallback and action == xbmcgui.ACTION_MOVE_RIGHT:
             if self.optionsList.getSelectedItem().dataSource.get("is_sub_list"):
                 self.setChoice()
+                return
+            elif self.getBoolProperty('scroll'):
+                self.setFocusId(self.SCROLLBAR_ID)
+                return
 
         elif controlID == self.SCROLLBAR_ID and action == xbmcgui.ACTION_SELECT_ITEM:
             self.setChoice()
