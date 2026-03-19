@@ -59,10 +59,13 @@ def render_templates(theme=None, templates=None, force=False):
 
             # get template overrides
             watch_state_type = getSetting('watched_indicators', 'modern_2024')
+            hub_count = getSetting('hub_count', 8)
+
             overrides = {
                 "core": {
                     "resolution": DISPLAY_RESOLUTION,
-                    "needs_scaling": NEEDS_SCALING
+                    "needs_scaling": NEEDS_SCALING,
+                    "hub_count": hub_count,
                 },
                 "indicators": {
                     "START": {

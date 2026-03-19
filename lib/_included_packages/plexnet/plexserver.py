@@ -186,24 +186,23 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
             and not section
 
         if newCW:
-            # home, add continueWatching
             cq = '/hubs/continueWatching'
             if section_ids:
                 cq += util.joinArgs(params)
 
             cdata = self.query(cq, params=params)
-            ccontainer = plexobjects.PlexContainer(cdata, initpath=cq, server=self, address=cq)
-            self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
-            hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
+            if cdata and len(cdata) > 0:
+                ccontainer = plexobjects.PlexContainer(cdata, initpath=cq, server=self, address=cq)
+                self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
+                hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
 
         if data:
             for elem in data:
                 hubIdent = elem.attrib.get('hubIdentifier')
                 self.currentHubs["{}:{}".format(section, hubIdent)] = elem.attrib.get('title')
 
-                # if we've added continueWatching, which combines continue and ondeck, skip those two hubs
-                if newCW and hubIdent and \
-                        (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
+                # Skip old-style continue/ondeck hubs when using combined continueWatching
+                if newCW and hubIdent and (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
                     continue
 
                 if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:

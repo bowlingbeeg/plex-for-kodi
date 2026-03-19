@@ -4,6 +4,7 @@ TEMPLATE_CONTEXTS = {
     "core": {
         "resolution": (1920, 1080),
         "needs_scaling": False,
+        "hub_count": 8,  # Default number of hub rows on home screen
     },
     "indicators": {
         "base": {

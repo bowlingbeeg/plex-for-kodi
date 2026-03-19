@@ -425,7 +425,7 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
 
 
 class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
-    __slots__ = ("_closing", "_winID", "started", "isOpen", "_errored", "_closeSignalled")
+    __slots__ = ("_closing", "_winID", "started", "isOpen", "_errored", "_closeSignalled", "dialogProps")
 
     def __init__(self, *args, **kwargs):
         BaseFunctions.__init__(self)
@@ -436,6 +436,7 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         self.started = False
 
         carryProps = kwargs.get("dialog_props", None)
+        self.dialogProps = carryProps
         if carryProps:
             self.setProperties(list(carryProps.keys()), list(carryProps.values()))
         self.setBoolProperty('is_plextuary', util.SKIN_PLEXTUARY)
