@@ -3517,8 +3517,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if hub_slot_index is not None:
                 # Hub is currently displayed - determine correct is_home flag
                 # Use the hub's cross-section source if set, otherwise use lastSection
-                cross_source = hub.__dict__.get('_crossSectionSource')
-                if cross_source is not None:
+                cross_source = hub.__dict__.get('_crossSectionSource') if '_crossSectionSource' in hub.__dict__ else "__UNDEF__"
+                if cross_source != "__UNDEF__":
                     is_home = cross_source is None
                 else:
                     is_home = self.lastSection.key is None if self.lastSection else False
@@ -3733,20 +3733,25 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if combined_hubs is not None and len(combined_hubs) > 0:
             hubs = combined_hubs
 
-        # On Home, append library name to hubs where it's not already in the title
+        # Append library's name in cross section hubs
         is_home = section.key is None
         for hub in hubs:
             hub.__dict__.pop('_displayTitle', None)  # Clear stale display titles
-            if is_home and hub.title:
-                source_key = hub.__dict__.get('_crossSectionSource')
+            source_key = hub.__dict__.get('_crossSectionSource') if '_crossSectionSource' in hub.__dict__ else "__UNDEF__"
+            source_is_home = source_key is None
+            if hub.title:
                 if source_key is None and hub.hubIdentifier:
                     parts = hub.hubIdentifier.rsplit('.', 2)
                     if len(parts) >= 2 and parts[-2].isdigit():
                         source_key = parts[-2]
-                if source_key is not None:
+                if not source_is_home and source_key != "__UNDEF__" and section.key != source_key:
+                    # hub's source is different to the current section
                     section_obj = self.allSections.get(str(source_key))
                     if section_obj and section_obj.title.lower() not in hub.title.lower():
                         hub._displayTitle = u'{} \u2014 {}'.format(hub.title, section_obj.title)
+                elif source_is_home and not is_home:
+                    # hub's source is Home
+                    hub._displayTitle = u'{} \u2014 {}'.format(hub.title, T(32332, 'Home'))
 
         # Sequential slot assignment - hubs are assigned to slots in order
         # Display type is determined per-hub and set as a window property for the skin
@@ -3763,14 +3768,15 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             # For cross-section hubs, use the source section's is_home flag
             # Use __dict__.get() instead of hasattr() because PlexObject.__getattr__ can cause false positives
-            cross_section_source = hub.__dict__.get('_crossSectionSource')
-            hub_source_key = cross_section_source if cross_section_source is not None else section.key
+            cross_section_source = hub.__dict__.get('_crossSectionSource') if '_crossSectionSource' in hub.__dict__ else "__UNDEF__"
+            hub_source_key = cross_section_source if cross_section_source != "__UNDEF__" else section.key
             hub_is_home = hub_source_key is None
-            identifier = hub.getCleanHubIdentifier(is_home=hub_is_home)
+            cross_is_home = cross_section_source is None
+            identifier = hub.getCleanHubIdentifier(is_home=hub_is_home or cross_is_home)
 
             # Check if hub should be hidden (for native hubs not in combined list)
             # Use string comparison to handle potential int/string mismatches
-            str_cross_source = str(cross_section_source) if cross_section_source is not None else None
+            str_cross_source = str(cross_section_source) if cross_section_source != "__UNDEF__" else None
             str_section_key = str(section.key) if section.key is not None else None
             is_cross_section = str_cross_source is not None and str_cross_source != str_section_key
 
