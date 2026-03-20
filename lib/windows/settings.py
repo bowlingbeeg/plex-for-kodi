@@ -822,7 +822,7 @@ class Settings(object):
                         ('skip_intro', T(32495, 'Skip Intro')),
                         ('skip_credits', T(32496, 'Skip Credits')),
                     ) + (
-                        (('video_show_vs10', T(34080, 'VS10 Mode')),) if util.CE_VS10 else ()
+                        (('video_show_vs10', T(34090, 'VS10 Mode')),) if util.CE_VS10 else ()
                     )
                 ).description(T(32939, 'Only applies to video player UI')),
                 MultiUAOptionsSetting(

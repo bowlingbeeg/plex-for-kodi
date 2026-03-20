@@ -444,7 +444,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.bigSeekGroupControl = self.getControl(self.BIG_SEEK_GROUP_ID)
         self.initialized = True
 
-        button_settings = util.getUserSetting('player_show_buttons', ['subtitle_downloads', 'skip_intro', 'skip_credits'])
+        button_defaults = ['subtitle_downloads', 'skip_intro', 'skip_credits'] + \
+            (['video_show_vs10'] if util.CE_VS10 else [])
+        button_settings = util.getUserSetting('player_show_buttons', button_defaults)
         showQuickSubs = 'subtitle_downloads' in button_settings
         showRepeat = 'video_show_repeat' in button_settings
         showFfwdRwd = 'video_show_ffwdrwd' in button_settings
