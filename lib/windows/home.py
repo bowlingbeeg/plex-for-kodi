@@ -543,7 +543,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.closeOption = None
         self.hubControls = None
         self.backgroundSet = False
-        self._homeRefreshTimer = None  # Debounce timer for Home refresh after library callbacks
         self.sectionChangeThread = None
         self.sectionChangeTimeout = 0
         self.lastFocusID = None
@@ -1100,12 +1099,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         configured_catalog_ids = {h.get('catalog_id', h.get('identifier')) for h in configured_hubs}
 
-        # Build position map for enabled hubs (1-based for display)
-        enabled_positions = {}
-        for idx, hub_config in enumerate(configured_hubs):
-            cat_id = hub_config.get('catalog_id', hub_config.get('identifier'))
-            enabled_positions[cat_id] = idx + 1
-
         # Determine enabled/disabled state for all hubs
         hub_states = {}  # catalog_id -> (is_enabled, hub_info)
         for catalog_id, hub_info in self.availableHubs.items():
@@ -1566,12 +1559,33 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             else:
                 cat_id = '{}:{}'.format(section_key, hub_identifier)
 
-            if cat_id in self.availableHubs:
-                section_config['hubs'].append({
-                    'catalog_id': cat_id,
-                    'identifier': hub_identifier,
-                    'order': len(section_config['hubs'])
-                })
+            section_config['hubs'].append({
+                'catalog_id': cat_id,
+                'identifier': hub_identifier,
+                'order': len(section_config['hubs'])
+            })
+
+            # Backfill availableHubs so _buildHubSettingsOptions can display this hub
+            if cat_id not in self.availableHubs:
+                source_title = 'Home'
+                source_type = 'home'
+                if section_key is not None:
+                    source_section = self.allSections.get(str(section_key))
+                    if source_section:
+                        source_title = str(source_section.title)
+                        source_type = str(source_section.type)
+
+                self.availableHubs[cat_id] = {
+                    'catalog_id': str(cat_id),
+                    'identifier': str(hub_identifier),
+                    'title': str(hub.title) if hub.title else hub_identifier,
+                    'hubIdentifier': str(hub.hubIdentifier) if hub.hubIdentifier else hub_identifier,
+                    'source_section_key': section_key,
+                    'source_section_title': source_title,
+                    'source_section_type': source_type,
+                    'native_display': self.TYPE_TO_DISPLAY.get(hub.items[0].type, 'poster') if hub.items else 'poster',
+                    'item_count': len(hub.items) if hub.items else 0,
+                }
 
         self.saveHubSettings()
         self._hubsSettingsChanged = True
@@ -1989,11 +2003,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                             self._scheduleHomeRefresh()
                         else:
                             self.showHubs(self.lastSection, update=False)
-                    else:
-                        pass
-                else:
-                    pass
-        except Exception as e:
+        except Exception:
             pass
 
     @property
@@ -3478,8 +3488,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             # Check if Home's native hubs are cached
             if self.sectionHubs.get(None) is not None:
                 self.showHubs(self.lastSection, update=False)
-            else:
-                pass
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
         with self.lock:
