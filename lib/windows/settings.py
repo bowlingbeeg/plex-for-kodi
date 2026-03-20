@@ -782,6 +782,13 @@ class Settings(object):
                     T(33044, "").format(util.addonSettings.hubsRrMax)
                 ),
                 BoolSetting(
+                    'hubs_linear', T(34091, 'Linear Hubs'), False
+                ).description(
+                    T(34092, "Certain hubs, such as Top Unwatched Movies, are randomized by Plex by default, "
+                             "making sequentially consuming content practically impossible. Prevent this and "
+                             "use linearly sorted variants.")
+                ),
+                BoolSetting(
                     'hubs_bifurcation_lines', T(32961, 'Show hub bifurcation lines'), False
                 ).description(
                     T(32962, "Visually separate hubs horizontally using a thin line.")

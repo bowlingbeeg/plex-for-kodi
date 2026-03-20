@@ -2064,6 +2064,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         plexapp.util.APP.on('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.on('change:hub_season_thumbnails', self.setDirty)
         plexapp.util.APP.on('change:use_watchlist', self.setDirty)
+        plexapp.util.APP.on('change:hubs_linear', self.onLinearHubsChanged)
         plexapp.util.APP.on('change:hubs_use_new_continue_watching', self.onContinueWatchingModeChanged)
         plexapp.util.APP.on('change:force_pd_mapping', self.setHostsDirty)
         plexapp.util.APP.on('change:debug', self.setDebugFlag)
@@ -2096,6 +2097,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         plexapp.util.APP.off('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.off('change:hub_season_thumbnails', self.setDirty)
         plexapp.util.APP.off('change:use_watchlist', self.setDirty)
+        plexapp.util.APP.off('change:hubs_linear', self.onLinearHubsChanged)
         plexapp.util.APP.off('change:force_pd_mapping', self.setHostsDirty)
         plexapp.util.APP.off('change:debug', self.setDebugFlag)
         plexapp.util.APP.off('change:update_source', self.updateSourceChanged)
@@ -2584,6 +2586,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def setThemeDirty(self, *args, **kwargs):
         self._applyTheme = util.getSetting("theme")
+
+    def onLinearHubsChanged(self, *args, **kwargs):
+        """Handle change in Linear Hubs setting - clear all hub caches and re-fetch."""
+        try:
+            # Clear hub caches for all sections since random hubs can appear anywhere
+            self.sectionHubs.clear()
+
+            self._reloadOnReinit = True
+
+            if self.lastSection:
+                self.showHubs(self.lastSection, force=True)
+        except Exception as e:
+            util.ERROR("Error in onLinearHubsChanged: {}".format(e))
 
     def onContinueWatchingModeChanged(self, *args, **kwargs):
         """Handle change in Continue Watching mode (combined vs separate hubs)."""
@@ -3744,6 +3759,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Append library's name in cross section hubs
         is_home = section.key is None
+        linear_hubs = util.getSetting('hubs_linear', False)
         for hub in hubs:
             hub.__dict__.pop('_displayTitle', None)  # Clear stale display titles
             source_key = hub.__dict__.get('_crossSectionSource') if '_crossSectionSource' in hub.__dict__ else "__UNDEF__"
@@ -3761,6 +3777,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 elif source_is_home and not is_home:
                     # hub's source is Home
                     hub._displayTitle = u'{} \u2014 {}'.format(hub.title, T(32332, 'Home'))
+
+            # Mark randomised hubs in the title when linear mode is off
+            if hub.random == '1' and not linear_hubs:
+                base_title = hub.__dict__.get('_displayTitle', hub.title)
+                if base_title:
+                    hub._displayTitle = u'{} (Random)'.format(base_title)
+
+            # In linear mode, replace random hub items with sorted results from hub.key
+            if hub.random == '1' and linear_hubs and hub.key:
+                try:
+                    hub.items = hub.extend(start=0, size=hub.size.asInt() or 10)
+                except:
+                    pass  # Fall back to the random items if re-fetch fails
 
         # Sequential slot assignment - hubs are assigned to slots in order
         # Display type is determined per-hub and set as a window property for the skin
