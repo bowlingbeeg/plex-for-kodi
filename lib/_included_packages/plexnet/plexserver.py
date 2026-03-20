@@ -144,7 +144,7 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
     def getPrefs(self):
         return plexobjects.listItems(self, "/:/prefs", bytag=True, cachable=False, not_cachable=True)
 
-    def hubs(self, section=None, count=None, search_query=None, section_ids=None, ignore_hubs=None):
+    def hubs(self, section=None, count=None, search_query=None, section_ids=None):
         hubs = []
 
         params = {"includeMarkers": 1}
@@ -203,9 +203,6 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
 
                 # Skip old-style continue/ondeck hubs when using combined continueWatching
                 if newCW and hubIdent and (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
-                    continue
-
-                if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:
                     continue
 
                 hubs.append(plexlibrary.Hub(elem, server=self, container=container))

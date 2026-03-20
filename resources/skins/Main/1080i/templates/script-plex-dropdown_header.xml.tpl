@@ -59,11 +59,13 @@
         <onup condition="String.IsEqual(Window.Property(close.direction),top)">Close</onup>
         <onup condition="!String.IsEqual(Window.Property(close.direction),top)">noop</onup>
         <onleft condition="String.IsEqual(Window.Property(close.direction),left)">Close</onleft>
+        <onright condition="!String.IsEmpty(Window.Property(scroll))">1152</onright>
         <onright condition="String.IsEqual(Window.Property(close.direction),right)">Close</onright>
         <ondown condition="String.IsEqual(Window.Property(close.direction),down)">Close</ondown>
         <ondown condition="!String.IsEqual(Window.Property(close.direction),down)">noop</ondown>
         <scrolltime>200</scrolltime>
         <orientation>vertical</orientation>
+        <pagecontrol>1152</pagecontrol>
         <!-- ITEM LAYOUT ########################################## -->
         <itemlayout height="{{ vscale(66) }}">
             <control type="image">
@@ -339,6 +341,23 @@
                 <texture colordiffuse="FF000000">script.plex/white-square.png</texture>
             </control>
         </focusedlayout>
+    </control>
+    <control type="scrollbar" id="1152">
+        <hitrect x="600" y="0" w="50" h="{{ vscale(528) }}" />
+        <left>604</left>
+        <top>0</top>
+        <width>12</width>
+        <height>{{ vscale(528) }}</height>
+        <visible>true</visible>
+        <texturesliderbackground colordiffuse="40000000" border="5">script.plex/white-square-rounded.png</texturesliderbackground>
+        <texturesliderbar colordiffuse="77FFFFFF" border="5">script.plex/white-square-rounded.png</texturesliderbar>
+        <texturesliderbarfocus colordiffuse="FFE5A00D" border="5">script.plex/white-square-rounded.png</texturesliderbarfocus>
+        <textureslidernib>-</textureslidernib>
+        <textureslidernibfocus>-</textureslidernibfocus>
+        <pulseonselect>false</pulseonselect>
+        <orientation>vertical</orientation>
+        <showonepage>false</showonepage>
+        <onleft>250</onleft>
     </control>
 </control>
 {% endblock controls %}

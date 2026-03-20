@@ -66,7 +66,7 @@ class PlexDiscoverServer(MyPlexServer):
         #self.session.request = functools.partial(self.session.request, timeout=plexserver.util.PLEXTV_TIMEOUT)
 
 
-    def hubs(self, section=None, count=None, search_query=None, section_ids=None, ignore_hubs=None):
+    def hubs(self, section=None, count=None, search_query=None, section_ids=None):
         hubs = []
 
         self.currentHubs = {} if self.currentHubs is None else self.currentHubs
@@ -101,9 +101,6 @@ class PlexDiscoverServer(MyPlexServer):
                     hubIdent = elem.attrib.get('hubIdentifier')
                     hubTitle = T(34019, "Discover {}").format(elem.attrib.get('title')) if q == '/hubs/sections/home' else elem.attrib.get('title')
                     self.currentHubs["{}:{}".format(section, hubIdent)] = hubTitle
-
-                    if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:
-                        continue
 
                     hub = plexlibrary.WatchlistHub(elem, server=self, container=container)
                     hub.title = hubTitle

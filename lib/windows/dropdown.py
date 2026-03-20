@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import time
+
 from kodi_six import xbmc, xbmcgui
 
 from lib import util
@@ -55,6 +57,7 @@ class DropdownDialog(kodigui.BaseDialog):
         self.moveUpperBound = None  # First position that can't be moved to (separator boundary)
         self._justEnteredMoveMode = False  # Flag to skip the SELECT that entered move mode
         self._adjustedY = None  # Actual y position used after overflow adjustment (set in onFirstInit)
+        self._lastMoveTime = 0  # Timestamp of last UP/DOWN action for wrap debounce
 
     @property
     def x(self):
@@ -91,6 +94,11 @@ class DropdownDialog(kodigui.BaseDialog):
         else:
             shadowControl.setHeight(height)
         self.optionsList.setHeight(ol_height)
+        if self.getBoolProperty('scroll'):
+            try:
+                self.getControl(self.SCROLLBAR_ID).setHeight(ol_height)
+            except:
+                pass
 
         if y == "middle":
             y = util.vperci(util.vscale(ol_height))
@@ -138,6 +146,10 @@ class DropdownDialog(kodigui.BaseDialog):
 
         if self.roundRobin and action in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN) and \
                 controlID == self.OPTIONS_LIST_ID:
+            now = time.time()
+            key_held = (now - self._lastMoveTime) < 0.3
+            self._lastMoveTime = now
+
             to_pos = None
             last_index = self.optionsList.size() - 1
 
@@ -151,6 +163,9 @@ class DropdownDialog(kodigui.BaseDialog):
                     to_pos = 0
 
                 if to_pos is not None:
+                    if key_held:
+                        # Key is being held — don't wrap
+                        return
                     self.optionsList.setSelectedItemByPos(to_pos)
                     self.lastSelectedItem = to_pos
                     return
@@ -159,6 +174,10 @@ class DropdownDialog(kodigui.BaseDialog):
         elif self.suboptionCallback and action == xbmcgui.ACTION_MOVE_RIGHT:
             if self.optionsList.getSelectedItem().dataSource.get("is_sub_list"):
                 self.setChoice()
+                return
+            elif self.getBoolProperty('scroll'):
+                self.setFocusId(self.SCROLLBAR_ID)
+                return
 
         elif controlID == self.SCROLLBAR_ID and action == xbmcgui.ACTION_SELECT_ITEM:
             self.setChoice()
