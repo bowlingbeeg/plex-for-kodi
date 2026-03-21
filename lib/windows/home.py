@@ -80,6 +80,11 @@ class SectionHubsTask(backgroundthread.Task):
             hubs = HubsList(self.section.server.hubs(self.section.key, count=HUB_PAGE_SIZE,
                                                                       section_ids=self.section_keys)).init()
             hubs.identifier = self.section.key
+            for i, hub in enumerate(hubs):
+                util.DEBUG_LOG(
+                    'SectionHubsTask: section={} [{}] hubIdentifier={} title={}',
+                    self.section.key, i, hub.hubIdentifier, hub.title
+                )
             if self.isCanceled():
                 return
             self.callback(self.section, hubs, reselect_pos_dict=self.reselect_pos_dict)
@@ -208,6 +213,12 @@ class DiscoverHubsTask(backgroundthread.Task):
                     else:
                         catalog_id = '{}:{}'.format(section_key, clean_identifier)
 
+                    util.DEBUG_LOG(
+                        'Hub discovery: section={} hubIdentifier={} clean={} catalog_id={} title={}',
+                        section_key, hub.hubIdentifier, clean_identifier, catalog_id,
+                        hub.title
+                    )
+
                     # Determine native display type from hub content
                     native_display = 'poster'  # Default
                     if hub.items:
@@ -230,6 +241,14 @@ class DiscoverHubsTask(backgroundthread.Task):
                             'native_display': native_display,
                             'item_count': len(hub.items) if hub.items else 0,
                         }
+                    else:
+                        util.DEBUG_LOG(
+                            'Hub discovery: SKIPPED duplicate catalog_id={} title={} hubIdentifier={}'
+                            ' (existing: hubIdentifier={} title={})',
+                            catalog_id, hub.title, hub.hubIdentifier,
+                            availableHubs[catalog_id].get('hubIdentifier'),
+                            availableHubs[catalog_id].get('title')
+                        )
 
 
             except plexnet.exceptions.BadRequest:
@@ -979,6 +998,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     else:
                         catalog_id = '{}:{}'.format(section_key, clean_identifier)
 
+                    util.DEBUG_LOG(
+                        'Hub discovery: section={} hubIdentifier={} clean={} catalog_id={} title={}',
+                        section_key, hub.hubIdentifier, clean_identifier, catalog_id,
+                        hub.title
+                    )
 
                     # Determine native display type from hub content
                     native_display = 'poster'
@@ -998,6 +1022,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                             'native_display': native_display,
                             'item_count': len(hub.items) if hub.items else 0,
                         }
+                    else:
+                        util.DEBUG_LOG(
+                            'Hub discovery: SKIPPED duplicate catalog_id={} title={} hubIdentifier={}'
+                            ' (existing: hubIdentifier={} title={})',
+                            catalog_id, hub.title, hub.hubIdentifier,
+                            availableHubs[catalog_id].get('hubIdentifier'),
+                            availableHubs[catalog_id].get('title')
+                        )
 
 
             except plexnet.exceptions.BadRequest:
@@ -1097,6 +1129,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         has_custom_config = section_config.get('custom', False)
         configured_hubs = section_config.get('hubs', []) if has_custom_config else []
 
+        util.DEBUG_LOG(
+            'Manage Hubs: section_key={} has_custom_config={} configured_hubs={}',
+            section_key, has_custom_config, configured_hubs
+        )
+
+        # Log cached hubs on screen for this section
+        cached_hubs_debug = self.sectionHubs.get(section_key, [])
+        is_home_debug = section_key is None
+        for i, hub in enumerate(cached_hubs_debug):
+            util.DEBUG_LOG(
+                'Manage Hubs: sectionHubs[{}][{}] hubIdentifier={} clean={} title={}',
+                section_key, i, hub.hubIdentifier,
+                hub.getCleanHubIdentifier(is_home=is_home_debug), hub.title
+            )
+
         configured_catalog_ids = {h.get('catalog_id', h.get('identifier')) for h in configured_hubs}
 
         # Determine enabled/disabled state for all hubs
@@ -1195,8 +1242,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             for catalog_id, hub_info, is_enabled in sorted(hubs_by_source[source], key=lambda x: x[1].get('title', '')):
                 options.append(make_option(catalog_id, hub_info, is_enabled))
 
-        # Reset option at the end
+        # Reset and refresh options at the end
         options.append(dropdown.SEPARATOR)
+        options.append({'key': 'refresh_hubs', 'display': T(34093, "Refresh Hub List")})
         options.append({'key': 'reset_hubs', 'display': T(34081, "Reset to Default")})
 
         return options
@@ -1313,6 +1361,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         choice = mli.dataSource
         if not choice:
             return
+
+        # Handle Refresh Hub List - re-discover hubs from server and rebuild list
+        if choice.get('key') == 'refresh_hubs':
+            section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
+            section_title = getattr(self, '_managingHubsForSectionTitle', '')
+            self._discoverHubsSync()
+            options = self._buildHubSettingsOptions(section_key, section_title)
+            return ('rebuild', options, 0)
 
         # Handle Reset to Defaults - rebuild list in place
         if choice.get('key') == 'reset_hubs':
