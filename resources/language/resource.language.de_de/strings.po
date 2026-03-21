@@ -2918,8 +2918,8 @@ msgid "Disable Auto-Sync"
 msgstr "Auto-Sync deakt."
 
 msgctxt "#33659"
-msgid "Hide hub: {}"
-msgstr "Hub verstecken: {}"
+msgid "Disable hub: {}"
+msgstr "Hub entfernen: {}"
 
 msgctxt "#33660"
 msgid "Disable HDR"

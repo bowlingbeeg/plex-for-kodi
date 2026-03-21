@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.5.0-beta1a"
+       version="1.5.0-beta2"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Add dynamic home hubs
-- Add collections to movie view
-- Add VS10 button to playback UI where applicable
+- Home: Fix incorrect implicit type assumptions when the user has changed their visible player buttons
         </news>
         <assets>
             <icon>icon2.png</icon>
