@@ -589,10 +589,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Migrate existing CE_VS10 users: inject video_show_vs10 into saved button list
         # if it was saved before the VS10 feature existed
         if util.CE_VS10 and not util.getSetting('vs10_button_migrated', False):
-            button_settings = util.getUserSetting('player_show_buttons', None)
+            button_settings = util.getUserSetting('player_show_buttons')
+
             if button_settings is not None and 'video_show_vs10' not in button_settings:
                 button_settings.append('video_show_vs10')
-                util.setSetting('player_show_buttons.{}'.format(plexapp.ACCOUNT.ID), button_settings)
+                util.setSetting('player_show_buttons.{}'.format(plexapp.ACCOUNT.ID), json.dumps(button_settings))
             util.setSetting('vs10_button_migrated', True)
 
         # set last BG image if possible
