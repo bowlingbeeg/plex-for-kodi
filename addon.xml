@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.5.0-beta2"
+       version="1.5.0-beta3"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,7 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Home: Fix incorrect implicit type assumptions when the user has changed their visible player buttons
+- Player: Verify actual player position after resume seek appears to succeed
         </news>
         <assets>
             <icon>icon2.png</icon>
