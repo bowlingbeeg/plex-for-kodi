@@ -893,6 +893,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Video hubs - ar16x9
         'video.': 'ar16x9',
         'hub.video.': 'ar16x9',
+        # Playlist hubs
+        'playlists.audio': 'square',
+        'playlists.video': 'ar16x9',
         # Watchlist/discover hubs - always poster (mixed movies + episodes, matches Pannal's original intent)
         'watchlist.': 'poster',
         # Home merged hubs
@@ -1980,7 +1983,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def fetchMissingSections(self, section_keys):
         """Trigger background fetch for missing section hubs."""
         # Use sections from sectionList to avoid expensive network call
-        sections_by_key = {None: home_section}
+        sections_by_key = {None: home_section, 'playlists': playlists_section}
         if hasattr(self, 'sectionList') and self.sectionList:
             for mli in self.sectionList:
                 if mli.dataSource and hasattr(mli.dataSource, 'key'):
@@ -3564,11 +3567,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         with self.lock:
             # First, find and update the hub in its source section's sectionHubs
             hub_source_section = None
+            # Collect section keys already checked via sectionList
+            checked_keys = set()
             for mli in self.sectionList:
                 section = mli.dataSource
                 if not section:
                     continue
 
+                checked_keys.add(section.key)
                 hubs = self.sectionHubs.get(section.key, ())
                 if not hubs:
                     continue
@@ -3580,6 +3586,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         break
                 if hub_source_section:
                     break
+
+            # If not found, check sectionHubs for hidden sections not in sectionList
+            # (e.g., hidden Playlists section providing cross-section hubs)
+            if not hub_source_section:
+                for section_key, section_hubs in self.sectionHubs.items():
+                    if section_key in checked_keys or not section_hubs:
+                        continue
+                    for idx, ihub in enumerate(section_hubs):
+                        if ihub == hub:
+                            section_hubs[idx] = hub
+                            hub_source_section = True
+                            break
+                    if hub_source_section:
+                        break
 
             if not hub_source_section:
                 util.DEBUG_LOG('Hub {0} not found in any sectionHubs'.format(hub.hubIdentifier))

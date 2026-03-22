@@ -854,11 +854,13 @@ class PlaylistHub(BaseHub):
 class AudioPlaylistHub(PlaylistHub):
     type = 'audio'
     hubIdentifier = 'playlists.audio'
+    title = 'Audio Playlists'
 
 
 class VideoPlaylistHub(PlaylistHub):
     type = 'video'
     hubIdentifier = 'playlists.video'
+    title = 'Video Playlists'
 
 
 SECTION_TYPES = {
