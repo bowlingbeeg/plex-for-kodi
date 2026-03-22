@@ -1149,6 +1149,20 @@ class SeekPlayerHandler(BasePlayerHandler):
             elif useSeekFix:
                 util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: current time already within range ({}, {}, {})", p_time * 1000, withinSOSLow, withinSOSHigh)
 
+                # Verify with actual player time after a brief settle. A display mode switch
+                # (resolution/refresh rate change) can cause the seek callback to report
+                # success while the player internally reverts to ~0. The reported seek time
+                # masks this in getTime(), so check the real player position.
+                if origSOS > 5000 and self.player.isPlayingVideo():
+                    util.MONITOR.waitForAbort(0.35)
+                    actual_time = getTime(force_player=True)
+                    if actual_time >= 0 and abs(actual_time * 1000 - origSOS) > seekWindow * 3:
+                        util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
+                                       "(actual: {}, expected: {}, reported: {}), re-seeking",
+                                       actual_time, origSOS / 1000.0, p_time)
+                        self.reportedSeekPlayerTime = None
+                        self.seek(origSOS)
+
             # should not be necessary due to other recent changes to dialog persistence, but it doesn't hurt, either
             if self.dialog:
                 if SOSSuccess and ((useSeekFix and origSosDiff > 500) or not useSeekFix):
