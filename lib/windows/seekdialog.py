@@ -2689,6 +2689,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
     def showOSD(self, focusButton=True):
         self.setProperty('show.OSD', '1')
+        util.setGlobalProperty('osd_active', '1')
         xbmc.executebuiltin('Dialog.Close(videoosd,true)')
         if xbmc.getCondVisibility('Player.showinfo'):
             xbmc.executebuiltin('Action(Info)')
@@ -2699,6 +2700,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def hideOSD(self, skipMarkerFocus=False, closing=False):
         util.DEBUG_LOG("SeekDialog: HideOSD: {}, {}", skipMarkerFocus, closing)
         self.setProperty('show.OSD', '')
+        util.setGlobalProperty('osd_active', '')
         if closing:
             return
 
