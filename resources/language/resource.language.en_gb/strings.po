@@ -3038,3 +3038,11 @@ msgstr ""
 msgctxt "#34093"
 msgid "Refresh Hub List"
 msgstr ""
+
+msgctxt "#34094"
+msgid "Audio Playlists"
+msgstr ""
+
+msgctxt "#34095"
+msgid "Video Playlists"
+msgstr ""
