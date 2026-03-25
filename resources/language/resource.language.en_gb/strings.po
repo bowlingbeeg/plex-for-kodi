@@ -3026,3 +3026,23 @@ msgstr ""
 msgctxt "#34088"
 msgid "Number of hub rows displayed on the home screen. More rows require more memory."
 msgstr ""
+
+msgctxt "#34091"
+msgid "Linear Hubs"
+msgstr ""
+
+msgctxt "#34092"
+msgid "Certain hubs, such as Top Unwatched Movies, are randomized by Plex by default, making sequentially consuming content practically impossible. Prevent this and use linearly sorted variants."
+msgstr ""
+
+msgctxt "#34093"
+msgid "Refresh Hub List"
+msgstr ""
+
+msgctxt "#34094"
+msgid "Audio Playlists"
+msgstr ""
+
+msgctxt "#34095"
+msgid "Video Playlists"
+msgstr ""
