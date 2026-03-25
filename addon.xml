@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.5.0-beta3"
+       version="1.5.0-beta4"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,7 +34,11 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Player: Verify actual player position after resume seek appears to succeed
+- Fix: include all on-screen hubs when initializing custom config
+- Add Linear Hubs setting to disable Plex's hub randomisation
+- Add Refresh Hub List option to Manage Hubs dialog
+- Fix: cross-section hubs from hidden Playlists section
+- SeekDialog: Toggle global Home property "osd_active" while OSD is shown to hint p3i's per frame L5 suppression
         </news>
         <assets>
             <icon>icon2.png</icon>
