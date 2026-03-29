@@ -1979,6 +1979,54 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.tasks.append(task)
             backgroundthread.BGThreader.addTask(task)
 
+    def _refreshCrossSectionSources(self, section_key):
+        """Refresh library sections that feed cross-section hubs into the given section.
+
+        When a section is refreshed (e.g. by tick staleness), getCombinedHubsForSection
+        pulls cross-section hubs from other sections' caches. If those caches are stale,
+        the cross-section hubs show old data. This method ensures source sections are
+        also refreshed so fresh data is available when the section is rendered.
+        """
+        required_sources = self.getRequiredSourceSections(section_key)
+        if not required_sources:
+            return
+
+        str_section_key = str(section_key) if section_key is not None else None
+        refreshed = []
+
+        for source_key in required_sources:
+            str_source = str(source_key) if source_key is not None else None
+            if str_source == str_section_key:
+                continue  # Skip the section itself — already being refreshed
+
+            # Check if source section hubs are stale
+            source_hubs = None
+            for cached_key in self.sectionHubs:
+                if str(cached_key) == str_source:
+                    source_hubs = self.sectionHubs[cached_key]
+                    break
+
+            if source_hubs is not None and time.time() - source_hubs.lastUpdated <= HUBS_REFRESH_INTERVAL:
+                continue  # Source is still fresh
+
+            # Find the section object
+            section_obj = self.allSections.get(str_source) if hasattr(self, 'allSections') else None
+            if section_obj is None:
+                continue
+
+            # Mark as refreshing so we don't double-fetch
+            if source_hubs is not None:
+                source_hubs.lastUpdated = time.time()
+
+            task = SectionHubsTask().setup(section_obj, self.crossSectionHubsCallback, self.wantedSections)
+            self.tasks.append(task)
+            backgroundthread.BGThreader.addTask(task)
+            refreshed.append(str_source)
+
+        if refreshed:
+            util.DEBUG_LOG('Refreshing cross-section sources for {}: {}',
+                           'Home' if section_key is None else section_key, refreshed)
+
     def crossSectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         """Callback for cross-section hub fetches."""
         try:
@@ -3789,6 +3837,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                                            reselect_pos_dict=rpd)
             self.tasks.append(task)
             backgroundthread.BGThreader.addTask(task)
+
+            # Also refresh source library sections that feed cross-section hubs
+            # into this section, otherwise getCombinedHubsForSection pulls stale data
+            self._refreshCrossSectionSources(section.key)
+
             return
 
         util.DEBUG_LOG('Showing hubs - Section: {0} - Update: {1}', section.key, update)
