@@ -287,8 +287,6 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         elif controlID in self.COLLECTION_LIST_IDS:
             self.openItem(self.collectionListControls[self.COLLECTION_LIST_IDS.index(controlID)])
         elif controlID == self.ROLES_LIST_ID:
-            if self.fromWatchlist:
-                return
             if not self.roleClicked():
                 return
         elif controlID == self.PLAY_BUTTON_ID:

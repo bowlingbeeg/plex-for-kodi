@@ -332,6 +332,7 @@ class Role(MediaTag):
                         'deathDate': directory.get('deathDate', ''),
                         'birthPlace': directory.get('birthPlace', ''),
                         'role': getattr(self, 'role', ''),
+                        'tagKey': tag_key or '',
                     }
                     break
                 

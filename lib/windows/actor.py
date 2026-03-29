@@ -212,6 +212,13 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             except Exception:
                 break
 
+        # Ensure we use the local server for library queries — discover/watchlist
+        # items reference the discover server which can't serve local library endpoints
+        from plexnet import plexapp
+        local_server = plexapp.SERVERMANAGER.selectedServer
+        if local_server and self.role.server != local_server:
+            self.role.server = local_server
+
         # Set initial info from role object
         self.setProperty('actor.name', self.role.tag or '')
         if self.role.thumb:
@@ -387,6 +394,13 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         thumb = details.get('thumb', '')
         if thumb:
             self.setProperty('actor.thumb', self.role.server.getImageTranscodeURL(thumb, *self.THUMB_DIM))
+
+        # If we got a tagKey from details and didn't have one before, save it and
+        # retry discover credits (the initial call in onFirstInit would have bailed)
+        tag_key = details.get('tagKey', '')
+        if tag_key and not getattr(self.role, 'tagKey', None):
+            self.role.tagKey = tag_key
+            self.fetchDiscoverCredits()
 
     def fetchDiscoverCredits(self):
         """Fetch full filmography from discover API and check library presence"""
