@@ -1157,11 +1157,24 @@ class SeekPlayerHandler(BasePlayerHandler):
                     util.MONITOR.waitForAbort(0.35)
                     actual_time = getTime(force_player=True)
                     if actual_time >= 0 and abs(actual_time * 1000 - origSOS) > seekWindow * 3:
-                        util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
-                                       "(actual: {}, expected: {}, reported: {}), re-seeking",
-                                       actual_time, origSOS / 1000.0, p_time)
-                        self.reportedSeekPlayerTime = None
-                        self.seek(origSOS)
+                        self._postSeekVerifyRetries = getattr(self, '_postSeekVerifyRetries', 0) + 1
+                        if self._postSeekVerifyRetries <= 15:
+                            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
+                                           "(actual: {}, expected: {}, reported: {}, retry: {}), re-seeking",
+                                           actual_time, origSOS / 1000.0, p_time, self._postSeekVerifyRetries)
+                            self.reportedSeekPlayerTime = None
+                            self.seek(origSOS)
+                            # Return early so we don't clear seekOnStart or set the dialog offset
+                            # to the bogus raw player time. The re-seek callback will re-enter
+                            # onPlayBackSeek with seekOnStart still set; once the mode switch
+                            # completes the seek will land correctly and proceed normally.
+                            return
+                        else:
+                            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
+                                           "(actual: {}, expected: {}, reported: {}), giving up after {} retries",
+                                           actual_time, origSOS / 1000.0, p_time, self._postSeekVerifyRetries)
+                    else:
+                        self._postSeekVerifyRetries = 0
 
             # should not be necessary due to other recent changes to dialog persistence, but it doesn't hurt, either
             if self.dialog:
