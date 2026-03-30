@@ -949,12 +949,12 @@ class SeekPlayerHandler(BasePlayerHandler):
             :return: seconds
             """
             try:
-                if util.addonSettings.coreelecSeekPreferReported and self.reportedSeekPlayerTime is not None and self.reportedSeekPlayerTime > 0:
-                    util.DEBUG_LOG("SeekHandler: Using reported seek time for getTime: {} ({})", self.reportedSeekPlayerTime, self.player.getTime())
-                    return self.reportedSeekPlayerTime / 1000.0
                 t = self.player.getTime()
                 if force_player:
                     return t
+                if util.addonSettings.coreelecSeekPreferReported and self.reportedSeekPlayerTime is not None and self.reportedSeekPlayerTime > 0:
+                    util.DEBUG_LOG("SeekHandler: Using reported seek time for getTime: {} ({})", self.reportedSeekPlayerTime, t)
+                    return self.reportedSeekPlayerTime / 1000.0
                 # it's possible that we got a wrong current time from the player, but a correct time from the seek event
                 if (self.reportedSeekPlayerTime is not None and self.reportedSeekPlayerTime > 0 and
                         (self.reportedSeekPlayerTime > t * 1000 + 50000 or self.reportedSeekPlayerTime < t * 1000 - 50000)):
