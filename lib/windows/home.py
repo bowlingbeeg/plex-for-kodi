@@ -3094,8 +3094,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         options = []
         has_prev = False
-        # Don't allow disabling the main continue watching / on deck hubs
-        if hub.hubIdentifier not in ("continueWatching", "home.continue", "home.ondeck"):
+        is_watchlist = self.lastSection == watchlist_section
+        # Don't allow disabling/adding hubs for watchlist or main CW/On Deck hubs
+        if not is_watchlist and hub.hubIdentifier not in ("continueWatching", "home.continue", "home.ondeck"):
             options.append({'key': 'disable_hub', 'display': T(33659, "Disable Hub: {}").format(hub_title)})
             has_prev = True
 
