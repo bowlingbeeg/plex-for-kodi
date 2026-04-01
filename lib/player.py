@@ -133,12 +133,17 @@ class BasePlayerHandler(object):
         return self._lastDuration
 
     def onKodiExit(self, *args, **kwargs):
-        util.MONITOR.off("system.exit", self.onKodiExit)
-        util.DEBUG_LOG("{}: onKodiExit", self.__class__.__name__)
-        self.updateNowPlaying(state=self.player.STATE_STOPPED, overrideChecks=True)
-        self.ignoreTimelines = True
-        # kill previous timeline data
-        plexapp.util.APP.nowplayingmanager.reset()
+        if util.MONITOR:
+            util.MONITOR.off("system.exit", self.onKodiExit)
+
+        try:
+            util.DEBUG_LOG("{}: onKodiExit", self.__class__.__name__)
+            self.updateNowPlaying(state=self.player.STATE_STOPPED, overrideChecks=True)
+            self.ignoreTimelines = True
+            # kill previous timeline data
+            plexapp.util.APP.nowplayingmanager.reset()
+        except:
+            pass
 
     def updateNowPlaying(self, refreshQueue=False, t=None, state=None, overrideChecks=False):
         if self.ignoreTimelines:
