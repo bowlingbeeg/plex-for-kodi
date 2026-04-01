@@ -1159,37 +1159,44 @@ class SeekPlayerHandler(BasePlayerHandler):
                 # success while the player internally reverts to ~0. The reported seek time
                 # masks this in getTime(), so check the real player position.
                 #
-                # Important: do NOT re-seek in a tight loop. Relative seeks can accumulate
-                # in the player pipeline during a mode switch, causing the position to double
-                # (e.g. 2×4800 ≈ 9600, past end of file). Instead, block callbacks via
-                # waitingForSOS and poll until the original seek takes effect, then issue at
-                # most one re-seek after the mode switch should be complete.
+                # Only detect the mode-switch regression specifically: player near zero when
+                # targeting a large offset. Do NOT flag normal keyframe-aligned variance
+                # (which can be 10+ seconds for Blu-ray content with large GOP sizes).
+                #
+                # On failure, poll instead of re-seeking in a loop — relative seeks can
+                # accumulate during a mode switch, doubling the offset past end of file.
                 if origSOS > 5000 and self.player.isPlayingVideo():
-                    self.reportedSeekPlayerTime = None
-                    self.waitingForSOS = True
-                    verified = False
-                    for verify_try in range(12):
-                        util.MONITOR.waitForAbort(0.5)
-                        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
-                            break
-                        actual_time = getTime(force_player=True)
-                        if actual_time >= 0 and abs(actual_time * 1000 - origSOS) <= seekWindow * 3:
-                            verified = True
-                            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification OK "
-                                           "after {} polls (actual: {}, expected: {})",
-                                           verify_try + 1, actual_time, origSOS / 1000.0)
-                            break
-                        util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification pending "
-                                       "(actual: {}, expected: {}, poll: {})",
-                                       actual_time, origSOS / 1000.0, verify_try + 1)
-                    self.waitingForSOS = False
+                    util.MONITOR.waitForAbort(0.35)
+                    actual_time = getTime(force_player=True)
+                    if actual_time >= 0 and actual_time < 2.0:
+                        util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification detected "
+                                       "mode-switch revert (actual: {}, expected: {}), waiting for seek to land",
+                                       actual_time, origSOS / 1000.0)
+                        self.reportedSeekPlayerTime = None
+                        self.waitingForSOS = True
+                        verified = False
+                        for verify_try in range(12):
+                            util.MONITOR.waitForAbort(0.5)
+                            if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
+                                break
+                            actual_time = getTime(force_player=True)
+                            if actual_time >= 2.0:
+                                verified = True
+                                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification OK "
+                                               "after {} polls (actual: {}, expected: {})",
+                                               verify_try + 1, actual_time, origSOS / 1000.0)
+                                break
+                            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification pending "
+                                           "(actual: {}, expected: {}, poll: {})",
+                                           actual_time, origSOS / 1000.0, verify_try + 1)
+                        self.waitingForSOS = False
 
-                    if not verified and self.player.isPlayingVideo():
-                        # Mode switch should be complete by now (~6s). Issue one final re-seek.
-                        util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
-                                       "after polling, re-seeking once")
-                        self.seek(origSOS)
-                        return
+                        if not verified and self.player.isPlayingVideo():
+                            # Mode switch should be complete by now (~6s). Issue one final re-seek.
+                            util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
+                                           "after polling, re-seeking once")
+                            self.seek(origSOS)
+                            return
 
             # should not be necessary due to other recent changes to dialog persistence, but it doesn't hurt, either
             if self.dialog:
