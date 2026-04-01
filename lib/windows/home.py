@@ -2934,10 +2934,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                                 'display': T(33029, "Show library: {}").format(T(34000, 'Watchlist'))
                                 })
 
-            # Add Manage Hubs option
+            # Add Manage Hubs and Refresh Hubs options
             if options:
                 options.append(dropdown.SEPARATOR)
             options.append({'key': 'manage_hubs', 'display': T(34080, "Manage Hubs")})
+            options.append({'key': 'refresh_hubs', 'display': T(34096, "Refresh Hubs")})
 
             if options:
                 choice = dropdown.showDropdown(
@@ -2981,10 +2982,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 options.append({'key': 'section_cache_reset', 'display': T(33721, "Clear library cache (not items)")})
                 options.append(dropdown.SEPARATOR)
 
-            # Add Manage Hubs option (not applicable to watchlist - it has no library hubs)
+            # Add Manage Hubs and Refresh Hubs options (not applicable to watchlist)
             if section != watchlist_section:
                 options.append(dropdown.SEPARATOR)
                 options.append({'key': 'manage_hubs', 'display': T(34080, "Manage Hubs")})
+                options.append({'key': 'refresh_hubs', 'display': T(34096, "Refresh Hubs")})
 
             choice = dropdown.showDropdown(
                 options,
@@ -3073,6 +3075,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             # Don't return lastSection - showHubSettingsDialog handles refresh internally
             # Returning a section would trigger serverRefresh which cancels background tasks
             # and clears availableHubs, breaking cross-section hub fetches
+            return
+
+        elif choice["key"] == "refresh_hubs":
+            self.showHubs(self.lastSection, force=True, update=True)
             return
 
     def hubMenu(self, hubControlID):
