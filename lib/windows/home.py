@@ -703,7 +703,15 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     self.setFocusId(self.lastFocusID)
 
         if self._odHubsDirty:
-            self._updateOnDeckHubs()
+            self._odHubsDirty = False
+            # If section is stale, do a full section refresh instead of individual
+            # hub updates. Running both causes race conditions and index errors.
+            hubs = self.sectionHubs.get(self.lastSection.key) if self.lastSection else None
+            if hubs is not None and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL:
+                util.DEBUG_LOG('UpdateOnDeckHubs: Section stale, doing full refresh instead')
+                self.showHubs(self.lastSection, update=True)
+            else:
+                self._updateOnDeckHubs()
 
     def checkPlexDirectHosts(self, servers, source="stored", *args, **kwargs):
         while self._checkingPD:
@@ -2023,6 +2031,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             backgroundthread.BGThreader.addTask(task)
             refreshed.append(str_source)
 
+        self._pendingCrossSources = len(refreshed)
         if refreshed:
             util.DEBUG_LOG('Refreshing cross-section sources for {}: {}',
                            'Home' if section_key is None else section_key, refreshed)
@@ -2039,10 +2048,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
                 self.sectionHubs[section.key] = sorted_hubs
 
-                hub_ids = [h.getCleanHubIdentifier(is_home=is_home) for h in sorted_hubs]
+                # Decrement pending cross-section source counter
+                pending = getattr(self, '_pendingCrossSources', 0)
+                if pending > 0:
+                    self._pendingCrossSources = pending - 1
 
                 # Trigger redisplay if needed
-
                 if self.lastSection:
                     should_redisplay = False
 
@@ -2070,9 +2081,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                             should_redisplay = True
 
                     if should_redisplay:
-                        # Use debounced refresh for Home to avoid multiple rapid redraws
                         if self.lastSection.key is None:
-                            self._scheduleHomeRefresh()
+                            # Defer Home drawing until all cross-section sources complete
+                            if self._pendingCrossSources == 0:
+                                home_hubs = self.sectionHubs.get(None)
+                                if home_hubs is not None:
+                                    self.showHubs(self.lastSection, update=bool(home_hubs))
+                            # else: wait for remaining sources
                         else:
                             self.showHubs(self.lastSection, update=False)
         except Exception:
@@ -3519,12 +3534,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             if is_home:
                 if has_cross:
-                    # Cross-section hubs need library data — defer drawing until all libraries complete
-                    pending = getattr(self, '_pendingLibrarySections', -1)
-                    if pending == 0:
-                        # All libraries already done, draw now
+                    # Cross-section hubs need library data — defer drawing until all sources complete
+                    pending_libs = getattr(self, '_pendingLibrarySections', -1)
+                    pending_cross = getattr(self, '_pendingCrossSources', 0)
+                    if pending_libs == 0 and pending_cross == 0:
+                        # All sources already done, draw now
                         self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
-                    # else: wait for library tasks to finish
+                    # else: wait for library/cross-section tasks to finish
                 else:
                     # No cross-section hubs — draw immediately
                     self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
@@ -3827,6 +3843,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             util.DEBUG_LOG('Section is stale: {0} REFRESHING - update: {1}, failed before: {2}'.format(
                 "Home" if section.key is None else section.key, update, "Unknown" if not hubs else hubs.invalid))
             hubs.lastUpdated = time.time()
+            # Cancel any in-flight UpdateHubTasks to prevent their callbacks
+            # from racing with the full section refresh
+            for task in self.tasks:
+                if isinstance(task, UpdateHubTask) and not task.finished:
+                    task.cancel()
             self.cleanTasks()
 
             rpd = self.getCurrentHubsPositions(section)
@@ -4267,7 +4288,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
                 control.selectItem(last_pos)
                 self._lastSelectedItem = (index + 400, last_pos)
-                if self.updateBackgroundFrom(control[last_pos].dataSource):
+                if last_pos < control.size() and self.updateBackgroundFrom(control[last_pos].dataSource):
                     self.backgroundSet = True
                 return
 
@@ -4292,7 +4313,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         else:
                             return
                 if rk_found:
-                    if self.updateBackgroundFrom(control[pos].dataSource):
+                    if pos < control.size() and self.updateBackgroundFrom(control[pos].dataSource):
                         self.backgroundSet = True
                     return
 
@@ -4305,7 +4326,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 util.DEBUG_LOG("Hub {}: Reselect: We didn't find {} in list, or no item given. "
                                "Reselecting position {}", identifier, rk, pos)
                 control.selectItem(pos)
-                if self.updateBackgroundFrom(control[pos].dataSource):
+                if pos < control.size() and self.updateBackgroundFrom(control[pos].dataSource):
                     self.backgroundSet = True
             else:
                 if more:
