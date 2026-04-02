@@ -3571,3 +3571,7 @@ msgstr "Zurückspringen beim Start Wartezeit zwischen Sprüngen"
 msgctxt "#34079"
 msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
 msgstr "Wie lange soll nach dem ersten Vorwärtsspringen bei \"Zurückspringen beim Start\" gewartet werden, bevor rückwärts gesprungen wird? Durch höhere Werte könnten Dekodierer-Initialisierungs-Probleme behoben werden. Standard: 500ms"
+
+msgctxt "#34097"
+msgid "Go Home"
+msgstr "Zum Hauptmenü"
