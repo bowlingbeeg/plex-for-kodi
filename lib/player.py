@@ -714,7 +714,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         if self.isDirectPlay and self.player.video and self.player.video.current_subtitle_is_embedded:
             got_player = False
             tries = 0
-            while not got_player and tries < 50:
+            while not got_player and tries < 50 and not util.MONITOR.abortRequested():
                 try:
                     playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
                     got_player = True
