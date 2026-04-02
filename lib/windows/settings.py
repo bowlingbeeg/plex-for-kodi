@@ -1088,7 +1088,7 @@ class Settings(object):
                     T(32700, 'Action on Sleep event'),
                     'none',
                     (('none', T(32702, 'Nothing')), ('stop', T(32703, 'Stop playback')),
-                     ('home', T(34066, 'Go Home')),
+                     ('home', T(34097, 'Go Home')),
                      ('quit', T(32704, 'Quit Kodi')), ('reboot', T(32426, 'Reboot')),
                      ('shutdown', T(32423, 'Shutdown')),
                      ('hibernate', T(32425, 'Hibernate')), ('suspend', T(32424, 'Suspend')),
