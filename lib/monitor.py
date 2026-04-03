@@ -25,10 +25,16 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
     def actionHome(self):
         from plexnet import plexapp
-        from .windows import windowutils
+        from .windows import kodigui, windowutils
         plexapp.util.APP.trigger('close.windows')
         plexapp.util.APP.trigger('close.dialogs')
         windowutils.HOME.go_root = True
+        # wait for sub-windows to actually close before showing HOME
+        ct = 0
+        home_wid = windowutils.HOME._winID
+        while home_wid and kodigui.xbmcgui.getCurrentWindowId() != home_wid and ct < self.waitAmount(2):
+            self.waitFor()
+            ct += 1
         windowutils.HOME.show()
 
     def actionQuit(self):

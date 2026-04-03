@@ -666,6 +666,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         if self.go_root:
             self.setProperty('hub.focus', '')
+            # prevent a late onReInit (from async sub-window close) from restoring stale focus/scroll
+            self.lastFocusID = self.SECTION_LIST_ID
+            self.lastSection = None
             self.setFocusId(self.SECTION_LIST_ID)
             self.sectionList.setSelectedItemByPos(0)
             # somehow we need to do this as well.
@@ -695,7 +698,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     self.focusFirstValidHub(hubControlIndex)
 
             elif self.lastFocusID == self.SECTION_LIST_ID:
-                if self.lastHubs != self.lastSection.key:
+                if self.lastSection and self.lastHubs != self.lastSection.key:
                     self.showHubs(self.lastSection)
 
             else:
