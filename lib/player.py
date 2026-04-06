@@ -1301,7 +1301,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                 # the terminological one (e.g: ger vs. deu, fre vs. fra)
                 ess_lang = languages.get(part2t=ess.languageCode)
                 for sub in kodisubs[ext_subs_amount:]:
-                    sub_language = sub['language'].strip(",.()- ")
+                    sub_language = sub['language'].strip(",.()- \x00")
                     # we're expecting Kodi to return a 3-char part2b, if it doesn't, try to fix
                     if len(sub_language) < 3:
                         # kodi somehow mismatched the language and/or the subtitle was mis-tagged (e.g. pt (BR))
