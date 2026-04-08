@@ -285,6 +285,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._progressHld = {}
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
+        self._deferAudioTrack = False
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -309,6 +310,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.seekBackToDone = False
         self.seekingBackTo = False
         self.waitingForSOS = False
+        self._deferAudioTrack = False
         self._lastDuration = 0
         self._subtitleStreamOffset = None
         self._lastSetEmbeddedSubIdx = None
@@ -1220,6 +1222,10 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.dialog.selectedOffset = appliedOffset
                 self.dialog.update()
 
+            if self._deferAudioTrack:
+                self._deferAudioTrack = False
+                self.setAudioTrack()
+
         self.skipFixForNextSeek = False
         self.updateOffset(offset=appliedOffset)
         # self.showOSD(from_seek=True)
@@ -1439,7 +1445,9 @@ class SeekPlayerHandler(BasePlayerHandler):
         if self.isTranscoded and self.player.getAvailableSubtitleStreams():
             util.DEBUG_LOG('Enabling first subtitle stream, as we\'re in DirectStream')
             self.player.showSubtitles(True)
-        self.setAudioTrack()
+
+        if not self._deferAudioTrack:
+            self.setAudioTrack()
 
     def onPlayBackFailed(self):
         # we might've crashed, make sure we set a correct volume again
@@ -2256,6 +2264,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
             if self.handler.seekOnStart is not None:
                 util.setGlobalProperty('playback_initializing', '1', wait=True)
+                self.handler._deferAudioTrack = True
             else:
                 util.setGlobalProperty('playback_initializing', '', wait=True)
 
