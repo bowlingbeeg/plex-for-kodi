@@ -286,6 +286,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
         self._deferAudioTrack = False
+        self._audioTrackSwitchedSOS = None
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -311,6 +312,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.seekingBackTo = False
         self.waitingForSOS = False
         self._deferAudioTrack = False
+        self._audioTrackSwitchedSOS = None
         self._lastDuration = 0
         self._subtitleStreamOffset = None
         self._lastSetEmbeddedSubIdx = None
@@ -668,6 +670,30 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def onAVChange(self):
         util.DEBUG_LOG('SeekHandler: onAVChange')
+        if self._audioTrackSwitchedSOS is not None:
+            try:
+                actual_time = self.player.getTime()
+            except RuntimeError:
+                actual_time = -1
+            sos, retries = self._audioTrackSwitchedSOS
+            if actual_time < 10:
+                if retries >= 5:
+                    self._audioTrackSwitchedSOS = None
+                    util.DEBUG_LOG("SeekHandler: onAVChange: Position reset persists after {} retries "
+                                   "(actual: {}, expected: {}), giving up", retries, actual_time, sos / 1000.0)
+                else:
+                    self._audioTrackSwitchedSOS = (sos, retries + 1)
+                    util.DEBUG_LOG("SeekHandler: onAVChange: Position reset detected after audio track switch "
+                                   "(actual: {}, expected: {}, retry: {}), re-seeking",
+                                   actual_time, sos / 1000.0, retries + 1)
+                    self.seekAbsolute(sos)
+                return
+            elif actual_time >= sos / 1000.0 * 0.5:
+                # position looks fine, disarm
+                self._audioTrackSwitchedSOS = None
+                util.DEBUG_LOG("SeekHandler: onAVChange: Position OK after audio track switch "
+                               "(actual: {}, expected: {}), disarming", actual_time, sos / 1000.0)
+
         if self.blackoutWasWanted and self.blackout:
             # this might occur even before AVStarted
             self.start_blackout()
@@ -1222,9 +1248,18 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.dialog.selectedOffset = appliedOffset
                 self.dialog.update()
 
-            if self._deferAudioTrack:
+            if self._deferAudioTrack and self.seekBackTo is None:
+                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Setting deferred audio track")
+                switched = self.setAudioTrack()
                 self._deferAudioTrack = False
-                self.setAudioTrack()
+
+                if switched and origSOS and origSOS > 10000:
+                    # setAudioStream() during an active display mode switch can cause the player
+                    # position to reset when OnResetDisplay arrives. Stash the SOS value so
+                    # onAVChange can detect the reset and re-seek.
+                    self._audioTrackSwitchedSOS = (origSOS, 0)
+                    util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Audio track switched, "
+                                   "arming position reset detection (SOS: {})", origSOS)
 
         self.skipFixForNextSeek = False
         self.updateOffset(offset=appliedOffset)
@@ -1410,6 +1445,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             track = self.player.video.selectedAudioStream()
             if track:
                 currIdx = None
+                switched = False
                 tries = 0
                 while currIdx != track.typeIndex and tries < 40:
                     try:
@@ -1421,15 +1457,17 @@ class SeekPlayerHandler(BasePlayerHandler):
                         pass
                     if currIdx == track.typeIndex:
                         util.DEBUG_LOG('Audio track is correct index: {0}', track.typeIndex)
-                        return
+                        return switched
 
                     if currIdx is not None:
                         util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, track.typeIndex, tries + 1)
+                        switched = True
                         util.MONITOR.waitForAbort(0.1)
                         self.player.setAudioStream(track.typeIndex)
                     else:
                         util.MONITOR.waitForAbort(0.1)
                     tries += 1
+        return False
 
 
     def updateOffset(self, offset=None):
@@ -1447,6 +1485,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.player.showSubtitles(True)
 
         if not self._deferAudioTrack:
+            util.DEBUG_LOG("SeekHandler: initPlayback: Not deferring audio track")
             self.setAudioTrack()
 
     def onPlayBackFailed(self):
@@ -2264,6 +2303,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
             if self.handler.seekOnStart is not None:
                 util.setGlobalProperty('playback_initializing', '1', wait=True)
+                util.DEBUG_LOG("Player: Enabling deferred audio track")
                 self.handler._deferAudioTrack = True
             else:
                 util.setGlobalProperty('playback_initializing', '', wait=True)
