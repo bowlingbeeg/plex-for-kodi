@@ -610,8 +610,17 @@ class Settings(object):
                 ).description(
                     T(33692, "When you usually watch things in a different language with subtitles, but are a"
                              " native speaker of other languages, which you don't need subtitles for, prevent Plex "
-                             "from auto-selecting subtitles for those languages.")
+                             "from auto-selecting subtitles for those languages. Also used to match external audio "
+                             "files when that setting is enabled.")
                 ),
+                BoolSetting('use_external_audio', T(34098, 'Honor external audio files'), False)
+                .description(T(34099, 'When Kodi discovers external audio files alongside the video '
+                                      '(e.g. a separate .dts or .ac3 file), honor its selection instead '
+                                      'of overriding it. A single external audio file is always accepted. '
+                                      'When multiple are present, the one matching the Plex-selected '
+                                      'audio language or a native language is preferred. External audio '
+                                      'files are not actively shown or selectable in the UI yet. '
+                                      'Only for mapped Direct Play.')),
                 OptionsSetting(
                     'subtitle_download_from',
                     T(33693, 'Download subtitles using'),

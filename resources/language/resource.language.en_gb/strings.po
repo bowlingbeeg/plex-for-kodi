@@ -2505,7 +2505,7 @@ msgid "Native languages"
 msgstr ""
 
 msgctxt "#33692"
-msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages."
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled."
 msgstr ""
 
 msgctxt "#33693"
@@ -3104,5 +3104,13 @@ msgctxt "#34097"
 msgid "Go Home"
 msgstr ""
 
-# Unused: 34098-35000 (903 IDs)
+msgctxt "#34098"
+msgid "Honor external audio files"
+msgstr ""
+
+msgctxt "#34099"
+msgid "When Kodi discovers external audio files alongside the video (e.g. a separate .dts or .ac3 file), honor its selection instead of overriding it. A single external audio file is always accepted. When multiple are present, the one matching the Plex-selected audio language or a native language is preferred. External audio files are not actively shown or selectable in the UI yet. Only for mapped Direct Play."
+msgstr ""
+
+# Unused: 34100-35000 (901 IDs)
 

@@ -19,6 +19,7 @@ from . import util
 from . import seamless_branching
 from plexnet import plexplayer
 from plexnet import plexapp
+from plexnet import plexstream as plexstreamModule
 from plexnet import signalsmixin
 from plexnet import util as plexnetUtil
 from six.moves import range
@@ -1439,15 +1440,118 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.player.showSubtitles(False)
             self._lastSetEmbeddedSubIdx = None
 
+    def _discoverExternalAudio(self):
+        """Query Kodi for external audio streams and register them on the video model.
+
+        Returns the list of ExternalAudioStream objects, or empty list.
+        """
+        video = self.player.video
+        if not video:
+            return []
+
+        plex_audio_count = video.embeddedAudioStreamCount
+        if plex_audio_count == 0:
+            return []
+
+        try:
+            playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
+            kodi_streams = kodijsonrpc.rpc.Player.GetProperties(
+                playerid=playerID, properties=['audiostreams'])['audiostreams']
+        except:
+            return []
+
+        if len(kodi_streams) <= plex_audio_count:
+            return []
+
+        # external streams are appended after embedded ones
+        ext_kodi_streams = kodi_streams[plex_audio_count:]
+        ext_streams = []
+        for ks in ext_kodi_streams:
+            lang_code = ks.get('language', '').strip(",.()- \x00")
+            # normalize Kodi's part2b to part2t for consistency with Plex
+            norm_lang = ''
+            if lang_code:
+                try:
+                    if len(lang_code) < 3:
+                        norm_lang = languages.get(part1=lang_code).part2t
+                    else:
+                        norm_lang = languages.get(part2b=lang_code).part2t
+                except:
+                    norm_lang = lang_code
+
+            stream = plexstreamModule.ExternalAudioStream(
+                language_code=norm_lang,
+                codec=ks.get('codec', ''),
+                channels=ks.get('channels', 0),
+                kodi_index=ks['index'],
+                filename=ks.get('name', '')
+            )
+            ext_streams.append(stream)
+            util.DEBUG_LOG('Discovered external audio: {}', stream)
+
+        video.setExternalAudioStreams(ext_streams)
+        return ext_streams
+
+    def _findExternalAudioMatch(self, track):
+        """Discover external audio and find the best match.
+
+        Returns the Kodi stream index of the matching external audio, or None.
+        """
+        if not track:
+            return None
+
+        ext_streams = self._discoverExternalAudio()
+        if not ext_streams:
+            return None
+
+        # single external audio — the user placed it there intentionally, use it
+        if len(ext_streams) == 1:
+            util.DEBUG_LOG('Single external audio found, using: {}', ext_streams[0])
+            return ext_streams[0].kodiIndex
+
+        # multiple external audio files — match against Plex-selected + native languages
+        accept_langs = set()
+        if track.languageCode:
+            accept_langs.add(track.languageCode)
+
+        native_codes = util.getSetting('disable_subtitle_languages', [])
+        for code in native_codes:
+            accept_langs.add(code)
+
+        if not accept_langs:
+            return None
+
+        for stream in ext_streams:
+            if stream.languageCode in accept_langs:
+                util.DEBUG_LOG('External audio match: {} matches accepted languages (Plex: {}, native: {})',
+                               stream, track.languageCode, ','.join(native_codes))
+                return stream.kodiIndex
+
+        return None
+
     def setAudioTrack(self):
         self.player.lastPlayWasBGM = False
         if self.isDirectPlay and self.player.video:
             track = self.player.video.selectedAudioStream()
             if track:
+                # if the selected stream is an external one (user chose it in UI), use its Kodi index
+                if getattr(track, 'isExternal', False):
+                    targetIdx = track.kodiIndex
+                else:
+                    targetIdx = track.typeIndex
+
+                    # auto-discover and match external audio
+                    if util.getSetting('use_external_audio', False) and \
+                            self.player.playerObject and self.player.playerObject.metadata and \
+                            self.player.playerObject.metadata.isMapped:
+                        ext_idx = self._findExternalAudioMatch(track)
+                        if ext_idx is not None:
+                            targetIdx = ext_idx
+
                 currIdx = None
                 switched = False
                 tries = 0
-                while currIdx != track.typeIndex and tries < 40:
+                while currIdx != targetIdx and tries < 40:
                     try:
                         playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
                         currIdx = \
@@ -1455,15 +1559,15 @@ class SeekPlayerHandler(BasePlayerHandler):
                             'currentaudiostream']['index']
                     except:
                         pass
-                    if currIdx == track.typeIndex:
-                        util.DEBUG_LOG('Audio track is correct index: {0}', track.typeIndex)
+                    if currIdx == targetIdx:
+                        util.DEBUG_LOG('Audio track is correct index: {0}', targetIdx)
                         return switched
 
                     if currIdx is not None:
-                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, track.typeIndex, tries + 1)
+                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, targetIdx, tries + 1)
                         switched = True
                         util.MONITOR.waitForAbort(0.1)
-                        self.player.setAudioStream(track.typeIndex)
+                        self.player.setAudioStream(targetIdx)
                     else:
                         util.MONITOR.waitForAbort(0.1)
                     tries += 1
