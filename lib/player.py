@@ -1441,55 +1441,68 @@ class SeekPlayerHandler(BasePlayerHandler):
             self._lastSetEmbeddedSubIdx = None
 
     def _discoverExternalAudio(self):
-        """Query Kodi for external audio streams and register them on the video model.
+        """Discover external audio streams and register them on the video model.
 
+        Uses filesystem scan first (may have been done at preplay), then enriches
+        with Kodi's runtime data (channel count, codec) if available during playback.
         Returns the list of ExternalAudioStream objects, or empty list.
         """
         video = self.player.video
         if not video:
             return []
 
+        # try filesystem discovery first (works at preplay and playback)
+        if hasattr(video, 'discoverExternalAudioStreams'):
+            ext_streams = video.discoverExternalAudioStreams()
+        else:
+            ext_streams = []
+
+        # during playback, enrich with Kodi's runtime data
         plex_audio_count = video.embeddedAudioStreamCount
-        if plex_audio_count == 0:
-            return []
+        if plex_audio_count > 0:
+            try:
+                playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
+                kodi_streams = kodijsonrpc.rpc.Player.GetProperties(
+                    playerid=playerID, properties=['audiostreams'])['audiostreams']
+            except:
+                kodi_streams = []
 
-        try:
-            playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
-            kodi_streams = kodijsonrpc.rpc.Player.GetProperties(
-                playerid=playerID, properties=['audiostreams'])['audiostreams']
-        except:
-            return []
+            ext_kodi_streams = kodi_streams[plex_audio_count:]
 
-        if len(kodi_streams) <= plex_audio_count:
-            return []
+            if ext_streams and ext_kodi_streams:
+                # update existing streams with Kodi's richer data
+                for i, ks in enumerate(ext_kodi_streams):
+                    if i < len(ext_streams):
+                        ext_streams[i].channels = plexstreamModule.plexobjects.PlexValue(str(ks.get('channels', 0)))
+                        ext_streams[i].kodiIndex = ks['index']
+                        if ks.get('codec'):
+                            ext_streams[i].codec = ks['codec']
+            elif not ext_streams and ext_kodi_streams:
+                # no filesystem discovery (not mapped?), fall back to Kodi-only discovery
+                for ks in ext_kodi_streams:
+                    lang_code = ks.get('language', '').strip(",.()- \x00")
+                    norm_lang = ''
+                    if lang_code:
+                        try:
+                            if len(lang_code) < 3:
+                                norm_lang = languages.get(part1=lang_code).part2t
+                            else:
+                                norm_lang = languages.get(part2b=lang_code).part2t
+                        except:
+                            norm_lang = lang_code
 
-        # external streams are appended after embedded ones
-        ext_kodi_streams = kodi_streams[plex_audio_count:]
-        ext_streams = []
-        for ks in ext_kodi_streams:
-            lang_code = ks.get('language', '').strip(",.()- \x00")
-            # normalize Kodi's part2b to part2t for consistency with Plex
-            norm_lang = ''
-            if lang_code:
-                try:
-                    if len(lang_code) < 3:
-                        norm_lang = languages.get(part1=lang_code).part2t
-                    else:
-                        norm_lang = languages.get(part2b=lang_code).part2t
-                except:
-                    norm_lang = lang_code
+                    stream = plexstreamModule.ExternalAudioStream(
+                        language_code=norm_lang,
+                        codec=ks.get('codec', ''),
+                        channels=ks.get('channels', 0),
+                        kodi_index=ks['index'],
+                        filename=ks.get('name', '')
+                    )
+                    ext_streams.append(stream)
+                    util.DEBUG_LOG('Discovered external audio from Kodi: {}', stream)
 
-            stream = plexstreamModule.ExternalAudioStream(
-                language_code=norm_lang,
-                codec=ks.get('codec', ''),
-                channels=ks.get('channels', 0),
-                kodi_index=ks['index'],
-                filename=ks.get('name', '')
-            )
-            ext_streams.append(stream)
-            util.DEBUG_LOG('Discovered external audio: {}', stream)
+                video.setExternalAudioStreams(ext_streams)
 
-        video.setExternalAudioStreams(ext_streams)
         return ext_streams
 
     def _findExternalAudioMatch(self, track):
@@ -1547,6 +1560,11 @@ class SeekPlayerHandler(BasePlayerHandler):
                         ext_idx = self._findExternalAudioMatch(track)
                         if ext_idx is not None:
                             targetIdx = ext_idx
+                            # mark the external stream as selected in the model
+                            for s in self.player.video.audioStreams:
+                                if getattr(s, 'isExternal', False) and s.kodiIndex == ext_idx:
+                                    self.player.video.selectStream(s, sync_to_server=False)
+                                    break
 
                 currIdx = None
                 switched = False

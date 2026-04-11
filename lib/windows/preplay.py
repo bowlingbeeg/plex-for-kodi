@@ -751,6 +751,10 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                 self.setProperty('remainingTime', '')
 
     def setAudioAndSubtitleInfo(self):
+        # discover external audio files for mapped direct play
+        if util.getSetting('use_external_audio', False) and hasattr(self.video, 'discoverExternalAudioStreams'):
+            self.video.discoverExternalAudioStreams()
+
         sas = self.video.selectedAudioStream()
 
         if sas:
