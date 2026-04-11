@@ -1452,7 +1452,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             return []
 
         # try filesystem discovery first (works at preplay and playback)
-        if hasattr(video, 'discoverExternalAudioStreams'):
+        if hasattr(type(video), 'discoverExternalAudioStreams'):
             ext_streams = video.discoverExternalAudioStreams()
         else:
             ext_streams = []
