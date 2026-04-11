@@ -795,6 +795,33 @@ class Movie(PlayableVideo):
         self._externalAudioStreams = streams
         util.DEBUG_LOG("Set {} external audio stream(s) on video (base typeIndex: {})", len(streams), base_idx)
 
+    def _matchExternalAudio(self, ext_streams):
+        """Find the best matching external audio stream.
+
+        Single stream: always match. Multiple: prefer Plex-selected language, then native languages.
+        """
+        if not ext_streams:
+            return None
+
+        if len(ext_streams) == 1:
+            return ext_streams[0]
+
+        # prefer Plex-selected audio language first
+        sas = self.selectedAudioStream()
+        plex_lang = sas.languageCode if sas and sas.languageCode else None
+        if plex_lang:
+            for s in ext_streams:
+                if s.languageCode == plex_lang:
+                    return s
+
+        # fall back to native languages
+        native_codes = self.settings.getPreference('disable_subtitle_languages', [])
+        for s in ext_streams:
+            if s.languageCode in native_codes:
+                return s
+
+        return None
+
     def discoverExternalAudioStreams(self):
         """Scan the filesystem for external audio files alongside the video.
 
@@ -866,23 +893,7 @@ class Movie(PlayableVideo):
 
         # auto-select the best external stream
         if ext_streams and util.INTERFACE.getPreference('use_external_audio', False):
-            match = None
-            if len(ext_streams) == 1:
-                match = ext_streams[0]
-            else:
-                # match against Plex-selected audio language + native languages
-                accept_langs = set()
-                sas = self.selectedAudioStream()
-                if sas and sas.languageCode:
-                    accept_langs.add(sas.languageCode)
-                for code in self.settings.getPreference('disable_subtitle_languages', []):
-                    accept_langs.add(code)
-                if accept_langs:
-                    for s in ext_streams:
-                        if s.languageCode in accept_langs:
-                            match = s
-                            break
-
+            match = self._matchExternalAudio(ext_streams)
             if match:
                 util.DEBUG_LOG('Pre-selecting external audio: {}', match)
                 self.selectStream(match, sync_to_server=False)

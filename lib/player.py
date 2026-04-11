@@ -1517,28 +1517,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         if not ext_streams:
             return None
 
-        # single external audio — the user placed it there intentionally, use it
-        if len(ext_streams) == 1:
-            util.DEBUG_LOG('Single external audio found, using: {}', ext_streams[0])
-            return ext_streams[0].kodiIndex
-
-        # multiple external audio files — match against Plex-selected + native languages
-        accept_langs = set()
-        if track.languageCode:
-            accept_langs.add(track.languageCode)
-
-        native_codes = util.getSetting('disable_subtitle_languages', [])
-        for code in native_codes:
-            accept_langs.add(code)
-
-        if not accept_langs:
-            return None
-
-        for stream in ext_streams:
-            if stream.languageCode in accept_langs:
-                util.DEBUG_LOG('External audio match: {} matches accepted languages (Plex: {}, native: {})',
-                               stream, track.languageCode, ','.join(native_codes))
-                return stream.kodiIndex
+        match = self.player.video._matchExternalAudio(ext_streams)
+        if match:
+            util.DEBUG_LOG('External audio match: {}', match)
+            return match.kodiIndex
 
         return None
 

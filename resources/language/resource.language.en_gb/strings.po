@@ -3109,7 +3109,7 @@ msgid "Honor external audio files"
 msgstr ""
 
 msgctxt "#34099"
-msgid "When Kodi discovers external audio files alongside the video (e.g. a separate .dts or .ac3 file), honor its selection instead of overriding it. A single external audio file is always accepted. When multiple are present, the one matching the Plex-selected audio language or a native language is preferred. External audio files are not actively shown or selectable in the UI yet. Only for mapped Direct Play."
+msgid "When external audio files are found alongside the video (e.g. a separate .dts or .ac3 file), use them. A single external audio file is always used. When multiple are present, the Plex-selected audio language is preferred, then native languages. Selectable in preplay and playback audio settings. Only for mapped Direct Play."
 msgstr ""
 
 # Unused: 34100-35000 (901 IDs)

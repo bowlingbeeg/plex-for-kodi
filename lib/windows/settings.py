@@ -614,12 +614,11 @@ class Settings(object):
                              "files when that setting is enabled.")
                 ),
                 BoolSetting('use_external_audio', T(34098, 'Honor external audio files'), False)
-                .description(T(34099, 'When Kodi discovers external audio files alongside the video '
-                                      '(e.g. a separate .dts or .ac3 file), honor its selection instead '
-                                      'of overriding it. A single external audio file is always accepted. '
-                                      'When multiple are present, the one matching the Plex-selected '
-                                      'audio language or a native language is preferred. External audio '
-                                      'files are not actively shown or selectable in the UI yet. '
+                .description(T(34099, 'When external audio files are found alongside the video '
+                                      '(e.g. a separate .dts or .ac3 file), use them. A single external '
+                                      'audio file is always used. When multiple are present, the '
+                                      'Plex-selected audio language is preferred, then native languages. '
+                                      'Selectable in preplay and playback audio settings. '
                                       'Only for mapped Direct Play.')),
                 OptionsSetting(
                     'subtitle_download_from',
