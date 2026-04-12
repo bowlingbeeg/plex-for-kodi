@@ -1506,6 +1506,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                         writers and u'{0}{1}    {2}'.format(directors and '    ' or '', writersLabel, writers) or '')
 
     def setItemAudioAndSubtitleInfo(self, video, mli):
+        if util.getSetting('use_external_audio', False) and hasattr(type(video), 'discoverExternalAudioStreams'):
+            video.discoverExternalAudioStreams()
+
         sas = video.selectedAudioStream()
 
         if sas:

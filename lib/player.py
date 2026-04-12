@@ -19,6 +19,7 @@ from . import util
 from . import seamless_branching
 from plexnet import plexplayer
 from plexnet import plexapp
+from plexnet import plexstream as plexstreamModule
 from plexnet import signalsmixin
 from plexnet import util as plexnetUtil
 from six.moves import range
@@ -285,6 +286,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._progressHld = {}
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
+        self._deferAudioTrack = False
+        self._audioTrackSwitchedSOS = None
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -309,6 +312,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.seekBackToDone = False
         self.seekingBackTo = False
         self.waitingForSOS = False
+        self._deferAudioTrack = False
+        self._audioTrackSwitchedSOS = None
         self._lastDuration = 0
         self._subtitleStreamOffset = None
         self._lastSetEmbeddedSubIdx = None
@@ -666,6 +671,30 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def onAVChange(self):
         util.DEBUG_LOG('SeekHandler: onAVChange')
+        if self._audioTrackSwitchedSOS is not None:
+            try:
+                actual_time = self.player.getTime()
+            except RuntimeError:
+                actual_time = -1
+            sos, retries = self._audioTrackSwitchedSOS
+            if actual_time < 10:
+                if retries >= 5:
+                    self._audioTrackSwitchedSOS = None
+                    util.DEBUG_LOG("SeekHandler: onAVChange: Position reset persists after {} retries "
+                                   "(actual: {}, expected: {}), giving up", retries, actual_time, sos / 1000.0)
+                else:
+                    self._audioTrackSwitchedSOS = (sos, retries + 1)
+                    util.DEBUG_LOG("SeekHandler: onAVChange: Position reset detected after audio track switch "
+                                   "(actual: {}, expected: {}, retry: {}), re-seeking",
+                                   actual_time, sos / 1000.0, retries + 1)
+                    self.seekAbsolute(sos)
+                return
+            elif actual_time >= sos / 1000.0 * 0.5:
+                # position looks fine, disarm
+                self._audioTrackSwitchedSOS = None
+                util.DEBUG_LOG("SeekHandler: onAVChange: Position OK after audio track switch "
+                               "(actual: {}, expected: {}), disarming", actual_time, sos / 1000.0)
+
         if self.blackoutWasWanted and self.blackout:
             # this might occur even before AVStarted
             self.start_blackout()
@@ -1220,6 +1249,19 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.dialog.selectedOffset = appliedOffset
                 self.dialog.update()
 
+            if self._deferAudioTrack and self.seekBackTo is None:
+                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Setting deferred audio track")
+                switched = self.setAudioTrack()
+                self._deferAudioTrack = False
+
+                if switched and origSOS and origSOS > 10000:
+                    # setAudioStream() during an active display mode switch can cause the player
+                    # position to reset when OnResetDisplay arrives. Stash the SOS value so
+                    # onAVChange can detect the reset and re-seek.
+                    self._audioTrackSwitchedSOS = (origSOS, 0)
+                    util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Audio track switched, "
+                                   "arming position reset detection (SOS: {})", origSOS)
+
         self.skipFixForNextSeek = False
         self.updateOffset(offset=appliedOffset)
         # self.showOSD(from_seek=True)
@@ -1301,7 +1343,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                 # the terminological one (e.g: ger vs. deu, fre vs. fra)
                 ess_lang = languages.get(part2t=ess.languageCode)
                 for sub in kodisubs[ext_subs_amount:]:
-                    sub_language = sub['language'].strip(",.()- ")
+                    sub_language = sub['language'].strip(",.()- \x00")
                     # we're expecting Kodi to return a 3-char part2b, if it doesn't, try to fix
                     if len(sub_language) < 3:
                         # kodi somehow mismatched the language and/or the subtitle was mis-tagged (e.g. pt (BR))
@@ -1398,14 +1440,118 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.player.showSubtitles(False)
             self._lastSetEmbeddedSubIdx = None
 
+    def _discoverExternalAudio(self):
+        """Discover external audio streams and register them on the video model.
+
+        Uses filesystem scan first (may have been done at preplay), then enriches
+        with Kodi's runtime data (channel count, codec) if available during playback.
+        Returns the list of ExternalAudioStream objects, or empty list.
+        """
+        video = self.player.video
+        if not video:
+            return []
+
+        # try filesystem discovery first (works at preplay and playback)
+        if hasattr(type(video), 'discoverExternalAudioStreams'):
+            ext_streams = video.discoverExternalAudioStreams()
+        else:
+            ext_streams = []
+
+        # during playback, enrich with Kodi's runtime data
+        plex_audio_count = video.embeddedAudioStreamCount
+        if plex_audio_count > 0:
+            try:
+                playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
+                kodi_streams = kodijsonrpc.rpc.Player.GetProperties(
+                    playerid=playerID, properties=['audiostreams'])['audiostreams']
+            except:
+                kodi_streams = []
+
+            ext_kodi_streams = kodi_streams[plex_audio_count:]
+
+            if ext_streams and ext_kodi_streams:
+                # update existing streams with Kodi's richer data
+                for i, ks in enumerate(ext_kodi_streams):
+                    if i < len(ext_streams):
+                        ext_streams[i].channels = plexstreamModule.plexobjects.PlexValue(str(ks.get('channels', 0)))
+                        ext_streams[i].kodiIndex = ks['index']
+                        if ks.get('codec'):
+                            ext_streams[i].codec = ks['codec']
+            elif not ext_streams and ext_kodi_streams:
+                # no filesystem discovery (not mapped?), fall back to Kodi-only discovery
+                for ks in ext_kodi_streams:
+                    lang_code = ks.get('language', '').strip(",.()- \x00")
+                    norm_lang = ''
+                    if lang_code:
+                        try:
+                            if len(lang_code) < 3:
+                                norm_lang = languages.get(part1=lang_code).part2t
+                            else:
+                                norm_lang = languages.get(part2b=lang_code).part2t
+                        except:
+                            norm_lang = lang_code
+
+                    stream = plexstreamModule.ExternalAudioStream(
+                        language_code=norm_lang,
+                        codec=ks.get('codec', ''),
+                        channels=ks.get('channels', 0),
+                        kodi_index=ks['index'],
+                        filename=ks.get('name', '')
+                    )
+                    ext_streams.append(stream)
+                    util.DEBUG_LOG('Discovered external audio from Kodi: {}', stream)
+
+                video.setExternalAudioStreams(ext_streams)
+
+        return ext_streams
+
+    def _findExternalAudioMatch(self, track):
+        """Discover external audio and find the best match.
+
+        Returns the Kodi stream index of the matching external audio, or None.
+        """
+        if not track:
+            return None
+
+        ext_streams = self._discoverExternalAudio()
+        if not ext_streams:
+            return None
+
+        match = self.player.video._matchExternalAudio(ext_streams)
+        if match:
+            util.DEBUG_LOG('External audio match: {}', match)
+            return match.kodiIndex
+
+        return None
+
     def setAudioTrack(self):
         self.player.lastPlayWasBGM = False
         if self.isDirectPlay and self.player.video:
             track = self.player.video.selectedAudioStream()
             if track:
+                # if the selected stream is an external one (user chose it in UI), use its Kodi index
+                if getattr(track, 'isExternal', False):
+                    targetIdx = track.kodiIndex
+                else:
+                    targetIdx = track.typeIndex
+
+                    # auto-discover and match external audio
+                    if util.getSetting('use_external_audio', False) and \
+                            self.player.playerObject and self.player.playerObject.metadata and \
+                            self.player.playerObject.metadata.isMapped:
+                        ext_idx = self._findExternalAudioMatch(track)
+                        if ext_idx is not None:
+                            targetIdx = ext_idx
+                            # mark the external stream as selected in the model
+                            for s in self.player.video.audioStreams:
+                                if getattr(s, 'isExternal', False) and s.kodiIndex == ext_idx:
+                                    self.player.video.selectStream(s, sync_to_server=False)
+                                    break
+
                 currIdx = None
+                switched = False
                 tries = 0
-                while currIdx != track.typeIndex and tries < 40:
+                while currIdx != targetIdx and tries < 40:
                     try:
                         playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
                         currIdx = \
@@ -1413,17 +1559,19 @@ class SeekPlayerHandler(BasePlayerHandler):
                             'currentaudiostream']['index']
                     except:
                         pass
-                    if currIdx == track.typeIndex:
-                        util.DEBUG_LOG('Audio track is correct index: {0}', track.typeIndex)
-                        return
+                    if currIdx == targetIdx:
+                        util.DEBUG_LOG('Audio track is correct index: {0}', targetIdx)
+                        return switched
 
                     if currIdx is not None:
-                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, track.typeIndex, tries + 1)
+                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, targetIdx, tries + 1)
+                        switched = True
                         util.MONITOR.waitForAbort(0.1)
-                        self.player.setAudioStream(track.typeIndex)
+                        self.player.setAudioStream(targetIdx)
                     else:
                         util.MONITOR.waitForAbort(0.1)
                     tries += 1
+        return False
 
 
     def updateOffset(self, offset=None):
@@ -1439,7 +1587,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         if self.isTranscoded and self.player.getAvailableSubtitleStreams():
             util.DEBUG_LOG('Enabling first subtitle stream, as we\'re in DirectStream')
             self.player.showSubtitles(True)
-        self.setAudioTrack()
+
+        if not self._deferAudioTrack:
+            util.DEBUG_LOG("SeekHandler: initPlayback: Not deferring audio track")
+            self.setAudioTrack()
 
     def onPlayBackFailed(self):
         # we might've crashed, make sure we set a correct volume again
@@ -2256,6 +2407,8 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
             if self.handler.seekOnStart is not None:
                 util.setGlobalProperty('playback_initializing', '1', wait=True)
+                util.DEBUG_LOG("Player: Enabling deferred audio track")
+                self.handler._deferAudioTrack = True
             else:
                 util.setGlobalProperty('playback_initializing', '', wait=True)
 

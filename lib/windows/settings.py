@@ -610,8 +610,16 @@ class Settings(object):
                 ).description(
                     T(33692, "When you usually watch things in a different language with subtitles, but are a"
                              " native speaker of other languages, which you don't need subtitles for, prevent Plex "
-                             "from auto-selecting subtitles for those languages.")
+                             "from auto-selecting subtitles for those languages. Also used to match external audio "
+                             "files when that setting is enabled.")
                 ),
+                BoolSetting('use_external_audio', T(34098, 'Honor external audio files'), False)
+                .description(T(34099, 'When external audio files are found alongside the video '
+                                      '(e.g. a separate .dts or .ac3 file), use them. A single external '
+                                      'audio file is always used. When multiple are present, the '
+                                      'Plex-selected audio language is preferred, then native languages. '
+                                      'Selectable in preplay and playback audio settings. '
+                                      'Only for mapped Direct Play.')),
                 OptionsSetting(
                     'subtitle_download_from',
                     T(33693, 'Download subtitles using'),

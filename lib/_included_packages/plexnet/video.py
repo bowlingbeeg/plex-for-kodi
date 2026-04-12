@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import datetime
+import os
 
 from functools import wraps
 
@@ -212,7 +213,8 @@ class Video(media.MediaItem, AudioCodecMixin):
 
     @forceMediaChoice
     def selectStream(self, stream, _async=True, from_session=False, session_id=None, sync_to_server=True):
-        if sync_to_server:
+        # don't sync external streams to Plex server — it doesn't know about them
+        if sync_to_server and not getattr(stream, 'isExternal', False):
             self.mediaChoice.part.setSelectedStream(stream.streamType.asInt(), stream.id, _async, from_session=from_session,
                                                     session_id=session_id, video=self)
         # Update any affected streams
@@ -579,6 +581,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
     _videoStreams = None
     _audioStreams = None
     _subtitleStreams = None
+    _externalAudioStreams = None
     _current_subtitle_idx = None
     isExtra = False
 
@@ -608,6 +611,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
         self._videoStreams = None
         self._audioStreams = None
         self._subtitleStreams = None
+        self._externalAudioStreams = None
 
     def reload(self, *args, **kwargs):
         if not kwargs.get('_soft'):
@@ -760,10 +764,141 @@ class Movie(PlayableVideo):
         return self._videoStreams
 
     @property
+    def embeddedAudioStreamCount(self):
+        """Number of embedded (Plex-known) audio streams, excluding external."""
+        if self._audioStreams is None:
+            self._audioStreams = self._findStreams(plexstream.PlexStream.TYPE_AUDIO)
+        return len(self._audioStreams)
+
+    @property
     def audioStreams(self):
         if self._audioStreams is None:
             self._audioStreams = self._findStreams(plexstream.PlexStream.TYPE_AUDIO)
+        if self._externalAudioStreams:
+            return self._audioStreams + self._externalAudioStreams
         return self._audioStreams
+
+    EXTERNAL_AUDIO_EXTENSIONS = frozenset((
+        'ac3', 'dts', 'dca', 'eac3', 'aac', 'm4a', 'flac', 'mp3',
+        'opus', 'ogg', 'truehd', 'pcm', 'wav', 'wma', 'mka',
+    ))
+
+    def setExternalAudioStreams(self, streams):
+        """Set external audio streams. Assigns typeIndex continuing from embedded."""
+        if not streams:
+            self._externalAudioStreams = None
+            return
+
+        base_idx = self.embeddedAudioStreamCount
+        for i, stream in enumerate(streams):
+            stream.typeIndex = base_idx + i
+        self._externalAudioStreams = streams
+        util.DEBUG_LOG("Set {} external audio stream(s) on video (base typeIndex: {})", len(streams), base_idx)
+
+    def _matchExternalAudio(self, ext_streams):
+        """Find the best matching external audio stream.
+
+        Single stream: always match. Multiple: prefer Plex-selected language, then native languages.
+        """
+        if not ext_streams:
+            return None
+
+        if len(ext_streams) == 1:
+            return ext_streams[0]
+
+        # prefer Plex-selected audio language first
+        sas = self.selectedAudioStream()
+        plex_lang = sas.languageCode if sas and sas.languageCode else None
+        if plex_lang:
+            for s in ext_streams:
+                if s.languageCode == plex_lang:
+                    return s
+
+        # fall back to native languages
+        native_codes = self.settings.getPreference('disable_subtitle_languages', [])
+        for s in ext_streams:
+            if s.languageCode in native_codes:
+                return s
+
+        return None
+
+    def discoverExternalAudioStreams(self):
+        """Scan the filesystem for external audio files alongside the video.
+
+        Uses path mapping to find the local file, then looks for audio files with
+        the same base name. Can be called at preplay time (no playback required).
+        Returns the list of ExternalAudioStream objects, or empty list.
+        """
+        if self._externalAudioStreams is not None:
+            return self._externalAudioStreams
+
+        if not self.mediaChoice or not self.mediaChoice.part:
+            return []
+
+        mapped_url = self.mediaChoice.part.getPathMappedUrl()
+        if not mapped_url:
+            return []
+
+        video_dir = os.path.dirname(mapped_url)
+        video_base = os.path.splitext(os.path.basename(mapped_url))[0]
+
+        try:
+            from kodi_six import xbmcvfs
+            dirs, files = xbmcvfs.listdir(video_dir)
+        except:
+            return []
+
+        ext_streams = []
+        kodi_idx = self.embeddedAudioStreamCount
+        for f in sorted(files):
+            if not f.startswith(video_base + '.'):
+                continue
+
+            # strip the video base name prefix to get e.g. "sv.dts" or just "dts"
+            remainder = f[len(video_base) + 1:]
+            parts = remainder.rsplit('.', 1)
+            if len(parts) < 1:
+                continue
+
+            ext = parts[-1].lower()
+            if ext not in self.EXTERNAL_AUDIO_EXTENSIONS:
+                continue
+
+            # parse language: "sv.dts" → lang="sv", or just "dts" → no lang
+            lang_code = ''
+            if len(parts) == 2 and parts[0]:
+                raw_lang = parts[0].split('.')[-1]  # handle "Movie.stuff.sv.dts"
+                if len(raw_lang) <= 3:
+                    try:
+                        from iso639 import languages
+                        if len(raw_lang) == 2:
+                            lang_code = languages.get(part1=raw_lang).part2t
+                        else:
+                            lang_code = languages.get(part2b=raw_lang).part2t
+                    except:
+                        lang_code = raw_lang
+
+            stream = plexstream.ExternalAudioStream(
+                language_code=lang_code,
+                codec=ext,
+                channels=0,
+                kodi_index=kodi_idx,
+                filename=f
+            )
+            ext_streams.append(stream)
+            util.DEBUG_LOG('Discovered external audio from filesystem: {} (lang: {}, codec: {})', f, lang_code, ext)
+            kodi_idx += 1
+
+        self.setExternalAudioStreams(ext_streams if ext_streams else None)
+
+        # auto-select the best external stream
+        if ext_streams and util.INTERFACE.getPreference('use_external_audio', False):
+            match = self._matchExternalAudio(ext_streams)
+            if match:
+                util.DEBUG_LOG('Pre-selecting external audio: {}', match)
+                self.selectStream(match, sync_to_server=False)
+
+        return ext_streams
 
     @property
     def subtitleStreams(self):

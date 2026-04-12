@@ -3051,8 +3051,8 @@ msgid "Native languages"
 msgstr "Muttersprachen"
 
 msgctxt "#33692"
-msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages."
-msgstr "Schaust Du normalerweise in einer anderen Sprache mit Untertiteln, bist aber Muttersprachler anderer Sprachen, für die Du keine Untertitel benötigst, halte Plex davon ab, Untertitel für diese Sprachen automatisch auszuwählen."
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled."
+msgstr "Schaust Du normalerweise in einer anderen Sprache mit Untertiteln, bist aber Muttersprachler anderer Sprachen, für die Du keine Untertitel benötigst, halte Plex davon ab, Untertitel für diese Sprachen automatisch auszuwählen. Wird auch zum Abgleich externer Audiodateien verwendet, wenn diese Einstellung aktiviert ist."
 
 msgctxt "#33693"
 msgid "Download subtitles using"
@@ -3575,3 +3575,11 @@ msgstr "Wie lange soll nach dem ersten Vorwärtsspringen bei \"Zurückspringen b
 msgctxt "#34097"
 msgid "Go Home"
 msgstr "Zum Hauptmenü"
+
+msgctxt "#34098"
+msgid "Honor external audio files"
+msgstr "Externe Audiodateien berücksichtigen"
+
+msgctxt "#34099"
+msgid "When external audio files are found alongside the video (e.g. a separate .dts or .ac3 file), use them. A single external audio file is always used. When multiple are present, the Plex-selected audio language is preferred, then native languages. Selectable in preplay and playback audio settings. Only for mapped Direct Play."
+msgstr "Wenn externe Audiodateien neben dem Video gefunden werden (z.B. eine separate .dts- oder .ac3-Datei), diese verwenden. Eine einzelne externe Audiodatei wird immer verwendet. Bei mehreren wird die von Plex gewählte Audiosprache bevorzugt, dann Muttersprachen. Auswählbar in Vorschau- und Wiedergabe-Audioeinstellungen. Nur für zugeordnetes Direct Play."

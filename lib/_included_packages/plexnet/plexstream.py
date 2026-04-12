@@ -205,3 +205,37 @@ class NoneStream(PlexStream):
 
 
 NONE_STREAM = NoneStream()
+
+
+class ExternalAudioStream(PlexStream):
+    """Synthetic audio stream representing an external audio file discovered by Kodi."""
+
+    def __init__(self, language_code='', codec='', channels=0, kodi_index=0, filename=''):
+        PlexStream.__init__(self, None)
+        self.id = plexobjects.PlexValue("external_audio_{}".format(kodi_index))
+        self.streamType = plexobjects.PlexValue(str(self.TYPE_AUDIO))
+        self.languageCode = language_code
+        self.language = language_code
+        self.codec = codec
+        self.channels = plexobjects.PlexValue(str(channels))
+        self.selected = plexobjects.PlexValue('0')
+        self.typeIndex = None
+        self.kodiIndex = kodi_index
+        self.title = filename
+        self.isExternal = True
+
+    def getTitle(self, translate_func=util.dummyTranslate):
+        title = self.getLanguageName(translate_func)
+        codec = self.translateAudioCodec((self.codec or '').lower())
+        channels = self.getChannels(translate_func)
+
+        if codec and channels:
+            title += u" ({0} {1})".format(codec, channels)
+        elif codec or channels:
+            title += u" ({0}{1})".format(codec, channels)
+
+        title += u" [{}]".format(translate_func("External"))
+        return title
+
+    def __repr__(self):
+        return '<ExternalAudioStream: {} (kodi:{})>'.format(str(self), self.kodiIndex)
