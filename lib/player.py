@@ -2813,6 +2813,12 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
 
         if self.handler.onPlayBackFailed() and not self._ignorePlaybackFailure:
+            # Re-evaluate server connections so a subsequent retry uses the best available connection
+            try:
+                plexapp.SERVERMANAGER.periodicReachabilityCheck()
+            except:
+                util.ERROR("Failed to trigger reachability re-check after playback error")
+
             self.ignoreStopEvents = True
             util.showNotification('Playback Error!')
             self.stopAndWait()
@@ -2829,6 +2835,12 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
 
         if self.handler.onPlayBackFailed() and not self._ignorePlaybackFailure:
+            # Re-evaluate server connections so a subsequent retry uses the best available connection
+            try:
+                plexapp.SERVERMANAGER.periodicReachabilityCheck()
+            except:
+                util.ERROR("Failed to trigger reachability re-check after playback failure")
+
             util.showNotification(util.T(32448, 'Playback Failed!'))
             self.stopAndWait()
             self.close()

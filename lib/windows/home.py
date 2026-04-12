@@ -31,6 +31,7 @@ from .mixins.common import CommonMixin
 
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
+REACHABILITY_CHECK_INTERVAL = 600  # 10 Minutes
 HUB_PAGE_SIZE = 10
 
 MOVE_SET = frozenset(
@@ -585,6 +586,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.block_section_change = False
         self.go_root = False
         self.kodi_exiting = False
+        self._lastReachabilityCheck = 0
 
         from . import windowutils
         windowutils.HOME = self
@@ -2272,11 +2274,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if hubs is None:
             return
 
-        if (self.is_active and not self._checkingForExit and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
-                not xbmc.Player().isPlayingVideo()):
+        now = time.time()
+        playing = xbmc.Player().isPlayingVideo()
+
+        if (self.is_active and not self._checkingForExit and now - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
+                not playing):
             util.DEBUG_LOG("Home: Ticking, section stale, calling showHubs(update=True)")
             self.showHubs(self.lastSection, update=True)
             util.cleanupCacheFolder()
+
+        if (not playing and util.getSetting('periodic_reachability_check', False) and
+                now - self._lastReachabilityCheck > REACHABILITY_CHECK_INTERVAL):
+            self._lastReachabilityCheck = now
+            plexapp.SERVERMANAGER.periodicReachabilityCheck()
 
     def doClose(self, force=True):
         util.DEBUG_LOG("Home: doClose called, triggering close.windows")
@@ -2743,6 +2753,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.showHubs(self.lastSection, force=True, update=True)
 
     def onWake(self, *args, **kwargs):
+        if util.getSetting('periodic_reachability_check', False):
+            self._lastReachabilityCheck = time.time()
+            plexapp.SERVERMANAGER.periodicReachabilityCheck()
+
         wakeAction = util.getSetting('action_on_wake', util.platformFlavor == 'CoreELEC' and 'wait_5' or 'wait_1')
         if wakeAction == "restart":
             self._ignoreReInit = True
