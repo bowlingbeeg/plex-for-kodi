@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.5.2-beta1"
+       version="1.6.1-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,13 +34,13 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Player: Fix onKodiExit Monitor object race
-- Fix false positive in post-seek verification for keyframe-aligned seeks
-- Fix hub refresh race condition and index crash after playback (thanks @Jonza)
-- Add Refresh Hubs option to section context menu (thanks @Jonza)
-- Player: Exit player alive loop early if requested
-- Fix action_on_sleep "Go Home" using wrong string ID 34066
-- Fix Go Home action scroll state race condition
+- Fix null byte in Kodi subtitle language code crashing player UI
+- Player: Defer setting audio track during initial seek(s); fixes issue with external audio tracks resulting in bad resume
+- Player: detect and recover position reset after deferred audio track switch
+- Player: add "Honor external audio files" setting
+- Player: integrate external audio into stream model and UI
+- Player: prioritize Plex-selected language over native for external audio matching
+- Player: fix external audio discovery on non-PlayableVideo objects
         </news>
         <assets>
             <icon>icon2.png</icon>
