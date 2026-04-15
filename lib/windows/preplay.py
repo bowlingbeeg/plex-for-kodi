@@ -35,6 +35,14 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
     def getData(self, offset, amount):
         return self.parentWindow.video.getRelated(offset=offset, limit=amount)
 
+    def createListItem(self, rel):
+        return kodigui.ManagedListItem(
+            rel.title or '',
+            str(rel.year) if rel.year else '',
+            thumbnailImage=rel.defaultThumb.asTranscodedImageURL(*self.parentWindow.RELATED_DIM),
+            data_source=rel
+        )
+
 
 class CollectionPaginator(pagination.BaseRelatedPaginator):
     initialPageSize = 10
@@ -64,6 +72,7 @@ class CollectionPaginator(pagination.BaseRelatedPaginator):
     def createListItem(self, item):
         return kodigui.ManagedListItem(
             item.title or '',
+            str(item.year) if item.year else '',
             thumbnailImage=item.defaultThumb.asTranscodedImageURL(*self.parentWindow.RELATED_DIM),
             data_source=item
         )
