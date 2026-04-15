@@ -560,7 +560,7 @@
                 </control>
                 <control type="group">
                     <visible>Control.HasFocus(260) | !String.IsEmpty(Window.Property(show.servers))</visible>
-                    <posx>-413</posx>
+                    <posx>-250</posx>
                     <posy>{{ vscale(70) }}</posy>
                     <control type="image" id="800">
                         <posx>-40</posx>
@@ -570,7 +570,7 @@
                         <texture border="42">script.plex/drop-shadow.png</texture>
                     </control>
                     <control type="image">
-                        <posx>432</posx>
+                        <posx>269</posx>
                         <posy>{{ vscale(-13) }}</posy>
                         <width>15</width>
                         <height>{{ vscale(13) }}</height>
