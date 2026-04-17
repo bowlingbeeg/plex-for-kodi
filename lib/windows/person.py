@@ -1,7 +1,4 @@
 # coding=utf-8
-"""
-Actor Detail Window - Shows actor biography, photo, and filmography
-"""
 from __future__ import absolute_import
 
 import datetime
@@ -20,36 +17,28 @@ from . import opener
 from . import search
 from . import windowutils
 
-# Pagination settings
 FILMOGRAPHY_PAGE_SIZE = 10
-
-# Discover hub settings (Not in Library hubs - one per credit type)
-DISCOVER_HUB_SLOTS = 6  # Max number of discover hub rows
-NOT_IN_LIBRARY_BATCH_SIZE = 10  # GUIDs per library-check request (matches Plex Web)
+DISCOVER_HUB_SLOTS = 6
+NOT_IN_LIBRARY_BATCH_SIZE = 10
 
 
-
-class ActorDetailsTask(backgroundthread.Task):
-    """Background task to fetch actor details from the server"""
+class PersonDetailsTask(backgroundthread.Task):
     def __init__(self, role, callback):
-        super(ActorDetailsTask, self).__init__()
+        super(PersonDetailsTask, self).__init__()
         self.role = role
         self.callback = callback
 
     def run(self):
         if self.isCanceled():
             return
-
         details = self.role.getDetails()
-
         if not self.isCanceled():
             self.callback(details)
 
 
-class ActorFilmographyTask(backgroundthread.Task):
-    """Background task to fetch actor's filmography with pagination"""
+class PersonFilmographyTask(backgroundthread.Task):
     def __init__(self, role, media_type, callback, start=0, size=FILMOGRAPHY_PAGE_SIZE):
-        super(ActorFilmographyTask, self).__init__()
+        super(PersonFilmographyTask, self).__init__()
         self.role = role
         self.media_type = media_type
         self.callback = callback
@@ -59,15 +48,12 @@ class ActorFilmographyTask(backgroundthread.Task):
     def run(self):
         if self.isCanceled():
             return
-
         result = self.role.getFilmography(self.media_type, start=self.start, size=self.size)
-
         if not self.isCanceled():
             self.callback(result)
 
 
 class ExtendFilmographyTask(backgroundthread.Task):
-    """Background task to fetch more filmography items"""
     def setup(self, role, start, size, callback, canceledCallback=None):
         self.role = role
         self.start = start
@@ -81,7 +67,6 @@ class ExtendFilmographyTask(backgroundthread.Task):
             if self.canceledCallback:
                 self.canceledCallback()
             return
-
         try:
             result = self.role.getFilmography(None, start=self.start, size=self.size)
             if self.isCanceled():
@@ -96,9 +81,6 @@ class ExtendFilmographyTask(backgroundthread.Task):
 
 
 class DiscoverItem(object):
-    """Lightweight wrapper around discover API credit metadata.
-    Provides just enough attributes to create ManagedListItems and add to watchlist.
-    """
     def __init__(self, credit_data):
         meta = credit_data.get('Metadata', {})
         self.title = meta.get('title', '')
@@ -110,34 +92,30 @@ class DiscoverItem(object):
         self.art = meta.get('art', '')
         self.role = credit_data.get('role', '')
         self.order = credit_data.get('order', 999)
-        self.is_discover = True  # Flag to distinguish from local PlexObjects
+        self.is_discover = True
 
 
 class DiscoverCreditsTask(backgroundthread.Task):
-    """Background task to fetch full filmography from Plex discover API,
-    then batch-check which items are in the user's library.
-    Returns all credit groups (actor, director, writer, etc.) with library presence info."""
-
-    def __init__(self, role, server, callback):
+    def __init__(self, role, server, callback, credit_type=None, primary_type='actor'):
         super(DiscoverCreditsTask, self).__init__()
         self.role = role
         self.server = server
         self.callback = callback
+        self.credit_type = credit_type
+        self.primary_type = primary_type
 
     def run(self):
         if self.isCanceled():
             return
 
-        # Step 1: Fetch ALL credit groups from discover (actor, director, writer, etc.)
-        credit_groups = self.role.getDiscoverCredits(credit_type=None)
+        credit_groups = self.role.getDiscoverCredits(credit_type=self.credit_type)
         if self.isCanceled() or not credit_groups:
             self.callback([], set(), set())
             return
 
-        # Step 2: Build DiscoverItems for ALL groups, collect all GUIDs
-        discover_hubs = []  # [(type_name, [DiscoverItem, ...]), ...]
+        discover_hubs = []
         all_guids = []
-        actor_guids = set()
+        primary_guids = set()
 
         for group_type, credits in credit_groups:
             group_items = []
@@ -146,8 +124,8 @@ class DiscoverCreditsTask(backgroundthread.Task):
                 if item.ratingKey:
                     group_items.append(item)
                     all_guids.append(item.guid)
-                    if group_type.lower() == 'actor':
-                        actor_guids.add(item.guid)
+                    if group_type.lower() == self.primary_type:
+                        primary_guids.add(item.guid)
             if group_items:
                 discover_hubs.append((group_type, group_items))
 
@@ -155,17 +133,16 @@ class DiscoverCreditsTask(backgroundthread.Task):
             self.callback([], set(), set())
             return
 
-        # Step 3: Batch-check which GUIDs are in the local library (deduplicated)
         unique_guids = list(set(all_guids))
         from plexnet import media as plexmedia
         library_guids = plexmedia.Role.checkLibraryPresence(self.server, unique_guids)
 
         if not self.isCanceled():
-            self.callback(discover_hubs, library_guids, actor_guids)
+            self.callback(discover_hubs, library_guids, primary_guids)
 
 
-class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
-    xmlFile = 'script-plex-actor.xml'
+class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
+    xmlFile = 'script-plex-person.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
     res = '1080i'
@@ -176,25 +153,30 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     POSTER_DIM = util.scaleResolution(244, 361)
 
     FILMOGRAPHY_LIST_ID = 400
-    DISCOVER_LIST_BASE_ID = 401  # List IDs 401-406 for discover hubs
-    DISCOVER_GROUP_BASE_ID = 501  # Group IDs 501-506 for discover hubs
+    DISCOVER_LIST_BASE_ID = 401
+    DISCOVER_GROUP_BASE_ID = 501
     HOME_BUTTON_ID = 201
     SEARCH_BUTTON_ID = 202
     PLAYER_STATUS_BUTTON_ID = 204
 
+    # Override in subclasses
+    CREDIT_TYPE = None      # passed to getDiscoverCredits — None fetches all types
+    PRIMARY_TYPE = 'actor'  # which credit group to use for filmography filtering
+    TYPE_LABEL_ID = 32473   # strings.po ID for the role type label shown on screen
+
     def __init__(self, *args, **kwargs):
         kodigui.ControlledWindow.__init__(self, *args, **kwargs)
         self.role = kwargs.get('role')
-        self.actorDetails = None
-        self.filmographyItems = []  # Unique items (one per GUID)
-        self.filmographyAllItems = []  # All raw items from API
-        self.filmographyByGuid = {}  # {guid: [item1, item2, ...]} for multi-library handling
+        self.personDetails = None
+        self.filmographyItems = []
+        self.filmographyAllItems = []
+        self.filmographyByGuid = {}
         self.filmographyOffset = 0
         self.filmographyTotalSize = 0
         self.filmographyMore = False
-        self.discoverListControls = []  # ManagedControlList for each discover hub slot
-        self.discoverActorGuids = set()  # GUIDs from discover actor credits (for filtering)
-        self.libraryGuids = set()  # GUIDs confirmed in user's library
+        self.discoverListControls = []
+        self.discoverPrimaryGuids = set()
+        self.libraryGuids = set()
         self.tasks = backgroundthread.Tasks()
         self.exitCommand = None
         self.initialized = False
@@ -202,7 +184,6 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def onFirstInit(self):
         self.filmographyListControl = kodigui.ManagedControlList(self, self.FILMOGRAPHY_LIST_ID, 5)
 
-        # Create list controls for all discover hub slots (template generates 6)
         self.discoverListControls = []
         for i in range(DISCOVER_HUB_SLOTS):
             list_id = self.DISCOVER_LIST_BASE_ID + i
@@ -212,20 +193,17 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             except Exception:
                 break
 
-        # Ensure we use the local server for library queries — discover/watchlist
-        # items reference the discover server which can't serve local library endpoints
         from plexnet import plexapp
         local_server = plexapp.SERVERMANAGER.selectedServer
         if local_server and self.role.server != local_server:
             self.role.server = local_server
 
-        # Set initial info from role object
-        self.setProperty('actor.name', self.role.tag or '')
+        self.setProperty('person.name', self.role.tag or '')
+        self.setProperty('person.type_label', T(self.TYPE_LABEL_ID, self.PRIMARY_TYPE.title()))
         if self.role.thumb:
-            self.setProperty('actor.thumb', self.role.thumb.asTranscodedImageURL(*self.THUMB_DIM))
+            self.setProperty('person.thumb', self.role.thumb.asTranscodedImageURL(*self.THUMB_DIM))
 
-        # Fetch full details in background
-        self.fetchActorDetails()
+        self.fetchPersonDetails()
         self.fetchFilmography()
         self.fetchDiscoverCredits()
 
@@ -241,7 +219,6 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                 self.doClose()
                 return
 
-            # Handle filmography pagination when user scrolls to end marker
             if controlID == self.FILMOGRAPHY_LIST_ID:
                 if self.checkFilmographyPagination(action):
                     return
@@ -252,18 +229,13 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         kodigui.ControlledWindow.onAction(self, action)
 
     def checkFilmographyPagination(self, action):
-        """Check if we need to load more filmography items"""
         mli = self.filmographyListControl.getSelectedItem()
         if not mli:
             return False
-
-        # Check if we're on the "load more" marker
         if mli.getProperty('is.end') and not mli.getProperty('is.updating'):
-            # User scrolled to the end marker, load more items
             mli.setBoolProperty('is.updating', True)
             self.extendFilmography()
             return True
-
         return False
 
     def onClick(self, controlID):
@@ -286,19 +258,18 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.tasks.kill()
         kodigui.ControlledWindow.doClose(self)
 
-    def fetchActorDetails(self):
-        task = ActorDetailsTask(self.role, self.onActorDetails)
+    def fetchPersonDetails(self):
+        task = PersonDetailsTask(self.role, self.onPersonDetails)
         self.tasks.add(task)
         backgroundthread.BGThreader.addTask(task)
 
     def fetchFilmography(self):
         self.setProperty('loading', '1')
-        task = ActorFilmographyTask(self.role, None, self.onFilmography, start=0, size=FILMOGRAPHY_PAGE_SIZE)
+        task = PersonFilmographyTask(self.role, None, self.onFilmography, start=0, size=FILMOGRAPHY_PAGE_SIZE)
         self.tasks.add(task)
         backgroundthread.BGThreader.addTask(task)
 
     def extendFilmography(self):
-        """Fetch more filmography items"""
         start = self.filmographyOffset + len(self.filmographyItems)
         task = ExtendFilmographyTask().setup(
             self.role,
@@ -311,113 +282,91 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         backgroundthread.BGThreader.addTask(task)
 
     def onFilmographyExtendCanceled(self):
-        """Handle extension task cancellation"""
-        # Find and clear the is.updating property on the end marker
         for mli in self.filmographyListControl:
             if mli.getProperty('is.end'):
                 mli.setBoolProperty('is.updating', False)
                 break
 
     def onFilmographyExtended(self, result):
-        """Handle additional filmography items"""
         items = result.get('items', [])
         self.filmographyMore = result.get('more', False)
         self.filmographyTotalSize = result.get('totalSize', 0)
 
         if not items:
-            # No more items, remove the end marker
             self.onFilmographyExtendCanceled()
             return
 
-        # Add new items to all items list
         self.filmographyAllItems.extend(items)
-        
-        # Group new items by GUID and merge with existing
+
         newUniqueItems, newByGuid = self.groupFilmographyByGuid(items, existingByGuid=self.filmographyByGuid)
         self.filmographyItems.extend(newUniqueItems)
 
-        # Create list items for the new unique items only
         newListItems = []
         for item in newUniqueItems:
             mli = self.createFilmographyListItem(item)
             newListItems.append(mli)
 
-        # Add end marker if there are more items
         if self.filmographyMore:
             end = kodigui.ManagedListItem('')
             end.setBoolProperty('is.end', True)
             newListItems.append(end)
 
-        # Replace the old end marker with new items
         endPos = self.filmographyListControl.size() - 1
         self.filmographyListControl.replaceItem(endPos, newListItems[0])
         if len(newListItems) > 1:
             self.filmographyListControl.addItems(newListItems[1:])
 
-        # Select the first new item
         self.filmographyListControl.selectItem(endPos)
-
-        # Update count
         self.setProperty('filmography.count', str(len(self.filmographyItems)))
 
-    def onActorDetails(self, details):
+    def onPersonDetails(self, details):
         if not details:
-            util.DEBUG_LOG('ActorWindow: No details returned for actor')
+            util.DEBUG_LOG('PersonWindow: No details returned')
             return
 
-        util.DEBUG_LOG('ActorWindow: Got actor details - name={}, summary_len={}, birthDate={}'.format(
-            details.get('name', ''),
-            len(details.get('summary', '')),
-            details.get('birthDate', '')
-        ))
+        self.personDetails = details
+        self.setProperty('person.name', details.get('name', ''))
+        self.setProperty('person.summary', details.get('summary', ''))
+        self.setProperty('person.birthPlace', details.get('birthPlace', ''))
 
-        self.actorDetails = details
-        self.setProperty('actor.name', details.get('name', ''))
-        self.setProperty('actor.summary', details.get('summary', ''))
-        self.setProperty('actor.birthPlace', details.get('birthPlace', ''))
-
-        # Handle birth date and age calculation
         birthDate = details.get('birthDate', '')
         deathDate = details.get('deathDate', '')
 
         if birthDate:
-            self.setProperty('actor.birthDate', self.formatDate(birthDate))
+            self.setProperty('person.birthDate', self.formatDate(birthDate))
             age = self.calculateAge(birthDate, deathDate)
             if age:
-                self.setProperty('actor.age', str(age))
+                self.setProperty('person.age', str(age))
 
         if deathDate:
-            self.setProperty('actor.deathDate', self.formatDate(deathDate))
-            self.setProperty('actor.deceased', '1')
+            self.setProperty('person.deathDate', self.formatDate(deathDate))
+            self.setProperty('person.deceased', '1')
 
-        # Update thumb if we got a better one
         thumb = details.get('thumb', '')
         if thumb:
-            self.setProperty('actor.thumb', self.role.server.getImageTranscodeURL(thumb, *self.THUMB_DIM))
+            self.setProperty('person.thumb', self.role.server.getImageTranscodeURL(thumb, *self.THUMB_DIM))
 
-        # If we got a tagKey from details and didn't have one before, save it and
-        # retry discover credits (the initial call in onFirstInit would have bailed)
         tag_key = details.get('tagKey', '')
         if tag_key and not getattr(self.role, 'tagKey', None):
             self.role.tagKey = tag_key
             self.fetchDiscoverCredits()
 
     def fetchDiscoverCredits(self):
-        """Fetch full filmography from discover API and check library presence"""
         if not hasattr(self.role, 'tagKey') or not self.role.tagKey:
-            util.DEBUG_LOG('ActorWindow: No tagKey, skipping discover credits')
+            util.DEBUG_LOG('PersonWindow: No tagKey, skipping discover credits')
             return
 
-        task = DiscoverCreditsTask(self.role, self.role.server, self.onDiscoverCredits)
+        task = DiscoverCreditsTask(
+            self.role, self.role.server, self.onDiscoverCredits,
+            credit_type=self.CREDIT_TYPE, primary_type=self.PRIMARY_TYPE
+        )
         self.tasks.add(task)
         backgroundthread.BGThreader.addTask(task)
 
-    def onDiscoverCredits(self, discover_hubs, library_guids, actor_guids):
-        """Handle discover credits results — populate one hub per credit type with not-in-library items"""
+    def onDiscoverCredits(self, discover_hubs, library_guids, primary_guids):
         self.libraryGuids = library_guids
-        self.discoverActorGuids = actor_guids
+        self.discoverPrimaryGuids = primary_guids
 
-        # Filter each group to not-in-library items and populate sequential hub slots
         slot = 0
         for group_type, items in discover_hubs:
             if slot >= DISCOVER_HUB_SLOTS:
@@ -428,53 +377,38 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                 self.fillDiscoverHub(slot, not_in_library, label)
                 slot += 1
 
-        util.DEBUG_LOG('ActorWindow: Discover credits: {0} groups, {1} in library, {2} hubs populated'.format(
+        util.DEBUG_LOG('PersonWindow: Discover credits: {0} groups, {1} in library, {2} hubs populated'.format(
             len(discover_hubs), len(library_guids), slot))
 
-        # Now filter the existing filmography to actor-only credits
-        self.filterFilmographyToActorCredits()
+        self.filterFilmographyToPrimaryCredits()
 
-    def filterFilmographyToActorCredits(self):
-        """Remove non-acting credits from the filmography list using discover data"""
-        if not self.discoverActorGuids or not self.filmographyItems:
+    def filterFilmographyToPrimaryCredits(self):
+        if not self.discoverPrimaryGuids or not self.filmographyItems:
             return
 
         original_count = len(self.filmographyItems)
-        filtered = []
-        for item in self.filmographyItems:
-            guid = self.getItemGuid(item)
-            # Keep item if its GUID is in the actor credits, or if we can't check (no GUID)
-            if not guid or guid in self.discoverActorGuids:
-                filtered.append(item)
+        filtered = [item for item in self.filmographyItems
+                    if not self.getItemGuid(item) or self.getItemGuid(item) in self.discoverPrimaryGuids]
 
         if len(filtered) < original_count:
-            util.DEBUG_LOG('ActorWindow: Filtered filmography from {0} to {1} (actor credits only)'.format(
+            util.DEBUG_LOG('PersonWindow: Filtered filmography from {0} to {1} (primary credits only)'.format(
                 original_count, len(filtered)))
             self.filmographyItems = filtered
             self.fillFilmography()
 
     def fillDiscoverHub(self, slot, items, label):
-        """Populate a discover hub slot with items and set its label"""
         if slot >= len(self.discoverListControls):
             return
 
         listControl = self.discoverListControls[slot]
-        listItems = []
-        for item in items:
-            mli = self.createNotInLibraryListItem(item)
-            listItems.append(mli)
-
+        listItems = [self.createNotInLibraryListItem(item) for item in items]
         listControl.reset()
         listControl.addItems(listItems)
         self.setProperty('discover.hub.{0}.label'.format(slot), label)
 
     def createNotInLibraryListItem(self, item):
-        """Create a ManagedListItem from a DiscoverItem"""
         mli = kodigui.ManagedListItem(
-            item.title,
-            item.year,
-            thumbnailImage=item.thumb,
-            data_source=item
+            item.title, item.year, thumbnailImage=item.thumb, data_source=item
         )
         mli.setProperty('media.type', item.type)
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/{0}.png'.format(
@@ -484,7 +418,6 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         return mli
 
     def openDiscoverItem(self, controlID):
-        """Open a discover item in the watchlist preplay screen"""
         slot = controlID - self.DISCOVER_LIST_BASE_ID
         if slot < 0 or slot >= len(self.discoverListControls):
             return
@@ -500,11 +433,9 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         from plexnet import util as pnUtil
         discover_server = pnUtil.SERVERMANAGER.getDiscoverServer()
         if not discover_server:
-            util.DEBUG_LOG('ActorWindow: No discover server available')
+            util.DEBUG_LOG('PersonWindow: No discover server available')
             return
 
-        # Pass ratingKey as string — opener.open() fetches the full object from the
-        # discover server, then routes to PrePlayWindowWL (movies) or ShowWindow (shows)
         self.processCommand(opener.open(
             item.ratingKey,
             server=discover_server,
@@ -514,21 +445,15 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def onFilmography(self, result):
         self.setProperty('loading', '')
-
-        # Handle the new result format with pagination info
         items = result.get('items', [])
         self.filmographyAllItems = items
         self.filmographyOffset = result.get('offset', 0)
         self.filmographyTotalSize = result.get('totalSize', len(items))
         self.filmographyMore = result.get('more', False)
-
-        # Group items by GUID to handle multi-library duplicates
         self.filmographyItems, self.filmographyByGuid = self.groupFilmographyByGuid(items)
-
         self.fillFilmography()
 
     def createFilmographyListItem(self, item):
-        """Create a ManagedListItem for a filmography item"""
         title = item.title if hasattr(item, 'title') else item.get('title', '')
         year = ''
         if hasattr(item, 'year'):
@@ -542,29 +467,23 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         mli = kodigui.ManagedListItem(title, year, thumbnailImage=thumb, data_source=item)
 
-        # Set type indicator
         item_type = item.type if hasattr(item, 'type') else item.TYPE if hasattr(item, 'TYPE') else ''
         mli.setProperty('media.type', item_type)
 
-        # Set watched indicator
         if hasattr(item, 'isWatched') and item.isWatched:
             mli.setProperty('watched', '1')
 
-        # Thumb fallback
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/{0}.png'.format(
             item_type in ('show', 'season', 'episode') and 'show' or 'movie'))
 
         return mli
 
     def fillFilmography(self):
-        """Populate the filmography list with initial items."""
         listItems = []
-
         for item in self.filmographyItems:
             mli = self.createFilmographyListItem(item)
             listItems.append(mli)
 
-        # Add "load more" end marker if there are more items
         if self.filmographyMore:
             end = kodigui.ManagedListItem('')
             end.setBoolProperty('is.end', True)
@@ -572,8 +491,6 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         self.filmographyListControl.reset()
         self.filmographyListControl.addItems(listItems)
-
-        # Update count
         self.setProperty('filmography.count', str(len(self.filmographyItems)))
 
     def filmographyItemClicked(self):
@@ -583,118 +500,85 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         item = mli.dataSource
         guid = self.getItemGuid(item)
-        
-        # Check if multiple versions exist
         versions = self.filmographyByGuid.get(guid, [item]) if guid else [item]
-        
+
         if len(versions) > 1:
-            # Show dropdown to choose version
             selectedItem = self.showVersionPicker(versions, item.type if hasattr(item, 'type') else 'movie')
             if selectedItem:
                 self.processCommand(opener.open(selectedItem))
         else:
-            # Single version, open directly
             self.processCommand(opener.open(item))
 
     def searchButtonClicked(self):
         self.processCommand(search.dialog(self))
 
     def formatDate(self, dateStr):
-        """Format a date string (YYYY-MM-DD) to a display format"""
         if not dateStr:
             return ''
-
         try:
-            # Parse YYYY-MM-DD format
             parts = dateStr.split('-')
             if len(parts) == 3:
                 year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
-                dt = datetime.date(year, month, day)
-                # Format as "Month Day, Year"
-                return dt.strftime('%B %d, %Y')
+                return datetime.date(year, month, day).strftime('%B %d, %Y')
         except (ValueError, IndexError):
             pass
-
         return dateStr
 
     def calculateAge(self, birthDateStr, deathDateStr=None):
-        """Calculate age from birth date, optionally to death date"""
         if not birthDateStr:
             return None
-
         try:
             parts = birthDateStr.split('-')
             if len(parts) != 3:
                 return None
-
-            birthYear, birthMonth, birthDay = int(parts[0]), int(parts[1]), int(parts[2])
-            birthDate = datetime.date(birthYear, birthMonth, birthDay)
+            birthDate = datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
 
             if deathDateStr:
                 parts = deathDateStr.split('-')
-                if len(parts) == 3:
-                    endYear, endMonth, endDay = int(parts[0]), int(parts[1]), int(parts[2])
-                    endDate = datetime.date(endYear, endMonth, endDay)
-                else:
-                    endDate = datetime.date.today()
+                endDate = datetime.date(int(parts[0]), int(parts[1]), int(parts[2])) if len(parts) == 3 else datetime.date.today()
             else:
                 endDate = datetime.date.today()
 
             age = endDate.year - birthDate.year
-            # Adjust if birthday hasn't occurred yet this year
             if (endDate.month, endDate.day) < (birthDate.month, birthDate.day):
                 age -= 1
-
             return age
         except (ValueError, IndexError):
             return None
 
     def getItemGuid(self, item):
-        """Get the GUID from a filmography item"""
         if hasattr(item, 'guid') and item.guid:
             return str(item.guid)
         return None
 
     def groupFilmographyByGuid(self, items, existingByGuid=None):
-        """
-        Group filmography items by GUID to handle multi-library duplicates.
-        Returns (uniqueItems, byGuidDict) where uniqueItems has one item per GUID
-        (the highest quality version) and byGuidDict maps GUID to all versions.
-        """
         byGuid = existingByGuid if existingByGuid is not None else {}
         uniqueItems = []
         seenGuids = set(byGuid.keys()) if existingByGuid else set()
-        
+
         for item in items:
             guid = self.getItemGuid(item)
-            
             if guid:
                 if guid not in byGuid:
                     byGuid[guid] = []
                 byGuid[guid].append(item)
-                
-                # Only add to unique items if we haven't seen this GUID before
                 if guid not in seenGuids:
                     seenGuids.add(guid)
                     uniqueItems.append(item)
             else:
-                # No GUID, add as unique item
                 uniqueItems.append(item)
-        
-        # Sort versions within each GUID by bitrate (highest first) for movies
+
         for guid, versions in byGuid.items():
             if len(versions) > 1:
                 versions.sort(key=lambda v: self.getItemBitrate(v), reverse=True)
-                # Replace the unique item with the highest quality version
                 for i, uitem in enumerate(uniqueItems):
                     if self.getItemGuid(uitem) == guid:
                         uniqueItems[i] = versions[0]
                         break
-        
+
         return uniqueItems, byGuid
 
     def getItemBitrate(self, item):
-        """Get the bitrate from an item's media info"""
         try:
             if hasattr(item, 'media') and item.media:
                 for media in item.media:
@@ -705,7 +589,6 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         return 0
 
     def getItemResolution(self, item):
-        """Get the video resolution from an item's media info"""
         try:
             if hasattr(item, 'media') and item.media:
                 for media in item.media:
@@ -716,7 +599,6 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         return ''
 
     def getItemLibraryTitle(self, item):
-        """Get the library section title for an item"""
         if hasattr(item, 'getLibrarySectionTitle'):
             return item.getLibrarySectionTitle()
         elif hasattr(item, 'librarySectionTitle'):
@@ -724,38 +606,19 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         return ''
 
     def formatVersionLabel(self, item, media_type='movie'):
-        """Format a version label like watchlist: 'Library, Resolution (Bitrate)'"""
         library = self.getItemLibraryTitle(item) or T(34090, 'Unknown')
-        
         if media_type == 'movie':
             resolution = self.getItemResolution(item)
             bitrate = self.getItemBitrate(item)
-            
-            if resolution:
-                res_str = '{}p'.format(resolution) if 'k' not in str(resolution).lower() else resolution.upper()
-            else:
-                res_str = T(34090, 'Unknown')
-            
+            res_str = '{}p'.format(resolution) if resolution and 'k' not in str(resolution).lower() else (resolution.upper() if resolution else T(34090, 'Unknown'))
             if bitrate:
-                bitrate_str = plexnetUtil.bitrateToString(bitrate * 1000)
-                return '{}, {} ({})'.format(library, res_str, bitrate_str)
-            else:
-                return '{}, {}'.format(library, res_str)
-        else:
-            # For shows, just show library name
-            return library
+                return '{}, {} ({})'.format(library, res_str, plexnetUtil.bitrateToString(bitrate * 1000))
+            return '{}, {}'.format(library, res_str)
+        return library
 
     def showVersionPicker(self, versions, media_type='movie'):
-        """Show a dropdown to pick which version to open"""
-        options = []
-        
-        for idx, item in enumerate(versions):
-            label = self.formatVersionLabel(item, media_type)
-            options.append({
-                'key': idx,
-                'display': label
-            })
-        
+        options = [{'key': idx, 'display': self.formatVersionLabel(item, media_type)}
+                   for idx, item in enumerate(versions)]
         choice = dropdown.showDropdown(
             options=options,
             pos=(660, 441),
@@ -764,7 +627,18 @@ class ActorWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             header=T(34091, 'Choose Version'),
             align_items='left'
         )
-        
         if choice is not None:
             return versions[choice['key']]
         return None
+
+
+class ActorWindow(PersonWindow):
+    CREDIT_TYPE = None
+    PRIMARY_TYPE = 'actor'
+    TYPE_LABEL_ID = 32473  # "Actor"
+
+
+class DirectorWindow(PersonWindow):
+    CREDIT_TYPE = 'director'
+    PRIMARY_TYPE = 'director'
+    TYPE_LABEL_ID = 32474  # "Director"

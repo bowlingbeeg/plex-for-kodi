@@ -34,14 +34,14 @@
     {% endwith %}
     {% endfor %}
 
-    <!-- Actor Details Section -->
+    <!-- Person Details Section -->
     <control type="group">
         <posx>60</posx>
         <posy>{{ vscale(120) }}</posy>
         <width>1800</width>
         <height>{{ vscale(350) }}</height>
 
-        <!-- Actor Photo (Circular) -->
+        <!-- Photo (Circular) -->
         <control type="group">
             <posx>0</posx>
             <posy>0</posy>
@@ -57,12 +57,12 @@
                 <posy>0</posy>
                 <width>300</width>
                 <height>{{ vscale(300) }}</height>
-                <texture background="true" diffuse="script.plex/masks/role.png">$INFO[Window.Property(actor.thumb)]</texture>
+                <texture background="true" diffuse="script.plex/masks/role.png">$INFO[Window.Property(person.thumb)]</texture>
                 <aspectratio scalediffuse="false" aligny="top">scale</aspectratio>
             </control>
         </control>
 
-        <!-- Actor Info -->
+        <!-- Person Info -->
         <control type="group">
             <posx>340</posx>
             <posy>0</posy>
@@ -79,10 +79,10 @@
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(actor.name)]</label>
+                <label>$INFO[Window.Property(person.name)]</label>
             </control>
 
-            <!-- Role Type (Actor, Producer, etc) - could be expanded -->
+            <!-- Role Type (Actor, Director, etc.) -->
             <control type="label">
                 <posx>0</posx>
                 <posy>{{ vscale(50) }}</posy>
@@ -92,17 +92,17 @@
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>99FFFFFF</textcolor>
-                <label>$ADDON[script.plexmod 32473]</label>
+                <label>$INFO[Window.Property(person.type_label)]</label>
             </control>
 
             <!-- Birth Date and Age -->
             <control type="group">
-                <visible>!String.IsEmpty(Window.Property(actor.birthDate))</visible>
+                <visible>!String.IsEmpty(Window.Property(person.birthDate))</visible>
                 <posx>0</posx>
                 <posy>{{ vscale(90) }}</posy>
 
                 <control type="label">
-                    <visible>!String.IsEmpty(Window.Property(actor.age))</visible>
+                    <visible>!String.IsEmpty(Window.Property(person.age))</visible>
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>1400</width>
@@ -111,10 +111,10 @@
                     <align>left</align>
                     <aligny>center</aligny>
                     <textcolor>AAFFFFFF</textcolor>
-                    <label>Born $INFO[Window.Property(actor.birthDate)] ($INFO[Window.Property(actor.age)] years)</label>
+                    <label>Born $INFO[Window.Property(person.birthDate)] ($INFO[Window.Property(person.age)] years)</label>
                 </control>
                 <control type="label">
-                    <visible>String.IsEmpty(Window.Property(actor.age))</visible>
+                    <visible>String.IsEmpty(Window.Property(person.age))</visible>
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>1400</width>
@@ -123,7 +123,7 @@
                     <align>left</align>
                     <aligny>center</aligny>
                     <textcolor>AAFFFFFF</textcolor>
-                    <label>Born $INFO[Window.Property(actor.birthDate)]</label>
+                    <label>Born $INFO[Window.Property(person.birthDate)]</label>
                 </control>
             </control>
 
@@ -138,7 +138,7 @@
                 <textcolor>CCFFFFFF</textcolor>
                 <scrolltime>200</scrolltime>
                 <autoscroll delay="3000" time="3000" repeat="5000"></autoscroll>
-                <label>$INFO[Window.Property(actor.summary)]</label>
+                <label>$INFO[Window.Property(person.summary)]</label>
             </control>
         </control>
     </control>
@@ -309,7 +309,7 @@
         </control>
     </control>
 
-    <!-- Discover Hub Slots (Not in Library - Actor, Director, etc.) -->
+    <!-- Discover Hub Slots (Not in Library) -->
     {% for i in range(6) %}
     {% with list_id = i + 401 & group_id = i + 501 & posy_val = i * 540 + 1000 %}
     <control type="group" id="{{ group_id }}">

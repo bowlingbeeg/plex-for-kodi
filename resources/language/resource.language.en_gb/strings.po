@@ -3118,6 +3118,10 @@ msgctxt "#32473"
 msgid "Actor"
 msgstr ""
 
+msgctxt "#32474"
+msgid "Director"
+msgstr ""
+
 msgctxt "#32476"
 msgid "Movies & Shows in Media Libraries"
 msgstr ""
