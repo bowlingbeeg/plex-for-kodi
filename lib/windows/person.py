@@ -158,6 +158,7 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     HOME_BUTTON_ID = 201
     SEARCH_BUTTON_ID = 202
     PLAYER_STATUS_BUTTON_ID = 204
+    FILTER_BUTTON_ID = 300
 
     # Override in subclasses
     CREDIT_TYPE = None      # passed to getDiscoverCredits — None fetches all types
@@ -171,6 +172,7 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.filmographyItems = []
         self.filmographyAllItems = []
         self.filmographyByGuid = {}
+        self.filmographyFilter = None
         self.filmographyOffset = 0
         self.filmographyTotalSize = 0
         self.filmographyMore = False
@@ -200,6 +202,7 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         self.setProperty('person.name', self.role.tag or '')
         self.setProperty('person.type_label', T(self.TYPE_LABEL_ID, self.PRIMARY_TYPE.title()))
+        self.setProperty('filmography.filter', T(32345, 'All'))
         if self.role.thumb:
             self.setProperty('person.thumb', self.role.thumb.asTranscodedImageURL(*self.THUMB_DIM))
 
@@ -241,6 +244,8 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def onClick(self, controlID):
         if controlID == self.HOME_BUTTON_ID:
             self.goHome()
+        elif controlID == self.FILTER_BUTTON_ID:
+            self.filterButtonClicked()
         elif controlID == self.FILMOGRAPHY_LIST_ID:
             self.filmographyItemClicked()
         elif controlID == self.SEARCH_BUTTON_ID:
@@ -492,6 +497,39 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.filmographyListControl.reset()
         self.filmographyListControl.addItems(listItems)
         self.setProperty('filmography.count', str(len(self.filmographyItems)))
+
+    def filterButtonClicked(self):
+        options = [
+            {'key': None,    'display': T(32345, 'All')},
+            {'key': 'movie', 'display': T(32348, 'Movies')},
+            {'key': 'show',  'display': T(32350, 'Shows')},
+        ]
+        choice = dropdown.showDropdown(
+            options=options,
+            pos=(560, 515),
+            close_direction='none',
+            set_dropdown_prop=False,
+            align_items='left'
+        )
+        if choice is None:
+            return
+        self.filmographyFilter = choice['key']
+        self.setProperty('filmography.filter', choice['display'])
+        self.applyFilmographyFilter()
+
+    def applyFilmographyFilter(self):
+        self.filmographyAllItems = []
+        self.filmographyItems = []
+        self.filmographyByGuid = {}
+        self.filmographyOffset = 0
+        self.filmographyMore = False
+        self.setProperty('loading', '1')
+        # Filtered modes fetch all at once (smaller result set, no pagination offset mismatch)
+        # "All" mode uses normal page size with pagination
+        size = None if self.filmographyFilter else FILMOGRAPHY_PAGE_SIZE
+        task = PersonFilmographyTask(self.role, self.filmographyFilter, self.onFilmography, start=0, size=size)
+        self.tasks.add(task)
+        backgroundthread.BGThreader.addTask(task)
 
     def filmographyItemClicked(self):
         mli = self.filmographyListControl.getSelectedItem()

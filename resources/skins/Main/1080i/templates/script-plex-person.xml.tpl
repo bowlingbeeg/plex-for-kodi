@@ -168,7 +168,7 @@
         <control type="label">
             <posx>60</posx>
             <posy>0</posy>
-            <width>1000</width>
+            <width>490</width>
             <height>{{ vscale(87) }}</height>
             <font>font12</font>
             <align>left</align>
@@ -176,12 +176,29 @@
             <textcolor>FFFFFFFF</textcolor>
             <label>[UPPERCASE]$ADDON[script.plexmod 32476][/UPPERCASE]</label>
         </control>
+        <control type="button" id="300">
+            <posx>560</posx>
+            <posy>{{ vscale(18) }}</posy>
+            <width>auto</width>
+            <height>{{ vscale(50) }}</height>
+            <font>font12</font>
+            <align>center</align>
+            <aligny>center</aligny>
+            <focusedcolor>FF000000</focusedcolor>
+            <textcolor>FFFFFFFF</textcolor>
+            <textoffsetx>15</textoffsetx>
+            <texturefocus colordiffuse="FFFFFFFF" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
+            <texturenofocus colordiffuse="40FFFFFF" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+            <onup>201</onup>
+            <ondown>400</ondown>
+            <label>$INFO[Window.Property(filmography.filter)]</label>
+        </control>
         <control type="list" id="400">
             <posx>0</posx>
             <posy>{{ vscale(29) }}</posy>
             <width>1920</width>
             <height>{{ vscale(515) }}</height>
-            <onup>201</onup>
+            <onup>300</onup>
             <ondown>401</ondown>
             <scrolltime>200</scrolltime>
             <orientation>horizontal</orientation>
