@@ -185,6 +185,5 @@ def directorClicked(director, **kwargs):
 
 
 def actorClicked(actor, **kwargs):
-    section = plexlibrary.LibrarySection.fromFilter(actor)
-    filter_ = {'type': actor.FILTER, 'display': 'Actor', 'sub': {'val': actor.id, 'display': actor.tag}}
-    return sectionClicked(section, filter_, ignoreLibrarySettings=True, **kwargs)
+    from . import actor as actor_window
+    return handleOpen(actor_window.ActorWindow, role=actor, **kwargs)
