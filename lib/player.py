@@ -1254,13 +1254,17 @@ class SeekPlayerHandler(BasePlayerHandler):
                 switched = self.setAudioTrack()
                 self._deferAudioTrack = False
 
-                if switched and origSOS and origSOS > 10000:
+                if switched and origSOS is not None:
                     # setAudioStream() during an active display mode switch can cause the player
-                    # position to reset when OnResetDisplay arrives. Stash the SOS value so
-                    # onAVChange can detect the reset and re-seek.
+                    # position to reset or the AMLogic codec to stall when OnResetDisplay arrives.
+                    # Two recovery paths:
+                    # 1) onAVChange retry (for position-reset cases where onAVChange still fires)
+                    # 2) delayed stall check (for cases where the codec dies and no events fire)
                     self._audioTrackSwitchedSOS = (origSOS, 0)
                     util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Audio track switched, "
                                    "arming position reset detection (SOS: {})", origSOS)
+                    threading.Thread(target=self._audioSwitchStallCheck,
+                                     daemon=True, name='audio_switch_stall').start()
 
         self.skipFixForNextSeek = False
         self.updateOffset(offset=appliedOffset)
@@ -1440,6 +1444,38 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.player.showSubtitles(False)
             self._lastSetEmbeddedSubIdx = None
 
+    def _audioSwitchStallCheck(self):
+        """Detect AMLogic codec stall after an audio track switch.
+
+        When setAudioStream races with OnResetDisplay, the hardware codec can
+        freeze with no onAVChange events firing — so the onAVChange-based retry
+        doesn't help. After a delay, compare two player time samples. If the
+        position hasn't advanced, issue a small forward seek to unstick it.
+        """
+        util.MONITOR.waitForAbort(2.5)
+        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
+            return
+        try:
+            t1 = self.player.getTime()
+        except RuntimeError:
+            return
+        util.MONITOR.waitForAbort(0.6)
+        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
+            return
+        try:
+            t2 = self.player.getTime()
+        except RuntimeError:
+            return
+
+        if abs(t2 - t1) < 0.1:
+            target = max(t2 + 3.0, 0.5)
+            util.DEBUG_LOG("SeekHandler: codec appears stalled after audio switch "
+                           "(t1={}, t2={}), issuing recovery seek to {}", t1, t2, target)
+            try:
+                self.player.seekTime(target)
+            except:
+                util.ERROR("SeekHandler: recovery seek failed")
+
     def _discoverExternalAudio(self):
         """Discover external audio streams and register them on the video model.
 
@@ -1541,7 +1577,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                         return switched
 
                     if currIdx is not None:
-                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, targetIdx, tries + 1)
+                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {2})', currIdx, targetIdx, tries + 1)
                         switched = True
                         util.MONITOR.waitForAbort(0.1)
                         self.player.setAudioStream(targetIdx)
