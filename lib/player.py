@@ -1505,51 +1505,25 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         return ext_streams
 
-    def _findExternalAudioMatch(self, track):
-        """Discover external audio and find the best match.
-
-        Returns the Kodi stream index of the matching external audio, or None.
-        """
-        if not track:
-            return None
-
-        ext_streams = self._discoverExternalAudio()
-        if not ext_streams:
-            return None
-
-        match = self.player.video._matchExternalAudio(ext_streams)
-        if match:
-            util.DEBUG_LOG('External audio match: {}', match)
-            return match.kodiIndex
-
-        return None
-
     def setAudioTrack(self):
         self.player.lastPlayWasBGM = False
         if self.isDirectPlay and self.player.video:
             video = self.player.video
+
+            # first-time discovery (preplay didn't run): discovery may update the selection
+            # via cache restore or auto-match, so trigger it before reading selectedAudioStream
+            if util.getSetting('use_external_audio', False) and \
+                    self.player.playerObject and self.player.playerObject.metadata and \
+                    self.player.playerObject.metadata.isMapped and \
+                    video._externalAudioStreams is None:
+                self._discoverExternalAudio()
+
             track = video.selectedAudioStream()
             if track:
-                # if the selected stream is an external one, use its Kodi index
                 if getattr(track, 'isExternal', False):
                     targetIdx = track.kodiIndex
                 else:
                     targetIdx = track.typeIndex
-
-                    # first-time discovery (preplay didn't run) — discover + auto-select
-                    # if discovery already ran, trust the current selection (user may have chosen embedded)
-                    if util.getSetting('use_external_audio', False) and \
-                            self.player.playerObject and self.player.playerObject.metadata and \
-                            self.player.playerObject.metadata.isMapped and \
-                            video._externalAudioStreams is None:
-                        ext_idx = self._findExternalAudioMatch(track)
-                        if ext_idx is not None:
-                            targetIdx = ext_idx
-                            # mark the external stream as selected in the model
-                            for s in video.audioStreams:
-                                if getattr(s, 'isExternal', False) and s.kodiIndex == ext_idx:
-                                    video.selectStream(s, sync_to_server=False)
-                                    break
 
                 currIdx = None
                 switched = False
