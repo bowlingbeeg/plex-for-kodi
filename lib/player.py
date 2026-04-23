@@ -1527,25 +1527,28 @@ class SeekPlayerHandler(BasePlayerHandler):
     def setAudioTrack(self):
         self.player.lastPlayWasBGM = False
         if self.isDirectPlay and self.player.video:
-            track = self.player.video.selectedAudioStream()
+            video = self.player.video
+            track = video.selectedAudioStream()
             if track:
-                # if the selected stream is an external one (user chose it in UI), use its Kodi index
+                # if the selected stream is an external one, use its Kodi index
                 if getattr(track, 'isExternal', False):
                     targetIdx = track.kodiIndex
                 else:
                     targetIdx = track.typeIndex
 
-                    # auto-discover and match external audio
+                    # first-time discovery (preplay didn't run) — discover + auto-select
+                    # if discovery already ran, trust the current selection (user may have chosen embedded)
                     if util.getSetting('use_external_audio', False) and \
                             self.player.playerObject and self.player.playerObject.metadata and \
-                            self.player.playerObject.metadata.isMapped:
+                            self.player.playerObject.metadata.isMapped and \
+                            video._externalAudioStreams is None:
                         ext_idx = self._findExternalAudioMatch(track)
                         if ext_idx is not None:
                             targetIdx = ext_idx
                             # mark the external stream as selected in the model
-                            for s in self.player.video.audioStreams:
+                            for s in video.audioStreams:
                                 if getattr(s, 'isExternal', False) and s.kodiIndex == ext_idx:
-                                    self.player.video.selectStream(s, sync_to_server=False)
+                                    video.selectStream(s, sync_to_server=False)
                                     break
 
                 currIdx = None
