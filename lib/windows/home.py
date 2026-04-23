@@ -668,9 +668,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         if self.go_root:
             self.setProperty('hub.focus', '')
-            # prevent a late onReInit (from async sub-window close) from restoring stale focus/scroll
+            # cancel any pending async section change so the focus call below doesn't trigger a redundant reload
+            self.sectionChangeTimeout = None
+            # decide whether we need to switch the displayed hubs before overwriting state
+            needs_hub_switch = self.lastHubs != home_section.key
+            # prevent a late onReInit (from async sub-window close) from restoring stale focus/scroll, and
+            # prevent the upcoming setFocusId -> onFocus -> checkSectionItem -> sectionChanged chain from
+            # spawning a delayed showHubs (guarded by lastSection == selected ds in _sectionChanged)
             self.lastFocusID = self.SECTION_LIST_ID
-            self.lastSection = None
+            self.lastSection = home_section
+            self.lastHubs = home_section.key
+            if needs_hub_switch:
+                self.showHubs(home_section)
             self.setFocusId(self.SECTION_LIST_ID)
             self.sectionList.setSelectedItemByPos(0)
             # somehow we need to do this as well.
