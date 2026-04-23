@@ -2014,7 +2014,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         str_section_key = str(section_key) if section_key is not None else None
-        refreshed = []
+        tasks_to_add = []
 
         for source_key in required_sources:
             str_source = str(source_key) if source_key is not None else None
@@ -2042,13 +2042,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             task = SectionHubsTask().setup(section_obj, self.crossSectionHubsCallback, self.wantedSections)
             self.tasks.append(task)
-            backgroundthread.BGThreader.addTask(task)
-            refreshed.append(str_source)
+            tasks_to_add.append((task, str_source))
 
-        self._pendingCrossSources = len(refreshed)
-        if refreshed:
+        # Set counter BEFORE adding tasks to BGThreader — a fast-completing task
+        # could call crossSectionHubsCallback before we set the counter, leaving
+        # it permanently too high so Home never redraws.
+        self._pendingCrossSources = len(tasks_to_add)
+        for task, _ in tasks_to_add:
+            backgroundthread.BGThreader.addTask(task)
+
+        if tasks_to_add:
             util.DEBUG_LOG('Refreshing cross-section sources for {}: {}',
-                           'Home' if section_key is None else section_key, refreshed)
+                           'Home' if section_key is None else section_key,
+                           [s for _, s in tasks_to_add])
 
     def crossSectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         """Callback for cross-section hub fetches."""
@@ -2105,7 +2111,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         else:
                             self.showHubs(self.lastSection, update=False)
         except Exception:
-            pass
+            util.ERROR("Error in crossSectionHubsCallback")
 
     @property
     def currentHub(self):
@@ -2300,9 +2306,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def doClose(self, force=True):
         util.DEBUG_LOG("Home: doClose called, triggering close.windows")
         plexapp.util.APP.trigger('close.windows')
-
-        # Cancel any pending Home refresh
-        self._homeRefreshScheduled = 0
 
         #if self.sectionChangeThread and self.sectionChangeThread.isAlive():
         #    self.sectionChangeThread.join(timeout=2.0)
@@ -3527,9 +3530,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             while self.block_section_change:
                 util.MONITOR.waitFor()
 
-            # Cancel any pending Home refresh when switching sections
-            self._homeRefreshScheduled = 0
-
             self.setProperty('hub.focus', '')
             if util.addonSettings.dynamicBackgrounds:
                 self.backgroundSet = False
@@ -3591,39 +3591,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if self._pendingLibrarySections == 0 and on_home and has_cross:
                     if self.sectionHubs.get(None) is not None:
                         self.showHubs(self.lastSection, update=False)
-
-    def _scheduleHomeRefresh(self):
-        """Schedule a debounced Home refresh using BGThreader.
-
-        Multiple calls within 0.5s are batched into a single refresh.
-        The task always refreshes after the delay - this avoids a race where
-        a second call updates _homeRefreshScheduled but no new task is created,
-        causing the existing task to skip the refresh entirely.
-        """
-        # Only add task if one isn't already pending
-        if not getattr(self, '_homeRefreshTaskPending', False):
-            self._homeRefreshTaskPending = True
-
-            class HomeRefreshTask(backgroundthread.Task):
-                def setup(task_self, window):
-                    task_self.window = window
-                    return task_self
-
-                def run(task_self):
-                    # Wait a bit for more callbacks to come in
-                    util.MONITOR.waitForAbort(0.5)
-                    task_self.window._homeRefreshTaskPending = False
-                    task_self.window._doHomeRefresh()
-
-            backgroundthread.BGThreader.addTask(HomeRefreshTask().setup(self))
-
-    def _doHomeRefresh(self):
-        """Perform the actual Home refresh."""
-        # Only refresh if still on Home
-        if self.lastSection and self.lastSection.key is None:
-            # Check if Home's native hubs are cached
-            if self.sectionHubs.get(None) is not None:
-                self.showHubs(self.lastSection, update=False)
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
         with self.lock:
@@ -4183,6 +4150,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         return self.CREATE_LI_MAP.get(obj.type, self.unhandledHub)(self, obj, wide)
 
     def clearHubs(self):
+        self.updateHubs = {}
         for i, control in enumerate(self.hubControls):
             control.reset()
             # Clear display type property for this hub slot

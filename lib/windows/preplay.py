@@ -35,6 +35,14 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
     def getData(self, offset, amount):
         return self.parentWindow.video.getRelated(offset=offset, limit=amount)
 
+    def createListItem(self, rel):
+        return kodigui.ManagedListItem(
+            rel.title or '',
+            str(rel.year) if rel.year else '',
+            thumbnailImage=rel.defaultThumb.asTranscodedImageURL(*self.parentWindow.RELATED_DIM),
+            data_source=rel
+        )
+
 
 class CollectionPaginator(pagination.BaseRelatedPaginator):
     initialPageSize = 10
@@ -64,6 +72,7 @@ class CollectionPaginator(pagination.BaseRelatedPaginator):
     def createListItem(self, item):
         return kodigui.ManagedListItem(
             item.title or '',
+            str(item.year) if item.year else '',
             thumbnailImage=item.defaultThumb.asTranscodedImageURL(*self.parentWindow.RELATED_DIM),
             data_source=item
         )
@@ -839,6 +848,24 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         collections = self.video.collections() if self.video.type == 'movie' and self.video.collections else []
         section_id = self.video.getLibrarySectionId()
 
+        # Fetch the section's collection metadata items to get their proper keys,
+        # which respect the sort order set in Plex (Custom / Alphabetical / Release Date).
+        # The id on a movie's <Collection> tag is a tag ID, not a metadata ratingKey,
+        # so we can't use it directly — match by title instead.
+        col_key_map = {}  # title → key (e.g. "/library/metadata/12345/children")
+        try:
+            col_items = plexobjects.listItems(
+                self.video.server,
+                '/library/sections/{0}/collections'.format(section_id)
+            )
+            for col_item in col_items:
+                title = str(col_item.title)
+                key = str(col_item.key)
+                if title and key:
+                    col_key_map[title] = key
+        except Exception:
+            util.ERROR()
+
         for i, list_control in enumerate(self.collectionListControls):
             if i >= len(collections):
                 list_control.reset()
@@ -847,7 +874,13 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                 continue
 
             collection = collections[i]
-            path = '/library/sections/{0}/all?type=1&{1}'.format(section_id, collection.filter)
+            tag = str(collection.tag)
+            if tag in col_key_map:
+                path = col_key_map[tag]
+            else:
+                # Fallback: filter-based path. Works but ignores custom sort order.
+                path = '/library/sections/{0}/all?type=1&{1}'.format(section_id, collection.filter)
+
             paginator = CollectionPaginator(list_control, parent_window=self, leaf_count=0)
             paginator.setup(self.video.server, path)
             try:

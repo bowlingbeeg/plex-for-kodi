@@ -923,7 +923,7 @@
             <visible>Integer.IsGreater(Container(403).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
             <defaultcontrol>403</defaultcontrol>
             <width>1920</width>
-            <height>{{ vscale(520) }}</height>
+            <height>{{ vscale(555) }}</height>
             <control type="label">
                 <posx>60</posx>
                 <posy>0</posy>
@@ -939,7 +939,7 @@
                 <posx>0</posx>
                 <posy>{{ vscale(16) }}</posy>
                 <width>1920</width>
-                <height>{{ vscale(520) }}</height>
+                <height>{{ vscale(555) }}</height>
                 <onup>402</onup>
                 <ondown>404</ondown>
                 <onleft>noop</onleft>
@@ -1003,6 +1003,18 @@
                                 <align>center</align>
                                 <textcolor>FFFFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
+                            </control>
+                            <control type="label">
+                                <scroll>false</scroll>
+                                <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                <posx>0</posx>
+                                <posy>{{ vscale(398) }}</posy>
+                                <width>244</width>
+                                <height>{{ vscale(35) }}</height>
+                                <font>font10</font>
+                                <align>center</align>
+                                <textcolor>99FFFFFF</textcolor>
+                                <label>$INFO[ListItem.Label2]</label>
                             </control>
                             <control type="group">
                                 <visible>!String.IsEmpty(ListItem.Property(is.boundary))</visible>
@@ -1112,6 +1124,18 @@
                                     <textcolor>FFFFFFFF</textcolor>
                                     <label>$INFO[ListItem.Label]</label>
                                 </control>
+                                <control type="label">
+                                    <scroll>Control.HasFocus(403)</scroll>
+                                    <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(398) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>99FFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2]</label>
+                                </control>
                             </control>
                             <control type="image">
                                 <visible>Control.HasFocus(403)</visible>
@@ -1167,7 +1191,7 @@
             <visible>Integer.IsGreater(Container(404).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
             <defaultcontrol>404</defaultcontrol>
             <width>1920</width>
-            <height>{{ vscale(520) }}</height>
+            <height>{{ vscale(555) }}</height>
             <control type="label">
                 <posx>60</posx>
                 <posy>0</posy>
@@ -1183,7 +1207,7 @@
                 <posx>0</posx>
                 <posy>{{ vscale(16) }}</posy>
                 <width>1920</width>
-                <height>{{ vscale(520) }}</height>
+                <height>{{ vscale(555) }}</height>
                 <onup>403</onup>
                 <ondown>405</ondown>
                 <onleft>noop</onleft>
@@ -1245,6 +1269,18 @@
                                 <align>center</align>
                                 <textcolor>FFFFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
+                            </control>
+                            <control type="label">
+                                <scroll>false</scroll>
+                                <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                <posx>0</posx>
+                                <posy>{{ vscale(398) }}</posy>
+                                <width>244</width>
+                                <height>{{ vscale(35) }}</height>
+                                <font>font10</font>
+                                <align>center</align>
+                                <textcolor>99FFFFFF</textcolor>
+                                <label>$INFO[ListItem.Label2]</label>
                             </control>
                             <control type="group">
                                 <visible>!String.IsEmpty(ListItem.Property(is.boundary))</visible>
@@ -1351,6 +1387,18 @@
                                     <textcolor>FFFFFFFF</textcolor>
                                     <label>$INFO[ListItem.Label]</label>
                                 </control>
+                                <control type="label">
+                                    <scroll>Control.HasFocus(404)</scroll>
+                                    <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(398) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>99FFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2]</label>
+                                </control>
                             </control>
                             <control type="image">
                                 <visible>Control.HasFocus(404)</visible>
@@ -1406,7 +1454,7 @@
             <visible>Integer.IsGreater(Container(405).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
             <defaultcontrol>405</defaultcontrol>
             <width>1920</width>
-            <height>{{ vscale(520) }}</height>
+            <height>{{ vscale(555) }}</height>
             <control type="label">
                 <posx>60</posx>
                 <posy>0</posy>
@@ -1422,7 +1470,7 @@
                 <posx>0</posx>
                 <posy>{{ vscale(16) }}</posy>
                 <width>1920</width>
-                <height>{{ vscale(520) }}</height>
+                <height>{{ vscale(555) }}</height>
                 <onup>404</onup>
                 <ondown>406</ondown>
                 <onleft>noop</onleft>
@@ -1484,6 +1532,18 @@
                                 <align>center</align>
                                 <textcolor>FFFFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
+                            </control>
+                            <control type="label">
+                                <scroll>false</scroll>
+                                <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                <posx>0</posx>
+                                <posy>{{ vscale(398) }}</posy>
+                                <width>244</width>
+                                <height>{{ vscale(35) }}</height>
+                                <font>font10</font>
+                                <align>center</align>
+                                <textcolor>99FFFFFF</textcolor>
+                                <label>$INFO[ListItem.Label2]</label>
                             </control>
                             <control type="group">
                                 <visible>!String.IsEmpty(ListItem.Property(is.boundary))</visible>
@@ -1590,6 +1650,18 @@
                                     <textcolor>FFFFFFFF</textcolor>
                                     <label>$INFO[ListItem.Label]</label>
                                 </control>
+                                <control type="label">
+                                    <scroll>Control.HasFocus(405)</scroll>
+                                    <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(398) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>99FFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2]</label>
+                                </control>
                             </control>
                             <control type="image">
                                 <visible>Control.HasFocus(405)</visible>
@@ -1645,7 +1717,7 @@
             <visible>Integer.IsGreater(Container(406).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
             <defaultcontrol>406</defaultcontrol>
             <width>1920</width>
-            <height>{{ vscale(520) }}</height>
+            <height>{{ vscale(555) }}</height>
             <control type="label">
                 <posx>60</posx>
                 <posy>0</posy>
@@ -1661,7 +1733,7 @@
                 <posx>0</posx>
                 <posy>{{ vscale(16) }}</posy>
                 <width>1920</width>
-                <height>{{ vscale(520) }}</height>
+                <height>{{ vscale(555) }}</height>
                 <onup>405</onup>
                 <onleft>noop</onleft>
                 <onright>noop</onright>
@@ -1722,6 +1794,18 @@
                                 <align>center</align>
                                 <textcolor>FFFFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
+                            </control>
+                            <control type="label">
+                                <scroll>false</scroll>
+                                <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                <posx>0</posx>
+                                <posy>{{ vscale(398) }}</posy>
+                                <width>244</width>
+                                <height>{{ vscale(35) }}</height>
+                                <font>font10</font>
+                                <align>center</align>
+                                <textcolor>99FFFFFF</textcolor>
+                                <label>$INFO[ListItem.Label2]</label>
                             </control>
                             <control type="group">
                                 <visible>!String.IsEmpty(ListItem.Property(is.boundary))</visible>
@@ -1827,6 +1911,18 @@
                                     <align>center</align>
                                     <textcolor>FFFFFFFF</textcolor>
                                     <label>$INFO[ListItem.Label]</label>
+                                </control>
+                                <control type="label">
+                                    <scroll>Control.HasFocus(406)</scroll>
+                                    <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(398) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>99FFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2]</label>
                                 </control>
                             </control>
                             <control type="image">
