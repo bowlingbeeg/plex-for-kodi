@@ -3122,3 +3122,34 @@ msgstr ""
 
 # Unused: 34102-35000 (899 IDs)
 
+msgctxt "#32473"
+msgid "Actor"
+msgstr ""
+
+msgctxt "#32474"
+msgid "Director"
+msgstr ""
+
+msgctxt "#32476"
+msgid "Movies & Shows in Media Libraries"
+msgstr ""
+
+msgctxt "#32478"
+msgid "No items found in your library"
+msgstr ""
+
+msgctxt "#32479"
+msgid "Not in Library"
+msgstr ""
+
+msgctxt "#34092"
+msgid "Add to Watchlist"
+msgstr ""
+
+msgctxt "#34090"
+msgid "Unknown"
+msgstr ""
+
+msgctxt "#34091"
+msgid "Choose Version"
+msgstr ""

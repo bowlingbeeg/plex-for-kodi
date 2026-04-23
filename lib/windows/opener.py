@@ -179,12 +179,10 @@ def genreClicked(genre, **kwargs):
 
 
 def directorClicked(director, **kwargs):
-    section = plexlibrary.LibrarySection.fromFilter(director)
-    filter_ = {'type': director.FILTER, 'display': 'Director', 'sub': {'val': director.id, 'display': director.tag}}
-    return sectionClicked(section, filter_, **kwargs)
+    from . import person as person_window
+    return handleOpen(person_window.DirectorWindow, role=director, **kwargs)
 
 
 def actorClicked(actor, **kwargs):
-    section = plexlibrary.LibrarySection.fromFilter(actor)
-    filter_ = {'type': actor.FILTER, 'display': 'Actor', 'sub': {'val': actor.id, 'display': actor.tag}}
-    return sectionClicked(section, filter_, ignoreLibrarySettings=True, **kwargs)
+    from . import person as person_window
+    return handleOpen(person_window.ActorWindow, role=actor, **kwargs)
