@@ -570,6 +570,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._ignoreTick = False
         self._ignoreInput = False
         self._ignoreReInit = False
+        self._goRootHold = False
         self._restarting = False
         self._anyItemAction = False
         self._odHubsDirty = False
@@ -655,7 +656,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def onReInit(self):
         util.DEBUG_LOG("Home: On ReInit")
-        if self._ignoreReInit:
+        if self._ignoreReInit or self._goRootHold:
             return
 
         if player.PLAYER.bgmPlaying:
@@ -667,6 +668,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         if self.go_root:
+            # hold off any late onReInit and any late stray focus events (both happen as the
+            # sub-window unstacks async after we've already snapped focus to the section list);
+            # cleared on first onAction once the user actually engages
+            self._goRootHold = True
             self.setProperty('hub.focus', '')
             # cancel any pending async section change so the focus call below doesn't trigger a redundant reload
             self.sectionChangeTimeout = None
@@ -2368,6 +2373,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if self._ignoreInput or self._shuttingDown:
             return
 
+        # any user input means the post-go_root quiet window is over; let onReInit run again
+        if self._goRootHold:
+            self._goRootHold = False
+
         try:
             if self._skipNextAction:
                 util.DEBUG_LOG("Home: Skipping next action")
@@ -2570,6 +2579,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.searchButtonClicked()
 
     def onFocus(self, controlID):
+        # while the post-go_root hold is active, any focus event that didn't land on the section
+        # list is a late side-effect of the sub-window unstacking; snap focus back and don't let
+        # lastFocusID get polluted to a hub control
+        if self._goRootHold and 100 < controlID < 500 and controlID != self.SECTION_LIST_ID:
+            self.setFocusId(self.SECTION_LIST_ID)
+            return
+
         if controlID != 204 and controlID < 500:
             # don't store focus for mini music player
             self.lastFocusID = controlID
