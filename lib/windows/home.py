@@ -656,7 +656,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def onReInit(self):
         util.DEBUG_LOG("Home: On ReInit")
-        if self._ignoreReInit or self._goRootHold:
+        if self._ignoreReInit:
+            return
+        if self._goRootHold:
+            util.DEBUG_LOG("Home: go_root debug: onReInit blocked by _goRootHold (lastFocusID={}, currentFocus={})",
+                           self.lastFocusID, self.getFocusId())
             return
 
         if player.PLAYER.bgmPlaying:
@@ -668,6 +672,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         if self.go_root:
+            util.DEBUG_LOG("Home: go_root debug: entering go_root branch (prev lastFocusID={}, currentFocus={})",
+                           self.lastFocusID, self.getFocusId())
             # hold off any late onReInit and any late stray focus events (both happen as the
             # sub-window unstacks async after we've already snapped focus to the section list);
             # cleared on first onAction once the user actually engages
@@ -690,6 +696,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             # somehow we need to do this as well.
             xbmc.executebuiltin('Control.SetFocus({0}, {1})'.format(self.SECTION_LIST_ID, 0))
             self.go_root = False
+            util.DEBUG_LOG("Home: go_root debug: go_root branch done (focus={})", self.getFocusId())
             return
 
         if self._reloadOnReinit:
@@ -2375,6 +2382,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # any user input means the post-go_root quiet window is over; let onReInit run again
         if self._goRootHold:
+            util.DEBUG_LOG("Home: go_root debug: clearing _goRootHold on action id={} (focus={})",
+                           action.getId(), controlID)
             self._goRootHold = False
 
         try:
@@ -2579,10 +2588,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.searchButtonClicked()
 
     def onFocus(self, controlID):
+        if self._goRootHold:
+            util.DEBUG_LOG("Home: go_root debug: onFocus({}) during hold (lastFocusID={})",
+                           controlID, self.lastFocusID)
         # while the post-go_root hold is active, any focus event that didn't land on the section
         # list is a late side-effect of the sub-window unstacking; snap focus back and don't let
         # lastFocusID get polluted to a hub control
         if self._goRootHold and 100 < controlID < 500 and controlID != self.SECTION_LIST_ID:
+            util.DEBUG_LOG("Home: go_root debug: snapping focus back from {} to section list", controlID)
             self.setFocusId(self.SECTION_LIST_ID)
             return
 
