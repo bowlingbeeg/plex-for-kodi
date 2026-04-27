@@ -167,6 +167,7 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def __init__(self, *args, **kwargs):
         kodigui.ControlledWindow.__init__(self, *args, **kwargs)
+        self.setProperty('loading', '1')
         self.role = kwargs.get('role')
         self.personDetails = None
         self.filmographyItems = []
@@ -184,6 +185,7 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.initialized = False
 
     def onFirstInit(self):
+        self.setProperty('loading', '1')
         self.filmographyListControl = kodigui.ManagedControlList(self, self.FILMOGRAPHY_LIST_ID, 5)
 
         self.discoverListControls = []
@@ -258,6 +260,11 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def onFocus(self, controlID):
         if self.FILMOGRAPHY_LIST_ID <= controlID <= self.DISCOVER_LIST_BASE_ID + DISCOVER_HUB_SLOTS:
             self.setProperty('hub.focus', str(controlID - self.FILMOGRAPHY_LIST_ID))
+
+        if controlID > self.FILMOGRAPHY_LIST_ID:
+            self.setProperty('on.extras', '1')
+        else:
+            self.setProperty('on.extras', '')
 
     def doClose(self, **kw):
         self.tasks.kill()

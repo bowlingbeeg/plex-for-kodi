@@ -1,5 +1,6 @@
 {% extends "default.xml.tpl" %}
 {% block headers %}<defaultcontrol>400</defaultcontrol>{% endblock %}
+{% block header_anim %}<animation effect="slide" end="0,{{ vscale(-135) }}" time="200" tween="sine" easing="inout" condition="!String.IsEmpty(Window.Property(on.extras)) + !ControlGroup(200).HasFocus(0)">Conditional</animation>{% endblock %}
 
 {% block content %}
 <!-- Background -->
@@ -29,7 +30,7 @@
     {% for i in range(6) %}
     {% with check_group = i + 501 %}
     <animation type="Conditional" condition="Integer.IsGreater(Window.Property(hub.focus),{{ i }}) + Control.IsVisible({{ check_group }})" reversible="true">
-        <effect type="slide" end="0,{{ vscale(-540) }}" time="300" tween="quadratic" easing="out"/>
+        <effect type="slide" end="0,{{ vscale(-540) }}" time="200" tween="sine" easing="inout"/>
     </animation>
     {% endwith %}
     {% endfor %}
