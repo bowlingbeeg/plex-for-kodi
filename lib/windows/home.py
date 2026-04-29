@@ -31,6 +31,7 @@ from .mixins.common import CommonMixin
 
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
+REACHABILITY_CHECK_INTERVAL = 600  # 10 Minutes
 HUB_PAGE_SIZE = 10
 
 MOVE_SET = frozenset(
@@ -569,6 +570,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._ignoreTick = False
         self._ignoreInput = False
         self._ignoreReInit = False
+        self._goRootHoldUntil = 0
         self._restarting = False
         self._anyItemAction = False
         self._odHubsDirty = False
@@ -585,6 +587,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.block_section_change = False
         self.go_root = False
         self.kodi_exiting = False
+        self._lastReachabilityCheck = 0
 
         from . import windowutils
         windowutils.HOME = self
@@ -653,7 +656,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def onReInit(self):
         util.DEBUG_LOG("Home: On ReInit")
-        if self._ignoreReInit:
+        if self._ignoreReInit or time.time() < self._goRootHoldUntil:
             return
 
         if player.PLAYER.bgmPlaying:
@@ -666,14 +669,24 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         if self.go_root:
             self.setProperty('hub.focus', '')
-            # prevent a late onReInit (from async sub-window close) from restoring stale focus/scroll
+            # cancel any pending async section change so the focus call below doesn't trigger a redundant reload
+            self.sectionChangeTimeout = None
+            # decide whether we need to switch the displayed hubs before overwriting state
+            needs_hub_switch = self.lastHubs != home_section.key
             self.lastFocusID = self.SECTION_LIST_ID
-            self.lastSection = None
+            self.lastSection = home_section
+            self.lastHubs = home_section.key
+            if needs_hub_switch:
+                self.showHubs(home_section)
             self.setFocusId(self.SECTION_LIST_ID)
             self.sectionList.setSelectedItemByPos(0)
             # somehow we need to do this as well.
             xbmc.executebuiltin('Control.SetFocus({0}, {1})'.format(self.SECTION_LIST_ID, 0))
             self.go_root = False
+            # set the hold deadline AT THE END so the 150ms window is measured from when the
+            # post-branch event queue starts draining (showHubs can take several hundred ms,
+            # which would otherwise blow past the deadline before any stray fires).
+            self._goRootHoldUntil = time.time() + 0.15
             return
 
         if self._reloadOnReinit:
@@ -1888,6 +1901,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     hub._catalogId = catalog_id
                     filtered_native.append(hub)
             result = HubsList(filtered_native)
+            result.identifier = section_key
             result.lastUpdated = native_hubs.lastUpdated
             result.invalid = native_hubs.invalid
             return result
@@ -1950,6 +1964,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
 
         result = HubsList(combined)
+        result.identifier = section_key
         result.lastUpdated = native_hubs.lastUpdated
         result.invalid = native_hubs.invalid
 
@@ -2003,7 +2018,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         str_section_key = str(section_key) if section_key is not None else None
-        refreshed = []
+        tasks_to_add = []
 
         for source_key in required_sources:
             str_source = str(source_key) if source_key is not None else None
@@ -2031,13 +2046,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             task = SectionHubsTask().setup(section_obj, self.crossSectionHubsCallback, self.wantedSections)
             self.tasks.append(task)
-            backgroundthread.BGThreader.addTask(task)
-            refreshed.append(str_source)
+            tasks_to_add.append((task, str_source))
 
-        self._pendingCrossSources = len(refreshed)
-        if refreshed:
+        # Set counter BEFORE adding tasks to BGThreader — a fast-completing task
+        # could call crossSectionHubsCallback before we set the counter, leaving
+        # it permanently too high so Home never redraws.
+        self._pendingCrossSources = len(tasks_to_add)
+        for task, _ in tasks_to_add:
+            backgroundthread.BGThreader.addTask(task)
+
+        if tasks_to_add:
             util.DEBUG_LOG('Refreshing cross-section sources for {}: {}',
-                           'Home' if section_key is None else section_key, refreshed)
+                           'Home' if section_key is None else section_key,
+                           [s for _, s in tasks_to_add])
 
     def crossSectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         """Callback for cross-section hub fetches."""
@@ -2094,7 +2115,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         else:
                             self.showHubs(self.lastSection, update=False)
         except Exception:
-            pass
+            util.ERROR("Error in crossSectionHubsCallback")
 
     @property
     def currentHub(self):
@@ -2272,18 +2293,23 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if hubs is None:
             return
 
-        if (self.is_active and not self._checkingForExit and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
-                not xbmc.Player().isPlayingVideo()):
+        now = time.time()
+        playing = xbmc.Player().isPlayingVideo()
+
+        if (self.is_active and not self._checkingForExit and now - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
+                not playing):
             util.DEBUG_LOG("Home: Ticking, section stale, calling showHubs(update=True)")
             self.showHubs(self.lastSection, update=True)
             util.cleanupCacheFolder()
 
+        if (not playing and util.getSetting('periodic_reachability_check', False) and
+                now - self._lastReachabilityCheck > REACHABILITY_CHECK_INTERVAL):
+            self._lastReachabilityCheck = now
+            plexapp.SERVERMANAGER.periodicReachabilityCheck()
+
     def doClose(self, force=True):
         util.DEBUG_LOG("Home: doClose called, triggering close.windows")
         plexapp.util.APP.trigger('close.windows')
-
-        # Cancel any pending Home refresh
-        self._homeRefreshScheduled = 0
 
         #if self.sectionChangeThread and self.sectionChangeThread.isAlive():
         #    self.sectionChangeThread.join(timeout=2.0)
@@ -2345,6 +2371,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         controlID = self.getFocusId()
         if self._ignoreInput or self._shuttingDown:
             return
+
+        # belt: any user input ends the post-go_root hold window early
+        if self._goRootHoldUntil:
+            self._goRootHoldUntil = 0
 
         try:
             if self._skipNextAction:
@@ -2548,6 +2578,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.searchButtonClicked()
 
     def onFocus(self, controlID):
+        # within the 150ms hold window after go_root, any non-section-list focus event is the
+        # stray Kodi fires when HOME reactivates with its previously-focused control still
+        # recorded. Snap it back and consume the deadline so user input (which arrives well
+        # after the window closes) passes through unblipped.
+        if (time.time() < self._goRootHoldUntil
+                and 100 < controlID < 500 and controlID != self.SECTION_LIST_ID):
+            self._goRootHoldUntil = 0
+            self.setFocusId(self.SECTION_LIST_ID)
+            return
+
         if controlID != 204 and controlID < 500:
             # don't store focus for mini music player
             self.lastFocusID = controlID
@@ -2650,7 +2690,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # fetch hubs we need to update
         rp = self.getCurrentHubsPositions(self.lastSection)
         tasks = [UpdateHubTask().setup(hub, self.updateHubCallback,
-                                       reselect_pos=rp.get(hub.getCleanHubIdentifier(self.lastSection.key is None)))
+                                       reselect_pos=rp.get(hub.getCleanHubIdentifier(not self.lastSection or self.lastSection.key is None)))
                  for hub in self.updateHubs.values()]
         self.tasks += tasks
         backgroundthread.BGThreader.addTasks(tasks)
@@ -2743,6 +2783,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.showHubs(self.lastSection, force=True, update=True)
 
     def onWake(self, *args, **kwargs):
+        if util.getSetting('periodic_reachability_check', False):
+            self._lastReachabilityCheck = time.time()
+            plexapp.SERVERMANAGER.periodicReachabilityCheck()
+
         wakeAction = util.getSetting('action_on_wake', util.platformFlavor == 'CoreELEC' and 'wait_5' or 'wait_1')
         if wakeAction == "restart":
             self._ignoreReInit = True
@@ -3100,7 +3144,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         ds = mli.dataSource
 
         # Determine the hub's source section and catalog_id
-        is_home = self.lastSection.key is None
+        is_home = not self.lastSection or self.lastSection.key is None
         cross_source = hub.__dict__.get('_crossSectionSource')
         hub_source_key = cross_source if cross_source is not None else self.lastSection.key
         hub_is_home = hub_source_key is None
@@ -3504,9 +3548,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             while self.block_section_change:
                 util.MONITOR.waitFor()
 
-            # Cancel any pending Home refresh when switching sections
-            self._homeRefreshScheduled = 0
-
             self.setProperty('hub.focus', '')
             if util.addonSettings.dynamicBackgrounds:
                 self.backgroundSet = False
@@ -3568,39 +3609,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if self._pendingLibrarySections == 0 and on_home and has_cross:
                     if self.sectionHubs.get(None) is not None:
                         self.showHubs(self.lastSection, update=False)
-
-    def _scheduleHomeRefresh(self):
-        """Schedule a debounced Home refresh using BGThreader.
-
-        Multiple calls within 0.5s are batched into a single refresh.
-        The task always refreshes after the delay - this avoids a race where
-        a second call updates _homeRefreshScheduled but no new task is created,
-        causing the existing task to skip the refresh entirely.
-        """
-        # Only add task if one isn't already pending
-        if not getattr(self, '_homeRefreshTaskPending', False):
-            self._homeRefreshTaskPending = True
-
-            class HomeRefreshTask(backgroundthread.Task):
-                def setup(task_self, window):
-                    task_self.window = window
-                    return task_self
-
-                def run(task_self):
-                    # Wait a bit for more callbacks to come in
-                    util.MONITOR.waitForAbort(0.5)
-                    task_self.window._homeRefreshTaskPending = False
-                    task_self.window._doHomeRefresh()
-
-            backgroundthread.BGThreader.addTask(HomeRefreshTask().setup(self))
-
-    def _doHomeRefresh(self):
-        """Perform the actual Home refresh."""
-        # Only refresh if still on Home
-        if self.lastSection and self.lastSection.key is None:
-            # Check if Home's native hubs are cached
-            if self.sectionHubs.get(None) is not None:
-                self.showHubs(self.lastSection, update=False)
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
         with self.lock:
@@ -3787,7 +3795,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.setProperty('drawing', '')
 
     def getCurrentHubsPositions(self, section):
-        is_home = section.key is None
+        is_home = not section or section.key is None
         rp = {}
 
         # Iterate through hub controls to find current positions
@@ -4160,6 +4168,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         return self.CREATE_LI_MAP.get(obj.type, self.unhandledHub)(self, obj, wide)
 
     def clearHubs(self):
+        self.updateHubs = {}
         for i, control in enumerate(self.hubControls):
             control.reset()
             # Clear display type property for this hub slot

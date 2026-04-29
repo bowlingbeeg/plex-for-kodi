@@ -748,7 +748,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                     playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
                     got_player = True
                     currIdx = kodijsonrpc.rpc.Player.GetProperties(playerid=playerID, properties=['currentsubtitle'])[
-                        'currentsubtitle']['index']
+                        'currentsubtitle'].get('index', None)
                     if currIdx != self.player.video._current_subtitle_idx + self.subtitleStreamOffset:
                         util.LOG("Embedded Subtitle index was incorrect ({}), setting to: {}".
                                  format(currIdx, self.player.video._current_subtitle_idx + self.subtitleStreamOffset))
@@ -1254,13 +1254,17 @@ class SeekPlayerHandler(BasePlayerHandler):
                 switched = self.setAudioTrack()
                 self._deferAudioTrack = False
 
-                if switched and origSOS and origSOS > 10000:
+                if switched and origSOS is not None:
                     # setAudioStream() during an active display mode switch can cause the player
-                    # position to reset when OnResetDisplay arrives. Stash the SOS value so
-                    # onAVChange can detect the reset and re-seek.
+                    # position to reset or the AMLogic codec to stall when OnResetDisplay arrives.
+                    # Two recovery paths:
+                    # 1) onAVChange retry (for position-reset cases where onAVChange still fires)
+                    # 2) delayed stall check (for cases where the codec dies and no events fire)
                     self._audioTrackSwitchedSOS = (origSOS, 0)
                     util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Audio track switched, "
                                    "arming position reset detection (SOS: {})", origSOS)
+                    threading.Thread(target=self._audioSwitchStallCheck,
+                                     daemon=True, name='audio_switch_stall').start()
 
         self.skipFixForNextSeek = False
         self.updateOffset(offset=appliedOffset)
@@ -1440,6 +1444,38 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.player.showSubtitles(False)
             self._lastSetEmbeddedSubIdx = None
 
+    def _audioSwitchStallCheck(self):
+        """Detect AMLogic codec stall after an audio track switch.
+
+        When setAudioStream races with OnResetDisplay, the hardware codec can
+        freeze with no onAVChange events firing — so the onAVChange-based retry
+        doesn't help. After a delay, compare two player time samples. If the
+        position hasn't advanced, issue a small forward seek to unstick it.
+        """
+        util.MONITOR.waitForAbort(2.5)
+        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
+            return
+        try:
+            t1 = self.player.getTime()
+        except RuntimeError:
+            return
+        util.MONITOR.waitForAbort(0.6)
+        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
+            return
+        try:
+            t2 = self.player.getTime()
+        except RuntimeError:
+            return
+
+        if abs(t2 - t1) < 0.1:
+            target = max(t2 + 3.0, 0.5)
+            util.DEBUG_LOG("SeekHandler: codec appears stalled after audio switch "
+                           "(t1={}, t2={}), issuing recovery seek to {}", t1, t2, target)
+            try:
+                self.player.seekTime(target)
+            except:
+                util.ERROR("SeekHandler: recovery seek failed")
+
     def _discoverExternalAudio(self):
         """Discover external audio streams and register them on the video model.
 
@@ -1505,48 +1541,25 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         return ext_streams
 
-    def _findExternalAudioMatch(self, track):
-        """Discover external audio and find the best match.
-
-        Returns the Kodi stream index of the matching external audio, or None.
-        """
-        if not track:
-            return None
-
-        ext_streams = self._discoverExternalAudio()
-        if not ext_streams:
-            return None
-
-        match = self.player.video._matchExternalAudio(ext_streams)
-        if match:
-            util.DEBUG_LOG('External audio match: {}', match)
-            return match.kodiIndex
-
-        return None
-
     def setAudioTrack(self):
         self.player.lastPlayWasBGM = False
         if self.isDirectPlay and self.player.video:
-            track = self.player.video.selectedAudioStream()
+            video = self.player.video
+
+            # first-time discovery (preplay didn't run): discovery may update the selection
+            # via cache restore or auto-match, so trigger it before reading selectedAudioStream
+            if util.getSetting('use_external_audio', False) and \
+                    self.player.playerObject and self.player.playerObject.metadata and \
+                    self.player.playerObject.metadata.isMapped and \
+                    video._externalAudioStreams is None:
+                self._discoverExternalAudio()
+
+            track = video.selectedAudioStream()
             if track:
-                # if the selected stream is an external one (user chose it in UI), use its Kodi index
                 if getattr(track, 'isExternal', False):
                     targetIdx = track.kodiIndex
                 else:
                     targetIdx = track.typeIndex
-
-                    # auto-discover and match external audio
-                    if util.getSetting('use_external_audio', False) and \
-                            self.player.playerObject and self.player.playerObject.metadata and \
-                            self.player.playerObject.metadata.isMapped:
-                        ext_idx = self._findExternalAudioMatch(track)
-                        if ext_idx is not None:
-                            targetIdx = ext_idx
-                            # mark the external stream as selected in the model
-                            for s in self.player.video.audioStreams:
-                                if getattr(s, 'isExternal', False) and s.kodiIndex == ext_idx:
-                                    self.player.video.selectStream(s, sync_to_server=False)
-                                    break
 
                 currIdx = None
                 switched = False
@@ -1564,7 +1577,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                         return switched
 
                     if currIdx is not None:
-                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {1})', currIdx, targetIdx, tries + 1)
+                        util.DEBUG_LOG('Switching audio track - index: {0} to {1} (try: {2})', currIdx, targetIdx, tries + 1)
                         switched = True
                         util.MONITOR.waitForAbort(0.1)
                         self.player.setAudioStream(targetIdx)
@@ -2813,6 +2826,12 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
 
         if self.handler.onPlayBackFailed() and not self._ignorePlaybackFailure:
+            # Re-evaluate server connections so a subsequent retry uses the best available connection
+            try:
+                plexapp.SERVERMANAGER.periodicReachabilityCheck()
+            except:
+                util.ERROR("Failed to trigger reachability re-check after playback error")
+
             self.ignoreStopEvents = True
             util.showNotification('Playback Error!')
             self.stopAndWait()
@@ -2829,6 +2848,12 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
 
         if self.handler.onPlayBackFailed() and not self._ignorePlaybackFailure:
+            # Re-evaluate server connections so a subsequent retry uses the best available connection
+            try:
+                plexapp.SERVERMANAGER.periodicReachabilityCheck()
+            except:
+                util.ERROR("Failed to trigger reachability re-check after playback failure")
+
             util.showNotification(util.T(32448, 'Playback Failed!'))
             self.stopAndWait()
             self.close()

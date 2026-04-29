@@ -16,6 +16,17 @@ from . import mediachoice
 from .mixins import AudioCodecMixin
 
 from lib.data_cache import dcm
+
+
+def _audioSelectionCacheId(rating_key):
+    """Build a user-scoped identifier for the audio selection cache.
+
+    dcm already scopes by server UUID; prefix the user ID so switching Plex
+    users doesn't bleed selections across accounts.
+    """
+    from . import plexapp
+    user_id = str(plexapp.ACCOUNT.ID or '') if plexapp.ACCOUNT else ''
+    return "{}_{}".format(user_id, rating_key)
 from lib.util import T, shortDF, durationToShortText
 
 
@@ -224,6 +235,19 @@ class Video(media.MediaItem, AudioCodecMixin):
                     audioStream.setSelected(True)
                 elif audioStream.isSelected():
                     audioStream.setSelected(False)
+
+            # remember user-initiated audio choices when external audio is in play, so the
+            # selection survives video reloads (Plex doesn't track external streams).
+            # Store only plain strings to avoid holding references to PlexObject-derived values.
+            if sync_to_server and self._externalAudioStreams:
+                rating_key = str(self.ratingKey) if self.ratingKey else None
+                if rating_key:
+                    if getattr(stream, 'isExternal', False):
+                        data = ['external', str(stream.languageCode or ''), str(stream.codec or '')]
+                    else:
+                        data = ['embedded', str(stream.id)]
+                    dcm.setCacheData('audio_selection', _audioSelectionCacheId(rating_key), data)
+                    util.DEBUG_LOG('Cached audio selection for {}: {}', rating_key, data)
         elif stream.streamType.asInt() == plexstream.PlexStream.TYPE_SUBTITLE:
             self._current_subtitle_idx = None
             self.current_subtitle_is_embedded = False
@@ -891,11 +915,34 @@ class Movie(PlayableVideo):
 
         self.setExternalAudioStreams(ext_streams if ext_streams else None)
 
-        # auto-select the best external stream
+        # preselect based on user's previous choice (if cached) or auto-match
         if ext_streams and util.INTERFACE.getPreference('use_external_audio', False):
-            match = self._matchExternalAudio(ext_streams)
+            match = None
+            rating_key = str(self.ratingKey) if self.ratingKey else None
+            cached = dcm.getCacheData('audio_selection', _audioSelectionCacheId(rating_key)) if rating_key else None
+
+            if cached:
+                kind = cached[0]
+                if kind == 'external':
+                    _, lang, codec = cached
+                    for s in ext_streams:
+                        if str(s.languageCode or '') == lang and str(s.codec or '') == codec:
+                            match = s
+                            break
+                elif kind == 'embedded':
+                    # user previously chose an embedded stream — don't preselect external
+                    stream_id = cached[1]
+                    for s in self._audioStreams or []:
+                        if str(s.id) == stream_id:
+                            self.selectStream(s, sync_to_server=False)
+                            util.DEBUG_LOG('Restored cached embedded audio selection for {}: id={}', rating_key, stream_id)
+                            return ext_streams
+
+            if match is None:
+                match = self._matchExternalAudio(ext_streams)
+
             if match:
-                util.DEBUG_LOG('Pre-selecting external audio: {}', match)
+                util.DEBUG_LOG('Pre-selecting external audio: {} (cached: {})', match, bool(cached))
                 self.selectStream(match, sync_to_server=False)
 
         return ext_streams

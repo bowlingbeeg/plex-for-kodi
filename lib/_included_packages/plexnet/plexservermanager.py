@@ -579,6 +579,26 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         self.deferReachabilityTimer = None
         self.updateReachability(True, False, False)
 
+    def periodicReachabilityCheck(self):
+        """Re-test reachability on the selected server to detect network changes (e.g. WiFi -> mobile)."""
+        if not plexapp.ACCOUNT.isAuthenticated or not self.selectedServer:
+            return
+
+        server = self.selectedServer
+        oldConn = server.activeConnection
+        oldAddr = oldConn and oldConn.address or None
+
+        util.LOG("Periodic reachability check for {0}", repr(server.name))
+        server.resetLastTest()
+        server.updateReachability(True)
+
+        # Log if the connection changed immediately (synchronous connections).
+        # Most changes will be detected asynchronously via onReachabilityResult.
+        newConn = server.activeConnection
+        newAddr = newConn and newConn.address or None
+        if oldAddr and newAddr and oldAddr != newAddr:
+            util.LOG("Periodic reachability: active connection changed from {0} to {1}", oldAddr, newAddr)
+
     def resetLastTest(self):
         for uuid in list(self.serversByUuid.keys()):
             self.serversByUuid[uuid].resetLastTest()

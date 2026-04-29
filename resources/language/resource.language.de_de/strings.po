@@ -3583,3 +3583,11 @@ msgstr "Externe Audiodateien berücksichtigen"
 msgctxt "#34099"
 msgid "When external audio files are found alongside the video (e.g. a separate .dts or .ac3 file), use them. A single external audio file is always used. When multiple are present, the Plex-selected audio language is preferred, then native languages. Selectable in preplay and playback audio settings. Only for mapped Direct Play."
 msgstr "Wenn externe Audiodateien neben dem Video gefunden werden (z.B. eine separate .dts- oder .ac3-Datei), diese verwenden. Eine einzelne externe Audiodatei wird immer verwendet. Bei mehreren wird die von Plex gewählte Audiosprache bevorzugt, dann Muttersprachen. Auswählbar in Vorschau- und Wiedergabe-Audioeinstellungen. Nur für zugeordnetes Direct Play."
+
+msgctxt "#34100"
+msgid "Periodically check server connections"
+msgstr "Server-Verbindungen regelmäßig prüfen"
+
+msgctxt "#34101"
+msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
+msgstr "Erreichbarkeit der Server-Verbindungen alle 10 Minuten erneut prüfen, um Netzwerkänderungen zu erkennen (z.B. WLAN zu Mobilfunk). Nützlich auf mobilen Geräten. Standard: Aus"
