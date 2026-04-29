@@ -821,10 +821,11 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         if self.section.TYPE == 'show':
             for t in ('show', 'episode', 'collection'):
                 options.append({'type': t, 'display': TYPE_PLURAL.get(t, t)})
+            options.append({'type': 'browse_genres', 'display': T(34102, 'Categories')})
         elif self.section.TYPE == 'movie':
             for t in ('movie', 'collection'):
                 options.append({'type': t, 'display': TYPE_PLURAL.get(t, t)})
-            options.append({'type': 'browse_genres', 'display': T(34080, 'Categories')})
+            options.append({'type': 'browse_genres', 'display': T(34102, 'Categories')})
             options.append({'type': 'folder', 'display': TYPE_PLURAL.get('folder', 'folder')})
         elif self.section.TYPE == 'artist':
             for t in ('artist', 'album', 'collection', 'track'):
