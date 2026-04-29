@@ -3120,7 +3120,11 @@ msgctxt "#34101"
 msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
 msgstr ""
 
-# Unused: 34102-35000 (899 IDs)
+msgctxt "#34102"
+msgid "Categories"
+msgstr ""
+
+# Unused: 34103-35000 (898 IDs)
 
 msgctxt "#32473"
 msgid "Actor"

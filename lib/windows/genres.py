@@ -33,7 +33,7 @@ class GenreBrowserWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def onFirstInit(self):
         self.genreListControl = kodigui.ManagedControlList(self, self.GENRE_PANEL_ID, 5)
         self.setProperty('screen.title', u'{0} \u00b7 {1}'.format(
-            self.section.title.upper(), T(34080, 'Categories').upper()
+            self.section.title.upper(), T(34102, 'Categories').upper()
         ))
         self.fillGenres()
         self.setBoolProperty('initialized', True)
