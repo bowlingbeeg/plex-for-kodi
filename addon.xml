@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.7.7-beta1"
+       version="1.7.7-beta2"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,19 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Core: add periodic server reachability check to detect network changes (disabled by default)
-- Fix hub refresh races and clean up dead code
-- Fix server dropdown clipping with long usernames
-- Preplay: respect collection sort order via metadata key lookup
-- Preplay: add year label to Related and Collection hub rows
-- Add actor/director details screen with biography and filmography
-- Home: Fix rare hub update crashes
-- Player: Fix embedded subtitle error
-- Home: prevent full hub reload after Go Home
-- Player: don't override explicit audio selection with external auto-match
-- Player: cache audio selection across video reloads when external audio exists
-- Player: recover AMLogic codec stall after audio switch race
-- Home: snap focus back during Go Home hold for late stray focus events
+- fix: Actor screen library hub empties after ~2s for certain shows
         </news>
         <assets>
             <icon>icon2.png</icon>

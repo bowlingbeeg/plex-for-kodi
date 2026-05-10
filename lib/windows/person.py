@@ -96,13 +96,12 @@ class DiscoverItem(object):
 
 
 class DiscoverCreditsTask(backgroundthread.Task):
-    def __init__(self, role, server, callback, credit_type=None, primary_type='actor'):
+    def __init__(self, role, server, callback, credit_type=None):
         super(DiscoverCreditsTask, self).__init__()
         self.role = role
         self.server = server
         self.callback = callback
         self.credit_type = credit_type
-        self.primary_type = primary_type
 
     def run(self):
         if self.isCanceled():
@@ -110,12 +109,11 @@ class DiscoverCreditsTask(backgroundthread.Task):
 
         credit_groups = self.role.getDiscoverCredits(credit_type=self.credit_type)
         if self.isCanceled() or not credit_groups:
-            self.callback([], set(), set())
+            self.callback([], set())
             return
 
         discover_hubs = []
         all_guids = []
-        primary_guids = set()
 
         for group_type, credits in credit_groups:
             group_items = []
@@ -124,13 +122,11 @@ class DiscoverCreditsTask(backgroundthread.Task):
                 if item.ratingKey:
                     group_items.append(item)
                     all_guids.append(item.guid)
-                    if group_type.lower() == self.primary_type:
-                        primary_guids.add(item.guid)
             if group_items:
                 discover_hubs.append((group_type, group_items))
 
         if self.isCanceled():
-            self.callback([], set(), set())
+            self.callback([], set())
             return
 
         unique_guids = list(set(all_guids))
@@ -138,7 +134,7 @@ class DiscoverCreditsTask(backgroundthread.Task):
         library_guids = plexmedia.Role.checkLibraryPresence(self.server, unique_guids)
 
         if not self.isCanceled():
-            self.callback(discover_hubs, library_guids, primary_guids)
+            self.callback(discover_hubs, library_guids)
 
 
 class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
@@ -178,7 +174,6 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.filmographyTotalSize = 0
         self.filmographyMore = False
         self.discoverListControls = []
-        self.discoverPrimaryGuids = set()
         self.libraryGuids = set()
         self.tasks = backgroundthread.Tasks()
         self.exitCommand = None
@@ -370,14 +365,13 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         task = DiscoverCreditsTask(
             self.role, self.role.server, self.onDiscoverCredits,
-            credit_type=self.CREDIT_TYPE, primary_type=self.PRIMARY_TYPE
+            credit_type=self.CREDIT_TYPE
         )
         self.tasks.add(task)
         backgroundthread.BGThreader.addTask(task)
 
-    def onDiscoverCredits(self, discover_hubs, library_guids, primary_guids):
+    def onDiscoverCredits(self, discover_hubs, library_guids):
         self.libraryGuids = library_guids
-        self.discoverPrimaryGuids = primary_guids
 
         slot = 0
         for group_type, items in discover_hubs:
@@ -391,22 +385,6 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         util.DEBUG_LOG('PersonWindow: Discover credits: {0} groups, {1} in library, {2} hubs populated'.format(
             len(discover_hubs), len(library_guids), slot))
-
-        self.filterFilmographyToPrimaryCredits()
-
-    def filterFilmographyToPrimaryCredits(self):
-        if not self.discoverPrimaryGuids or not self.filmographyItems:
-            return
-
-        original_count = len(self.filmographyItems)
-        filtered = [item for item in self.filmographyItems
-                    if not self.getItemGuid(item) or self.getItemGuid(item) in self.discoverPrimaryGuids]
-
-        if len(filtered) < original_count:
-            util.DEBUG_LOG('PersonWindow: Filtered filmography from {0} to {1} (primary credits only)'.format(
-                original_count, len(filtered)))
-            self.filmographyItems = filtered
-            self.fillFilmography()
 
     def fillDiscoverHub(self, slot, items, label):
         if slot >= len(self.discoverListControls):
