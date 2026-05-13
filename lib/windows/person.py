@@ -420,7 +420,18 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         if not item.ratingKey:
             return
 
-        from plexnet import util as pnUtil
+        from plexnet import plexapp, util as pnUtil
+        from plexnet.compat import quote_plus
+        local_server = plexapp.SERVERMANAGER.selectedServer
+        if local_server and item.guid in self.libraryGuids:
+            try:
+                # Resolve plex:// guid against the local PMS — getObject builds a proper PlexObject
+                self.processCommand(opener.open(
+                    '/library/metadata/{0}'.format(quote_plus(item.guid)), server=local_server))
+                return
+            except Exception as e:
+                util.DEBUG_LOG('PersonWindow: Local open failed for {0}: {1}', item.guid, e)
+
         discover_server = pnUtil.SERVERMANAGER.getDiscoverServer()
         if not discover_server:
             util.DEBUG_LOG('PersonWindow: No discover server available')
