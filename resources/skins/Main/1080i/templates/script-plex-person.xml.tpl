@@ -191,7 +191,8 @@
             <texturefocus colordiffuse="FFFFFFFF" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
             <texturenofocus colordiffuse="40FFFFFF" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
             <onup>201</onup>
-            <ondown>400</ondown>
+            <ondown condition="Integer.IsGreater(Container(400).NumItems,0)">400</ondown>
+            <ondown condition="!Integer.IsGreater(Container(400).NumItems,0)">401</ondown>
             <label>$INFO[Window.Property(filmography.filter)]</label>
         </control>
         <control type="list" id="400">
@@ -353,7 +354,8 @@
             <posy>{{ vscale(29) }}</posy>
             <width>1920</width>
             <height>{{ vscale(515) }}</height>
-            <onup>{% if loop.is_first %}400{% else %}{{ list_id - 1 }}{% endif %}</onup>
+            {% if loop.is_first %}<onup condition="Integer.IsGreater(Container(400).NumItems,0)">400</onup>
+            <onup condition="!Integer.IsGreater(Container(400).NumItems,0)">300</onup>{% else %}<onup>{{ list_id - 1 }}</onup>{% endif %}
             <ondown>{% if loop.is_last %}{{ list_id }}{% else %}{{ list_id + 1 }}{% endif %}</ondown>
             <scrolltime>200</scrolltime>
             <orientation>horizontal</orientation>

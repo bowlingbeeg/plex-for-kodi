@@ -383,8 +383,12 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                 self.fillDiscoverHub(slot, not_in_library, label)
                 slot += 1
 
-        util.DEBUG_LOG('PersonWindow: Discover credits: {0} groups, {1} in library, {2} hubs populated'.format(
-            len(discover_hubs), len(library_guids), slot))
+        util.DEBUG_LOG('PersonWindow: Discover credits: {0} groups, {1} in library, {2} hubs populated',
+                       len(discover_hubs), len(library_guids), slot)
+
+        # Avoid focus trap: if filmography is empty but Discover hubs filled, move focus there
+        if slot > 0 and self.filmographyListControl.size() == 0:
+            self.setFocusId(self.DISCOVER_LIST_BASE_ID)
 
     def fillDiscoverHub(self, slot, items, label):
         if slot >= len(self.discoverListControls):
