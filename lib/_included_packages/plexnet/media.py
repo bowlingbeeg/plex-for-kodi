@@ -339,6 +339,12 @@ class Role(MediaTag):
         except Exception as e:
             util.DEBUG_LOG('Failed to fetch actor details from local PMS for {0}: {1}'.format(self.tag, e))
 
+        # If local PMS didn't yield a tagKey (actor not in library), resolve via Discover people search
+        if not tag_key:
+            tag_key = self._resolveTagKeyViaDiscover(self.tag)
+            if tag_key:
+                result['tagKey'] = tag_key
+
         # If we have a tagKey and no biography yet, try the online metadata provider
         if tag_key and not result.get('summary'):
             try:
@@ -396,6 +402,75 @@ class Role(MediaTag):
                 util.DEBUG_LOG('Failed to fetch actor metadata from plex.tv for {0}: {1}'.format(self.tag, e))
 
         return result
+
+    def _resolveTagKeyViaDiscover(self, name):
+        """
+        Resolve an actor's tagKey via Plex Discover people search.
+        Returns the tagKey of the highest-score result, or None.
+        """
+        if not name:
+            return None
+        try:
+            from . import plexapp
+            account = plexapp.ACCOUNT
+            if not account or not account.authToken:
+                return None
+
+            import requests
+            url = 'https://discover.provider.plex.tv/library/search'
+            params = {
+                'query': name,
+                'searchTypes': 'people',
+                'searchProviders': 'discover',
+                'limit': 5,
+            }
+            headers = {
+                'X-Plex-Token': account.authToken,
+                'Accept': 'application/json',
+            }
+            response = requests.get(url, params=params, headers=headers, timeout=5)
+            if response.status_code != 200:
+                util.DEBUG_LOG('_resolveTagKeyViaDiscover: status {0} for {1}', response.status_code, name)
+                return None
+
+            data = response.json()
+            container = data.get('MediaContainer', {})
+            results = container.get('SearchResult', []) or container.get('SearchResults', [])
+
+            best = None
+            best_score = -1.0
+            for sr in results:
+                try:
+                    score = float(sr.get('score', 0) or 0)
+                except (TypeError, ValueError):
+                    score = 0.0
+                candidates = []
+                if isinstance(sr.get('Metadata'), dict):
+                    candidates.append(sr['Metadata'])
+                elif isinstance(sr.get('Metadata'), list):
+                    candidates.extend(sr['Metadata'])
+                if isinstance(sr.get('Directory'), dict):
+                    candidates.append(sr['Directory'])
+                elif isinstance(sr.get('Directory'), list):
+                    candidates.extend(sr['Directory'])
+                if not candidates:
+                    candidates.append(sr)
+                for entry in candidates:
+                    tk = entry.get('tagKey') or entry.get('metadataId') or entry.get('id')
+                    if tk and score > best_score:
+                        best = tk
+                        best_score = score
+                        break
+
+            if best:
+                util.DEBUG_LOG('_resolveTagKeyViaDiscover: resolved tagKey {0} for {1} (score={2})',
+                               best, name, best_score)
+            else:
+                util.DEBUG_LOG('_resolveTagKeyViaDiscover: no match for {0}', name)
+            return best
+        except Exception as e:
+            util.DEBUG_LOG('_resolveTagKeyViaDiscover: failed for {0}: {1}', name, e)
+            return None
 
     def _getBasicDetails(self):
         """Return basic info from the Role object when API call fails or is unavailable."""
