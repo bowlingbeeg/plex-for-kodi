@@ -297,7 +297,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
                 mli = self.subItemListControl.getSelectedItem()
                 if not mli:
                     return
-                self.wl_item_opener(mli.dataSource, self.openItem)
+                if self.wl_availability:
+                    self.wl_item_opener(mli.dataSource, self.openItem)
+                else:
+                    self.openItem(item=mli.dataSource, inherit_from_watchlist=False)
         elif controlID == self.PLAYER_STATUS_BUTTON_ID:
             self.showAudioPlayer()
         elif controlID == self.EXTRA_LIST_ID:
@@ -305,9 +308,8 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         elif controlID == self.RELATED_LIST_ID:
             self.openItem(self.relatedListControl)
         elif controlID == self.ROLES_LIST_ID:
-            if not self.fromWatchlist:
-                if not self.roleClicked():
-                    return
+            if not self.roleClicked():
+                return
         elif controlID == self.INFO_BUTTON_ID:
             self.infoButtonClicked()
         elif controlID == self.PLAY_BUTTON_ID:
