@@ -2420,8 +2420,11 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
             if self.handler.seekOnStart is not None:
                 util.setGlobalProperty('playback_initializing', '1', wait=True)
-                util.DEBUG_LOG("Player: Enabling deferred audio track")
-                self.handler._deferAudioTrack = True
+                # Defer audio only when external audio is actually present — otherwise the
+                # late post-seek setAudioStream() knocks out the embedded subtitle set at preplay.
+                if hasattr(self.video, '_externalAudioStreams') and self.video._externalAudioStreams:
+                    util.DEBUG_LOG("Player: Enabling deferred audio track (external audio detected)")
+                    self.handler._deferAudioTrack = True
             else:
                 util.setGlobalProperty('playback_initializing', '', wait=True)
 
