@@ -749,17 +749,31 @@ class SeekPlayerHandler(BasePlayerHandler):
                     got_player = True
                     currIdx = kodijsonrpc.rpc.Player.GetProperties(playerid=playerID, properties=['currentsubtitle'])[
                         'currentsubtitle'].get('index', None)
-                    if currIdx != self.player.video._current_subtitle_idx + self.subtitleStreamOffset:
+                    target = self.player.video._current_subtitle_idx + self.subtitleStreamOffset
+                    if currIdx != target:
                         util.LOG("Embedded Subtitle index was incorrect ({}), setting to: {}".
-                                 format(currIdx, self.player.video._current_subtitle_idx + self.subtitleStreamOffset))
+                                 format(currIdx, target))
+                        self.dialog.setSubtitles()
+                    elif util.CE_NEEDS_EMBEDDED_SEEKBACK:
+                        # Index already correct on Kodi side but rendering may not be engaged —
+                        # setSubtitleStream() called from onPrePlay/onPlayBackStarted runs before
+                        # Kodi has opened the file. On builds without the kernel fix, the seekback
+                        # in dialog.setSubtitles is what forces Kodi to engage subtitle rendering.
+                        util.DEBUG_LOG("Embedded subtitle index already correct — re-applying via "
+                                       "dialog to trigger seekback forcing function")
+                        self.dialog.setSubtitles()
                     else:
-                        util.DEBUG_LOG("Embedded subtitle index already correct in Kodi — re-applying "
-                                       "to ensure rendering engages")
-                    # Re-apply unconditionally: setSubtitleStream() called from onPrePlay/onPlayBackStarted
-                    # runs before Kodi has opened the file, so Kodi reports the chosen index via JSON-RPC
-                    # but the subtitle rendering pipeline never actually engages until something nudges
-                    # it again (user picking a sub from the OSD, etc).
-                    self.dialog.setSubtitles()
+                        # Kernel-fix build (CE_NEEDS_EMBEDDED_SEEKBACK=False): the seekback that
+                        # normally wakes rendering doesn't fire. Force Kodi to close+reopen the
+                        # subtitle player by switching off then back to the target — the close/
+                        # reopen of the subtitle stream is what actually engages rendering when
+                        # the early setSubtitleStream call set the index without activating it.
+                        util.DEBUG_LOG("Embedded subtitle index already correct — forcing stream "
+                                       "switch to engage rendering (kernel-fix build)")
+                        self.player.setSubtitleStream(-1)
+                        util.MONITOR.waitForAbort(0.05)
+                        self.player.setSubtitleStream(target)
+                        self.player.showSubtitles(True)
                 except IndexError:
                     util.DEBUG_LOG("Player not available yet, retrying ({}/{})".format(tries, 50))
                     tries += 1
