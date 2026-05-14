@@ -752,9 +752,14 @@ class SeekPlayerHandler(BasePlayerHandler):
                     if currIdx != self.player.video._current_subtitle_idx + self.subtitleStreamOffset:
                         util.LOG("Embedded Subtitle index was incorrect ({}), setting to: {}".
                                  format(currIdx, self.player.video._current_subtitle_idx + self.subtitleStreamOffset))
-                        self.dialog.setSubtitles()
                     else:
-                        util.DEBUG_LOG("Embedded subtitle was correctly set in Kodi")
+                        util.DEBUG_LOG("Embedded subtitle index already correct in Kodi — re-applying "
+                                       "to ensure rendering engages")
+                    # Re-apply unconditionally: setSubtitleStream() called from onPrePlay/onPlayBackStarted
+                    # runs before Kodi has opened the file, so Kodi reports the chosen index via JSON-RPC
+                    # but the subtitle rendering pipeline never actually engages until something nudges
+                    # it again (user picking a sub from the OSD, etc).
+                    self.dialog.setSubtitles()
                 except IndexError:
                     util.DEBUG_LOG("Player not available yet, retrying ({}/{})".format(tries, 50))
                     tries += 1
