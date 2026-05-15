@@ -286,6 +286,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._progressHld = {}
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
+        self._absSeekRetries = 0
         self._deferAudioTrack = False
         self._audioTrackSwitchedSOS = None
         self.blackout = False
@@ -329,6 +330,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.skipFixForNextSeek = False
         self.pausedForSeek = False
         self.reportedSeekPlayerTime = None
+        self._absSeekRetries = 0
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -1268,6 +1270,18 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.dialog.selectedOffset = appliedOffset
                 self.dialog.update()
 
+            # Absolute-seek verification (non-alternate-seek path).
+            # Kodi fires OnSeek with the requested target even when the demuxer / AML
+            # codec (freshly opened, mid display rebuild) silently drops the actual
+            # reposition. Both the coreelecSeekPreferReported override and the 50s
+            # "Massive deviation" fallback then make p_time == origSOS, so the alt-seek
+            # retry block above can't help. Verify against raw getTime asynchronously
+            # and re-issue the seek when the stream is still near byte 0.
+            if SOSSuccess and origSOS is not None and not self.useResumeFix \
+                    and self.seekBackTo is None:
+                threading.Thread(target=self._verifyAbsoluteSeek, args=(origSOS,),
+                                 daemon=True, name='abs_seek_verify').start()
+
             if self._deferAudioTrack and self.seekBackTo is None:
                 util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Setting deferred audio track")
                 switched = self.setAudioTrack()
@@ -1494,6 +1508,44 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.player.seekTime(target)
             except:
                 util.ERROR("SeekHandler: recovery seek failed")
+
+    def _verifyAbsoluteSeek(self, target):
+        """Post-seek check for the regular (non-alternate-seek) absolute path.
+
+        Kodi can fire OnSeek with the requested target while the demuxer / AML
+        codec (freshly opened, mid display rebuild) silently drops the actual
+        reposition. The seek-target overrides in onPlayBackSeek's getTime()
+        helper mask this from the alt-seek retry logic. Read raw getTime() once
+        the seek has had time to propagate and re-issue if the stream is still
+        sitting near byte 0.
+        """
+        util.MONITOR.waitForAbort(1.5)
+        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
+            return
+        try:
+            raw_t = self.player.getTime()
+        except RuntimeError:
+            return
+
+        deviation = abs(target - raw_t * 1000)
+        if deviation < 10000:
+            self._absSeekRetries = 0
+            return
+
+        if self._absSeekRetries >= 2:
+            util.LOG("SeekHandler: absolute seek did NOT take effect after retries "
+                     "(target: {}, raw: {}, deviation: {}ms). Resume position will be wrong.",
+                     target, raw_t, deviation)
+            self._absSeekRetries = 0
+            return
+
+        self._absSeekRetries += 1
+        util.LOG("SeekHandler: absolute seek verification FAILED "
+                 "(target: {}, raw: {}, deviation: {}ms). Retry {}/2.",
+                 target, raw_t, deviation, self._absSeekRetries)
+        self.seekOnStart = target
+        self.reportedSeekPlayerTime = None
+        self.seek(target)
 
     def _discoverExternalAudio(self):
         """Discover external audio streams and register them on the video model.
