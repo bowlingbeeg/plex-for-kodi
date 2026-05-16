@@ -2372,13 +2372,22 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 self.playerObject.choice.audioStream):
                 audio_stream = self.playerObject.choice.audioStream
 
+            # Per-folder force-engage: an SB/SB.txt marker file next to the
+            # mapped part bypasses both the curated list and the codec gate.
+            sb_marker = seamless_branching.sbm.has_sb_marker(self.playerObject)
+            is_sb_match = seamless_branching.sbm.is_seamless_branching_movie(imdb_id, audio_stream)
+
             # Check if LAV filters should be enabled
-            if seamless_branching.sbm.is_seamless_branching_movie(imdb_id, audio_stream):
-                util.DEBUG_LOG('Seamless branching detected: IMDB={} codec={} bitrate={}kbps title={}',
-                              imdb_id,
-                              audio_stream.codec if audio_stream else 'none',
-                              audio_stream.bitrate if audio_stream and hasattr(audio_stream, 'bitrate') else 'unknown',
-                              self.video.title)
+            if is_sb_match or sb_marker:
+                if sb_marker:
+                    util.DEBUG_LOG('Seamless branching marker file present, forcing engage: title={}',
+                                  self.video.title)
+                else:
+                    util.DEBUG_LOG('Seamless branching detected: IMDB={} codec={} bitrate={}kbps title={}',
+                                  imdb_id,
+                                  audio_stream.codec if audio_stream else 'none',
+                                  audio_stream.bitrate if audio_stream and hasattr(audio_stream, 'bitrate') else 'unknown',
+                                  self.video.title)
 
                 # Enable LAV filters (use SettingControl for Kodi setting)
                 lav_mode = seamless_branching.sbm.get_lav_mode()

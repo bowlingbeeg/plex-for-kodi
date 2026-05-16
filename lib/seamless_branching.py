@@ -34,6 +34,12 @@ class SeamlessBranchingManager(object):
     BUNDLED_DATA_FILE = "seamless_branching.json"
     USER_DATA_FILE = "seamless_branching_user.json"
 
+    # Per-folder force-engage marker filenames. If one of these sits next to the
+    # playing media's first Part, engage LAV regardless of curated-list match or
+    # audio codec. Only consulted when the part is path-mapped to a local URI
+    # (playerObject.metadata.isMapped). Matches service.p3i.sb convention.
+    SB_MARKER_FILES = ("SB", "SB.txt")
+
     # LAV setting ID (CoreELEC U3k B9+)
     LAV_SETTING_ID = "coreelec.amlogic.dolbyvision.audio.seamlessbranch"
 
@@ -151,6 +157,36 @@ class SeamlessBranchingManager(object):
             if bitrate and bitrate.asInt() >= self.TMS_EAC3_MIN_BITRATE:
                 return True
 
+        return False
+
+    def has_sb_marker(self, playerObject):
+        """
+        Check for an SB or SB.txt marker file next to the playing media's first
+        Part. Only meaningful when the part is path-mapped to a local URI;
+        relies on playerObject.metadata.isMapped (set by BasePlayer.setupObj
+        when PathMappingManager.getPathMappedUrl() resolves).
+
+        Returns:
+            bool: True if a marker file exists in the mapped folder.
+        """
+        try:
+            meta = playerObject.metadata
+        except AttributeError:
+            return False
+        if not meta or not getattr(meta, 'isMapped', False):
+            return False
+        try:
+            url = meta.streamUrls[0]
+        except (AttributeError, IndexError, TypeError):
+            return False
+        if not url:
+            return False
+        folder = os.path.dirname(url)
+        if not folder:
+            return False
+        for marker in self.SB_MARKER_FILES:
+            if xbmcvfs.exists(os.path.join(folder, marker)):
+                return True
         return False
 
     def is_seamless_branching_movie(self, imdb_id, audio_stream, force_detection=False):
