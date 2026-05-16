@@ -1319,6 +1319,10 @@ msgctxt "#35002"
 msgid "Combine video & virtual chapters when both are available."
 msgstr ""
 
+msgctxt "#35003"
+msgid "Stream Stopped by Server"
+msgstr ""
+
 msgctxt "#33605"
 msgid "Video Chapters"
 msgstr ""

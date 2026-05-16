@@ -190,6 +190,24 @@ class NowPlayingManager(object):
     def onTimelineResponse(self, request, response, context):
         context.request.server.trigger("np:timelineResponse", response=response)
 
+        # Server may signal that the current stream was killed (admin "stop stream",
+        # plan/concurrent-limit, server shutdown, etc.) by returning terminationCode
+        # on the MediaContainer of the timeline reply. Surface it as a discrete signal
+        # so the player can stop gracefully and tell the user why.
+        if response is not None and getattr(response, "container", None) is not None:
+            try:
+                terminationCode = response.container.get("terminationCode", "-1").asInt()
+            except Exception:
+                terminationCode = -1
+            if terminationCode > -1:
+                terminationText = response.container.get("terminationText")
+                terminationText = str(terminationText) if terminationText else "Unknown"
+                util.WARN_LOG("Server terminated playback: code={0} text={1}",
+                              terminationCode, terminationText)
+                context.request.server.trigger(
+                    "np:streamTerminated", code=terminationCode, reason=terminationText
+                )
+
         if not context.playQueue or not context.playQueue.refreshOnTimeline:
             return
         context.playQueue.refreshOnTimeline = False
