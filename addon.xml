@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.7.9-beta1"
+       version="1.7.9-beta2"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,13 +34,8 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Actor: fix Discover-routed onClick handlers
-- Actor: resolve tagKey via Discover when actor missing from local PMS
-- Actor: route library-matched Discover items through local PMS
-- Actor: escape focus trap when filmography is empty
-- Player: gate deferred audio track on external audio actually being present
-- Player: always re-apply embedded subtitle on AVStarted
-- Player: differentiate embedded sub re-apply by build's seekback availability
+- Player: verify absolute SeekOnStart actually moved the stream
+- Player: gracefully handle server-initiated stream termination
         </news>
         <assets>
             <icon>icon2.png</icon>
