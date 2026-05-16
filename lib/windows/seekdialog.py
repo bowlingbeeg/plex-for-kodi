@@ -192,6 +192,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self._navigatedViaMarkerOrChapter = False
         self._lastAction = None
         self.lastTimelineResponse = None
+        self._terminated = False
         self._ignoreInput = False
         self._ignoreTick = False
         self._abortBufferWait = False
@@ -252,6 +253,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.showItemEndsLabel = util.addonSettings.showMediaEndsLabel
 
         self.player.video.server.on("np:timelineResponse", self.timelineResponseCallback)
+        self.player.video.server.on("np:streamTerminated", self.streamTerminatedCallback)
 
         if util.kodiSkipSteps and util.addonSettings.kodiSkipStepping and not self.handler.useAlternateSeek:
             self.skipSteps = {"negative": [], "positive": []}
@@ -275,6 +277,61 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def timelineResponseCallback(self, **kwargs):
         response = kwargs.get("response")
         self.lastTimelineResponse = response.getBodyXml()
+
+    def streamTerminatedCallback(self, **kwargs):
+        # Server killed the stream (admin stop, plan/concurrent limit, server
+        # shutdown, ...). Capture progress, suppress next-episode/post-play, stop
+        # playback immediately instead of waiting for the buffer to drain, and tell
+        # the user why.
+        if self._terminated:
+            return
+        self._terminated = True
+
+        code = kwargs.get("code")
+        reason = kwargs.get("reason") or util.T(32330, "Message")
+        util.LOG("SeekDialog: stream terminated by server (code={0}, reason={1})",
+                 code, reason)
+
+        offset = None
+        try:
+            if self.handler and self.handler.player:
+                pt = self.handler.player.getTime()
+                if pt is not None:
+                    offset = int(pt * 1000)
+        except Exception:
+            offset = None
+        if offset is None:
+            try:
+                offset = self.trueOffset()
+            except Exception:
+                offset = 0
+
+        # Final timeline event with current playhead so PMS records progress.
+        try:
+            self.sendTimeline(state=self.player.STATE_STOPPED, t=offset)
+        except Exception:
+            util.ERROR()
+
+        # Suppress next-up / post-play.
+        if self.handler:
+            self.handler.terminated = True
+            self.handler.skipPostPlay = True
+            self.handler.stoppedManually = True
+
+        self._ignoreTick = True
+        self._ignoreInput = True
+
+        # Stop the Kodi player; we don't wait for the buffer to drain.
+        try:
+            if self.handler and self.handler.player:
+                self.handler.player.stop()
+        except Exception:
+            util.ERROR()
+
+        try:
+            util.messageDialog(util.T(35003, 'Stream Stopped by Server'), reason)
+        except Exception:
+            util.messageDialog('Stream Stopped by Server', reason)
 
     def resetTimeout(self, fast=False):
         self.timeout = time.time() + (fast and min(0.5, self._hideDelay) or self._hideDelay)
@@ -487,6 +544,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def onReInit(self):
         util.DEBUG_LOG("SeekDialog: onReInit")
         self.lastTimelineResponse = None
+        self._terminated = False
         self._lastAction = None
         self._ignoreTick = False
         self.waitingForBuffer = False

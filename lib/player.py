@@ -278,6 +278,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.chapters = None
         self.stoppedManually = False
         self.endedManually = False
+        self.terminated = False
         self.inBingeMode = False
         self.skipPostPlay = False
         self.prePlayWitnessed = False
@@ -321,6 +322,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.ended = False
         self.endedManually = False
         self.stoppedManually = False
+        self.terminated = False
         self.prePlayWitnessed = False
         self.queuingNext = False
         self.queuingSpecific = False
@@ -394,6 +396,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         if util.getUserSetting('post_play_never', False):
             return False
 
+        # Server killed the stream — don't follow up with post-play.
+        if self.terminated:
+            return False
+
         if self.player.video and self.player.video.isExtra:
             return False
 
@@ -432,6 +438,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         return self.getDialog().displayMarkers(setMarkersSkipped=True, offset=offset)
 
     def next(self, on_end=False):
+        # Server killed the stream — don't auto-advance into the next item.
+        if self.terminated:
+            return False
+
         hasNext = False
         if self.playlist:
             hasNext = bool(next(self.playlist))
