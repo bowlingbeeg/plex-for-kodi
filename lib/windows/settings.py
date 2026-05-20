@@ -977,6 +977,21 @@ class Settings(object):
                              '\nCan be disabled/enabled per TV show. Doesn\'t override enabled binge mode. '
                              'Overrides the Post Play setting.')
                 ),
+                OptionsSetting(
+                    'tv_specials_order',
+                    T(34103, 'Specials in episode queue'),
+                    'default',
+                    (
+                        ('default', T(34105, 'Library default')),
+                        ('interleave', T(34107, 'Interleave by air date')),
+                    )
+                ).description(
+                    T(34104, "Library default keeps Plex's order in the queue, with specials at the "
+                             "front - playback skips past them and starts at the first regular episode, "
+                             "so they appear in the queue but won't play. "
+                             "Interleave inserts each special by its original air date and plays them "
+                             "between regular episodes.")
+                ),
             )
         ),
         'network': (
