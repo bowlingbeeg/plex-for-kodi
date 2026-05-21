@@ -93,6 +93,9 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     height = 1080
 
     supportsAutoPlay = True
+    # back-out of preplay can leave the window lingering on the stack until a parent
+    # re-activate; actively dismiss it on NAV_BACK (see ControlledWindow.onAction)
+    dismissOnClose = True
 
     THUMB_POSTER_DIM = util.scaleResolution(347, 518)
     RELATED_DIM = util.scaleResolution(268, 402)

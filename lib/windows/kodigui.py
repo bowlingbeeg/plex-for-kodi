@@ -48,16 +48,6 @@ class BaseFunctions(object):
             path = util.PROFILE
         window = cls(cls.xmlFile, path, cls.theme, cls.res, **kwargs)
         window.modal(aggressive=aggressive)
-        # modal() only returns once the window has closed itself (_closing set). For a
-        # ControlledWindow that just flips a flag and exits the wait() loop -- it never calls
-        # Kodi's real close, so the window can linger on the stack (and swallow input) until
-        # GC or a parent re-activate drops it. Actively dismiss it here. MultiWindow does not
-        # use this open() path (it drives _MWBackground/view windows directly), so it's safe.
-        if isinstance(window, xbmcgui.WindowXML):
-            try:
-                xbmcgui.WindowXML.close(window)
-            except Exception:
-                pass
         return window
 
     @classmethod
@@ -518,10 +508,24 @@ class ControlledBase:
 
 
 class ControlledWindow(ControlledBase, BaseWindow):
+    # opt-in: actively dismiss the Kodi window on a genuine back-out (see onAction). Off by
+    # default; ControlledBase.close() only flips a flag, so non-opted windows keep relying on
+    # GC/parent re-activate and windows with their own teardown (video player) stay untouched.
+    dismissOnClose = False
+
     def onAction(self, action):
         try:
             if action in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK):
                 self.doClose()
+                if self.dismissOnClose:
+                    # genuine NAV_BACK on an opted-in window: the wait()-loop close only sets a
+                    # flag, so the window can linger on the stack and swallow input. Force the
+                    # real Kodi dismiss. Scoped to back-out, so go-home/playback teardown paths
+                    # (different actions / non-opted windows) are never force-closed.
+                    try:
+                        xbmcgui.WindowXML.close(self)
+                    except Exception:
+                        pass
                 return
         except:
             traceback.print_exc()
