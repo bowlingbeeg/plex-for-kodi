@@ -16,6 +16,7 @@ This module:
 
 import os
 import json
+import fnmatch
 
 from kodi_six import xbmcvfs
 
@@ -166,8 +167,15 @@ class SeamlessBranchingManager(object):
         relies on playerObject.metadata.isMapped (set by BasePlayer.setupObj
         when PathMappingManager.getPathMappedUrl() resolves).
 
+        Marker semantics (mirrors service.p3i.sb):
+        - Empty / whitespace-only file: engage for every file in the folder
+          (original behavior).
+        - Non-empty: each non-blank/non-comment line is a filename or fnmatch
+          glob; engage only when the playing file's basename matches at least
+          one entry.
+
         Returns:
-            bool: True if a marker file exists in the mapped folder.
+            bool: True if a marker file applies to the playing file.
         """
         try:
             meta = playerObject.metadata
@@ -184,10 +192,49 @@ class SeamlessBranchingManager(object):
         folder = os.path.dirname(url)
         if not folder:
             return False
+        basename = os.path.basename(url)
         for marker in self.SB_MARKER_FILES:
-            if xbmcvfs.exists(os.path.join(folder, marker)):
+            marker_path = os.path.join(folder, marker)
+            if not xbmcvfs.exists(marker_path):
+                continue
+            patterns = self._read_marker_patterns(marker_path)
+            if patterns is None:
+                # Empty / unreadable / no entries -> whole-folder engage.
                 return True
+            if any(fnmatch.fnmatchcase(basename, p) for p in patterns):
+                util.DEBUG_LOG("SB marker {} matched {}", marker_path, basename)
+                return True
+            util.DEBUG_LOG("SB marker {} present but no entry matched {}", marker_path, basename)
         return False
+
+    def _read_marker_patterns(self, marker_path):
+        """Returns the list of patterns from the marker file, or None if the
+        file is empty / unreadable / contains nothing but blanks and comments
+        (in which case the caller treats marker presence as whole-folder)."""
+        try:
+            f = xbmcvfs.File(marker_path)
+            try:
+                data = f.read()
+            finally:
+                f.close()
+        except Exception as exc:
+            util.ERROR("SB marker {} unreadable: {}".format(marker_path, exc))
+            return None
+        if isinstance(data, bytes):
+            try:
+                data = data.decode("utf-8")
+            except UnicodeDecodeError:
+                util.DEBUG_LOG("SB marker {} not UTF-8, treating as whole-folder", marker_path)
+                return None
+        if not data or not data.strip():
+            return None
+        patterns = []
+        for line in data.splitlines():
+            s = line.strip()
+            if not s or s[0] in ("#", ";"):
+                continue
+            patterns.append(s)
+        return patterns or None
 
     def is_seamless_branching_movie(self, imdb_id, audio_stream, force_detection=False):
         """
