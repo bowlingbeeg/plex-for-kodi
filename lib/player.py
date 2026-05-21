@@ -287,6 +287,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._progressHld = {}
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
+        # raised once an absolute SeekOnStart has actually landed (or given up); the
+        # embedded-subtitle re-enable in onAVStarted waits on it so its renderer-
+        # disrupting stream switch never lands on top of an in-flight seek
+        self._absSeekSettled = True
         self._deferAudioTrack = False
         self._audioTrackSwitchedSOS = None
         self.blackout = False
@@ -331,6 +335,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.skipFixForNextSeek = False
         self.pausedForSeek = False
         self.reportedSeekPlayerTime = None
+        self._absSeekSettled = True
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -675,6 +680,12 @@ class SeekPlayerHandler(BasePlayerHandler):
                     if self.blackout:
                         self.stop_blackout()
             else:
+                # arm the settle gate: the embedded-subtitle re-enable will hold off its
+                # stream switch until onPlayBackSeek confirms this seek actually landed.
+                # Skip for seek-back-on-start (its own flow handles the second seek; the
+                # absolute safeguard is gated off it too, so arming would never release).
+                if self.seekBackTo is None:
+                    self._absSeekSettled = False
                 util.DEBUG_LOG("SeekAbsolute: Seeking to {0}", self.seekOnStart)
                 self.player.seekTime(seekSeconds)
         return True
@@ -751,6 +762,23 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         # check if embedded subtitle was set correctly
         if self.isDirectPlay and self.player.video and self.player.video.current_subtitle_is_embedded:
+            # The resume SeekOnStart (player.seekTime) issued just above is async. Any
+            # subtitle-stream manipulation below (the mismatch re-apply, or the kernel-fix
+            # close/reopen) disrupts the renderer; doing it while the seek is still
+            # in flight clobbers it (AddPacketsRenderer timeout -> display reset ->
+            # playback restarts at 0). Wait until onPlayBackSeek confirms the seek has
+            # actually landed (real player position converged on the target, not the
+            # masked reported time) before touching the subtitle stream. ~15s ceiling
+            # to outlast a variable display reset; waitForAbort yields so onPlayBackSeek
+            # can run and raise the flag.
+            waited = 0
+            while not self._absSeekSettled and waited < 150 and not util.MONITOR.abortRequested():
+                util.MONITOR.waitForAbort(0.1)
+                waited += 1
+            if not self._absSeekSettled:
+                util.LOG("onAVStarted: seek-settle gate timed out before embedded subtitle "
+                         "re-apply; proceeding anyway")
+
             got_player = False
             tries = 0
             while not got_player and tries < 50 and not util.MONITOR.abortRequested():
@@ -1255,6 +1283,61 @@ class SeekPlayerHandler(BasePlayerHandler):
                                            "after polling, re-seeking once")
                             self.seek(origSOS)
                             return
+
+            # Absolute-path SOS safeguard (alternate seek disabled).
+            # A display reset around AVStarted -- HDMI/DV mode switch, refresh-rate or
+            # HDR change, resolution-whitelist switch -- can tear down the renderer while
+            # our seekTime() is in flight, so the seek is silently dropped and playback
+            # runs from the opened position. Kodi still fires OnSeek with the requested
+            # target, and getTime()'s reportedSeekPlayerTime override reports false
+            # convergence. This isn't platform-specific: any Kodi target that resets the
+            # display on start is exposed, and the longer the reset the more reliably it
+            # swallows the seek. Verify against the REAL player time (force_player) and
+            # re-issue the absolute seek until it lands or we give up.
+            if not self.useResumeFix and self.seekBackTo is None:
+                raw = getTime(force_player=True)
+                # NB: don't gate on raw >= 0 -- a small negative getTime (e.g. -0.06) is a
+                # valid "playing at the very start, seek not landed yet" reading, which is
+                # exactly what we must catch. Distance from target is the signal; the loop's
+                # isPlayingVideo() check handles genuine not-ready states.
+                if abs(origSOS - raw * 1000) > seekWindow:
+                    util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS not landed "
+                                   "(player: {}, target: {}); polling + re-seeking", raw, origSOS / 1000.0)
+                    self.waitingForSOS = True
+                    try:
+                        waited = 0
+                        last_reseek = -5
+                        converged = False
+                        # ~15s ceiling: long enough to outlast a variable display reset
+                        while waited < 75 and not util.MONITOR.abortRequested():
+                            if not self.player.isPlayingVideo():
+                                util.MONITOR.waitForAbort(0.2)
+                                waited += 1
+                                continue
+                            raw = getTime(force_player=True)
+                            if raw >= 0 and abs(origSOS - raw * 1000) <= seekWindow:
+                                converged = True
+                                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS landed "
+                                               "at {} (target {})", raw, origSOS / 1000.0)
+                                break
+                            # re-issue ~every second; attempts during the reset window are
+                            # dropped, a later one (after the reset completes) sticks
+                            if waited - last_reseek >= 5:
+                                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: re-seeking to {} "
+                                               "(player at {})", origSOS / 1000.0, raw)
+                                self.player.seekTime(origSOS / 1000.0)
+                                last_reseek = waited
+                            util.MONITOR.waitForAbort(0.2)
+                            waited += 1
+                        if not converged:
+                            SOSSuccess = False
+                            util.LOG("SeekHandler: onPlayBackSeek: absolute SOS did not converge "
+                                     "after polling (target: {}); resume position may be wrong",
+                                     origSOS / 1000.0)
+                    finally:
+                        self.waitingForSOS = False
+                # seek has landed (or we gave up) — release the embedded-subtitle re-enable
+                self._absSeekSettled = True
 
             # should not be necessary due to other recent changes to dialog persistence, but it doesn't hurt, either
             if self.dialog:
