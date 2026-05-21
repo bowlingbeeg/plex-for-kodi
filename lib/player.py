@@ -287,7 +287,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._progressHld = {}
         self.useAlternateSeek = util.getSetting('use_alternate_seek2')
         self.useResumeFix = self.useAlternateSeek
-        self._absSeekRetries = 0
+        # raised once an absolute SeekOnStart has actually landed (or given up); the
+        # embedded-subtitle re-enable in onAVStarted waits on it so its renderer-
+        # disrupting stream switch never lands on top of an in-flight seek
+        self._absSeekSettled = True
         self._deferAudioTrack = False
         self._audioTrackSwitchedSOS = None
         self.blackout = False
@@ -332,7 +335,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.skipFixForNextSeek = False
         self.pausedForSeek = False
         self.reportedSeekPlayerTime = None
-        self._absSeekRetries = 0
+        self._absSeekSettled = True
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -677,6 +680,12 @@ class SeekPlayerHandler(BasePlayerHandler):
                     if self.blackout:
                         self.stop_blackout()
             else:
+                # arm the settle gate: the embedded-subtitle re-enable will hold off its
+                # stream switch until onPlayBackSeek confirms this seek actually landed.
+                # Skip for seek-back-on-start (its own flow handles the second seek; the
+                # absolute safeguard is gated off it too, so arming would never release).
+                if self.seekBackTo is None:
+                    self._absSeekSettled = False
                 util.DEBUG_LOG("SeekAbsolute: Seeking to {0}", self.seekOnStart)
                 self.player.seekTime(seekSeconds)
         return True
@@ -753,6 +762,23 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         # check if embedded subtitle was set correctly
         if self.isDirectPlay and self.player.video and self.player.video.current_subtitle_is_embedded:
+            # The resume SeekOnStart (player.seekTime) issued just above is async. Any
+            # subtitle-stream manipulation below (the mismatch re-apply, or the kernel-fix
+            # close/reopen) disrupts the renderer; doing it while the seek is still
+            # in flight clobbers it (AddPacketsRenderer timeout -> display reset ->
+            # playback restarts at 0). Wait until onPlayBackSeek confirms the seek has
+            # actually landed (real player position converged on the target, not the
+            # masked reported time) before touching the subtitle stream. ~15s ceiling
+            # to outlast a variable display reset; waitForAbort yields so onPlayBackSeek
+            # can run and raise the flag.
+            waited = 0
+            while not self._absSeekSettled and waited < 150 and not util.MONITOR.abortRequested():
+                util.MONITOR.waitForAbort(0.1)
+                waited += 1
+            if not self._absSeekSettled:
+                util.LOG("onAVStarted: seek-settle gate timed out before embedded subtitle "
+                         "re-apply; proceeding anyway")
+
             got_player = False
             tries = 0
             while not got_player and tries < 50 and not util.MONITOR.abortRequested():
@@ -1258,6 +1284,61 @@ class SeekPlayerHandler(BasePlayerHandler):
                             self.seek(origSOS)
                             return
 
+            # Absolute-path SOS safeguard (alternate seek disabled).
+            # A display reset around AVStarted -- HDMI/DV mode switch, refresh-rate or
+            # HDR change, resolution-whitelist switch -- can tear down the renderer while
+            # our seekTime() is in flight, so the seek is silently dropped and playback
+            # runs from the opened position. Kodi still fires OnSeek with the requested
+            # target, and getTime()'s reportedSeekPlayerTime override reports false
+            # convergence. This isn't platform-specific: any Kodi target that resets the
+            # display on start is exposed, and the longer the reset the more reliably it
+            # swallows the seek. Verify against the REAL player time (force_player) and
+            # re-issue the absolute seek until it lands or we give up.
+            if not self.useResumeFix and self.seekBackTo is None:
+                raw = getTime(force_player=True)
+                # NB: don't gate on raw >= 0 -- a small negative getTime (e.g. -0.06) is a
+                # valid "playing at the very start, seek not landed yet" reading, which is
+                # exactly what we must catch. Distance from target is the signal; the loop's
+                # isPlayingVideo() check handles genuine not-ready states.
+                if abs(origSOS - raw * 1000) > seekWindow:
+                    util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS not landed "
+                                   "(player: {}, target: {}); polling + re-seeking", raw, origSOS / 1000.0)
+                    self.waitingForSOS = True
+                    try:
+                        waited = 0
+                        last_reseek = -5
+                        converged = False
+                        # ~15s ceiling: long enough to outlast a variable display reset
+                        while waited < 75 and not util.MONITOR.abortRequested():
+                            if not self.player.isPlayingVideo():
+                                util.MONITOR.waitForAbort(0.2)
+                                waited += 1
+                                continue
+                            raw = getTime(force_player=True)
+                            if raw >= 0 and abs(origSOS - raw * 1000) <= seekWindow:
+                                converged = True
+                                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS landed "
+                                               "at {} (target {})", raw, origSOS / 1000.0)
+                                break
+                            # re-issue ~every second; attempts during the reset window are
+                            # dropped, a later one (after the reset completes) sticks
+                            if waited - last_reseek >= 5:
+                                util.DEBUG_LOG("SeekHandler: onPlayBackSeek: re-seeking to {} "
+                                               "(player at {})", origSOS / 1000.0, raw)
+                                self.player.seekTime(origSOS / 1000.0)
+                                last_reseek = waited
+                            util.MONITOR.waitForAbort(0.2)
+                            waited += 1
+                        if not converged:
+                            SOSSuccess = False
+                            util.LOG("SeekHandler: onPlayBackSeek: absolute SOS did not converge "
+                                     "after polling (target: {}); resume position may be wrong",
+                                     origSOS / 1000.0)
+                    finally:
+                        self.waitingForSOS = False
+                # seek has landed (or we gave up) — release the embedded-subtitle re-enable
+                self._absSeekSettled = True
+
             # should not be necessary due to other recent changes to dialog persistence, but it doesn't hurt, either
             if self.dialog:
                 if SOSSuccess and ((useSeekFix and origSosDiff > 500) or not useSeekFix):
@@ -1279,18 +1360,6 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.dialog.offset = appliedOffset
                 self.dialog.selectedOffset = appliedOffset
                 self.dialog.update()
-
-            # Absolute-seek verification (non-alternate-seek path).
-            # Kodi fires OnSeek with the requested target even when the demuxer / AML
-            # codec (freshly opened, mid display rebuild) silently drops the actual
-            # reposition. Both the coreelecSeekPreferReported override and the 50s
-            # "Massive deviation" fallback then make p_time == origSOS, so the alt-seek
-            # retry block above can't help. Verify against raw getTime asynchronously
-            # and re-issue the seek when the stream is still near byte 0.
-            if SOSSuccess and origSOS is not None and not self.useResumeFix \
-                    and self.seekBackTo is None:
-                threading.Thread(target=self._verifyAbsoluteSeek, args=(origSOS,),
-                                 daemon=True, name='abs_seek_verify').start()
 
             if self._deferAudioTrack and self.seekBackTo is None:
                 util.DEBUG_LOG("SeekHandler: onPlayBackSeek: Setting deferred audio track")
@@ -1518,44 +1587,6 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.player.seekTime(target)
             except:
                 util.ERROR("SeekHandler: recovery seek failed")
-
-    def _verifyAbsoluteSeek(self, target):
-        """Post-seek check for the regular (non-alternate-seek) absolute path.
-
-        Kodi can fire OnSeek with the requested target while the demuxer / AML
-        codec (freshly opened, mid display rebuild) silently drops the actual
-        reposition. The seek-target overrides in onPlayBackSeek's getTime()
-        helper mask this from the alt-seek retry logic. Read raw getTime() once
-        the seek has had time to propagate and re-issue if the stream is still
-        sitting near byte 0.
-        """
-        util.MONITOR.waitForAbort(1.5)
-        if not self.player.isPlayingVideo() or util.MONITOR.abortRequested():
-            return
-        try:
-            raw_t = self.player.getTime()
-        except RuntimeError:
-            return
-
-        deviation = abs(target - raw_t * 1000)
-        if deviation < 10000:
-            self._absSeekRetries = 0
-            return
-
-        if self._absSeekRetries >= 2:
-            util.LOG("SeekHandler: absolute seek did NOT take effect after retries "
-                     "(target: {}, raw: {}, deviation: {}ms). Resume position will be wrong.",
-                     target, raw_t, deviation)
-            self._absSeekRetries = 0
-            return
-
-        self._absSeekRetries += 1
-        util.LOG("SeekHandler: absolute seek verification FAILED "
-                 "(target: {}, raw: {}, deviation: {}ms). Retry {}/2.",
-                 target, raw_t, deviation, self._absSeekRetries)
-        self.seekOnStart = target
-        self.reportedSeekPlayerTime = None
-        self.seek(target)
 
     def _discoverExternalAudio(self):
         """Discover external audio streams and register them on the video model.
@@ -2424,13 +2455,22 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 self.playerObject.choice.audioStream):
                 audio_stream = self.playerObject.choice.audioStream
 
+            # Per-folder force-engage: an SB/SB.txt marker file next to the
+            # mapped part bypasses both the curated list and the codec gate.
+            sb_marker = seamless_branching.sbm.has_sb_marker(self.playerObject)
+            is_sb_match = seamless_branching.sbm.is_seamless_branching_movie(imdb_id, audio_stream)
+
             # Check if LAV filters should be enabled
-            if seamless_branching.sbm.is_seamless_branching_movie(imdb_id, audio_stream):
-                util.DEBUG_LOG('Seamless branching detected: IMDB={} codec={} bitrate={}kbps title={}',
-                              imdb_id,
-                              audio_stream.codec if audio_stream else 'none',
-                              audio_stream.bitrate if audio_stream and hasattr(audio_stream, 'bitrate') else 'unknown',
-                              self.video.title)
+            if is_sb_match or sb_marker:
+                if sb_marker:
+                    util.DEBUG_LOG('Seamless branching marker file present, forcing engage: title={}',
+                                  self.video.title)
+                else:
+                    util.DEBUG_LOG('Seamless branching detected: IMDB={} codec={} bitrate={}kbps title={}',
+                                  imdb_id,
+                                  audio_stream.codec if audio_stream else 'none',
+                                  audio_stream.bitrate if audio_stream and hasattr(audio_stream, 'bitrate') else 'unknown',
+                                  self.video.title)
 
                 # Enable LAV filters (use SettingControl for Kodi setting)
                 lav_mode = seamless_branching.sbm.get_lav_mode()

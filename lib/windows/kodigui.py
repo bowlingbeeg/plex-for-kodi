@@ -48,6 +48,16 @@ class BaseFunctions(object):
             path = util.PROFILE
         window = cls(cls.xmlFile, path, cls.theme, cls.res, **kwargs)
         window.modal(aggressive=aggressive)
+        # modal() only returns once the window has closed itself (_closing set). For a
+        # ControlledWindow that just flips a flag and exits the wait() loop -- it never calls
+        # Kodi's real close, so the window can linger on the stack (and swallow input) until
+        # GC or a parent re-activate drops it. Actively dismiss it here. MultiWindow does not
+        # use this open() path (it drives _MWBackground/view windows directly), so it's safe.
+        if isinstance(window, xbmcgui.WindowXML):
+            try:
+                xbmcgui.WindowXML.close(window)
+            except Exception:
+                pass
         return window
 
     @classmethod

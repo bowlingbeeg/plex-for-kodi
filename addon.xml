@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.7.9-beta2"
+       version="1.7.10-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,8 +34,14 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Player: verify absolute SeekOnStart actually moved the stream
-- Player: gracefully handle server-initiated stream termination
+- seamless_branching: honor SB/SB.txt marker file via path-mapped Part
+- seamless_branching: parse SB/SB.txt marker content (filename/glob list)
+- Player: land absolute resume seek before re-enabling embedded subtitles
+- Library: Fix rare traceback on inexistant key
+- PrePlay/Movies: Teardown optimizations, logging
+- Watchlist: Don't engage check task if watchlist isn't enabled
+- Tasks: Don't wait indefinitely for not finished tasks
+- Kodigui: Explicitly close windows after they return from modal() (should fix Movie/preplay not closing when quickly hitting BACK)
         </news>
         <assets>
             <icon>icon2.png</icon>
