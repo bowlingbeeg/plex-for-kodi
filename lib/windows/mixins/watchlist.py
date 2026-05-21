@@ -317,6 +317,9 @@ class WatchlistUtilsMixin(object):
         :return:
         """
 
+        if not self.wl_enabled:
+            return False
+
         def callback(state):
             if state is None:
                 util.LOG("Watchlist: Couldn't parse watchlist response, assuming old state")

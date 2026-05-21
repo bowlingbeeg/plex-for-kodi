@@ -150,8 +150,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
     def doClose(self, **kw):
         self.relatedPaginator = None
-        kodigui.ControlledWindow.doClose(self)
         TasksMixin.doClose(self)
+        kodigui.ControlledWindow.doClose(self)
 
     def onFirstInit(self):
         self.extraListControl = kodigui.ManagedControlList(self, self.EXTRA_LIST_ID, 5)
@@ -650,6 +650,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             if not self.getFocusId() == self.PLAY_BUTTON_ID:
                 self.setFocusId(self.PLAY_BUTTON_ID)
         except (SystemError, RuntimeError):
+            util.ERROR()
             self.setFocusId(self.PLAY_BUTTON_ID)
 
     @busy.dialog()
