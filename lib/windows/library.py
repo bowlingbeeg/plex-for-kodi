@@ -725,7 +725,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 return
 
         li = self.keyItems.get(mli.getProperty('key'))
-        if not li:
+        if not li or not li.pos():
             return
         self.keyListControl.selectItem(li.pos())
 
