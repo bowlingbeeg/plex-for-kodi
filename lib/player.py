@@ -682,9 +682,12 @@ class SeekPlayerHandler(BasePlayerHandler):
             else:
                 # arm the settle gate: the embedded-subtitle re-enable will hold off its
                 # stream switch until onPlayBackSeek confirms this seek actually landed.
-                # Skip for seek-back-on-start (its own flow handles the second seek; the
-                # absolute safeguard is gated off it too, so arming would never release).
-                if self.seekBackTo is None:
+                # Skip the entire seek-back-on-start lifecycle: the forward leg has
+                # seekBackTo set, the back leg has seekingBackTo set (seekBackTo is already
+                # nulled by then). SBOS is a non-resume flow -- there is no resume point to
+                # protect -- so arming the gate would only couple the subtitle close/reopen
+                # (and its display reset) to SBOS's forward->back motion and break its resync.
+                if self.seekBackTo is None and not self.seekingBackTo:
                     self._absSeekSettled = False
                 util.DEBUG_LOG("SeekAbsolute: Seeking to {0}", self.seekOnStart)
                 self.player.seekTime(seekSeconds)
@@ -1294,7 +1297,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             # display on start is exposed, and the longer the reset the more reliably it
             # swallows the seek. Verify against the REAL player time (force_player) and
             # re-issue the absolute seek until it lands or we give up.
-            if not self.useResumeFix and self.seekBackTo is None:
+            if not self.useResumeFix and self.seekBackTo is None and not self.seekingBackTo:
                 raw = getTime(force_player=True)
                 # NB: don't gate on raw >= 0 -- a small negative getTime (e.g. -0.06) is a
                 # valid "playing at the very start, seek not landed yet" reading, which is
