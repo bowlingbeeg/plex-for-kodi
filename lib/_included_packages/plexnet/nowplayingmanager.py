@@ -194,19 +194,30 @@ class NowPlayingManager(object):
         # plan/concurrent-limit, server shutdown, etc.) by returning terminationCode
         # on the MediaContainer of the timeline reply. Surface it as a discrete signal
         # so the player can stop gracefully and tell the user why.
-        if response is not None and getattr(response, "container", None) is not None:
+        #
+        # The async timeline reply is a PlexResult whose .container is lazily built;
+        # we must parseResponse() before the container is available.
+        if response is not None:
             try:
-                terminationCode = response.container.get("terminationCode", "-1").asInt()
+                if getattr(response, "container", None) is None and hasattr(response, "parseResponse"):
+                    response.parseResponse()
             except Exception:
-                terminationCode = -1
-            if terminationCode > -1:
-                terminationText = response.container.get("terminationText")
-                terminationText = str(terminationText) if terminationText else "Unknown"
-                util.WARN_LOG("Server terminated playback: code={0} text={1}",
-                              terminationCode, terminationText)
-                context.request.server.trigger(
-                    "np:streamTerminated", code=terminationCode, reason=terminationText
-                )
+                util.ERROR()
+
+            container = getattr(response, "container", None)
+            if container is not None:
+                try:
+                    terminationCode = container.get("terminationCode", "-1").asInt()
+                except Exception:
+                    terminationCode = -1
+                if terminationCode > -1:
+                    terminationText = container.get("terminationText")
+                    terminationText = str(terminationText) if terminationText else "Unknown"
+                    util.WARN_LOG("Server terminated playback: code={0} text={1}",
+                                  terminationCode, terminationText)
+                    context.request.server.trigger(
+                        "np:streamTerminated", code=terminationCode, reason=terminationText
+                    )
 
         if not context.playQueue or not context.playQueue.refreshOnTimeline:
             return
