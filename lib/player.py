@@ -26,6 +26,17 @@ from six.moves import range
 
 FIVE_MINUTES_MILLIS = 300000
 
+# Fastseek (CoreELEC p3i T4+ feature, coreelec.amlogic.fastseek, default ON)
+# lands on the keyframe at-or-before the seek target instead of decoding
+# forward to it, so the player time can sit up to one GOP-length below the
+# requested SOS after a perfectly successful seek. Long-GOP WEB-DL/streaming
+# sees up to ~10s. The absolute-SOS landing safeguard widens its "below
+# target" tolerance to accept this; the "above target" side stays tight
+# (fastseek never overshoots) and the original dropped-seek case (display
+# reset around AVStarted) still reports player time ~= opened position, well
+# outside this window.
+ABSSOS_UNDERSHOOT_TOLERANCE_MS = 10000
+
 
 class BasePlayerHandler(object):
     def __init__(self, player, session_id=None):
@@ -1303,7 +1314,12 @@ class SeekPlayerHandler(BasePlayerHandler):
                 # valid "playing at the very start, seek not landed yet" reading, which is
                 # exactly what we must catch. Distance from target is the signal; the loop's
                 # isPlayingVideo() check handles genuine not-ready states.
-                if abs(origSOS - raw * 1000) > seekWindow:
+                raw_ms = raw * 1000
+                undershoot_ms = max(0, origSOS - raw_ms)
+                overshoot_ms = max(0, raw_ms - origSOS)
+                landed = (undershoot_ms <= ABSSOS_UNDERSHOOT_TOLERANCE_MS
+                          and overshoot_ms <= seekWindow)
+                if not landed:
                     util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS not landed "
                                    "(player: {}, target: {}); polling + re-seeking", raw, origSOS / 1000.0)
                     self.waitingForSOS = True
@@ -1318,7 +1334,12 @@ class SeekPlayerHandler(BasePlayerHandler):
                                 waited += 1
                                 continue
                             raw = getTime(force_player=True)
-                            if raw >= 0 and abs(origSOS - raw * 1000) <= seekWindow:
+                            raw_ms = raw * 1000
+                            undershoot_ms = max(0, origSOS - raw_ms)
+                            overshoot_ms = max(0, raw_ms - origSOS)
+                            landed = (undershoot_ms <= ABSSOS_UNDERSHOOT_TOLERANCE_MS
+                                      and overshoot_ms <= seekWindow)
+                            if raw >= 0 and landed:
                                 converged = True
                                 util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS landed "
                                                "at {} (target {})", raw, origSOS / 1000.0)
