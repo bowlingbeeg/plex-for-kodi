@@ -329,9 +329,10 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             util.ERROR()
 
         try:
-            util.messageDialog(util.T(35003, 'Stream Stopped by Server'), reason)
+            util.showNotification(reason, time_ms=8000,
+                                  header=util.T(35003, 'Stream Stopped by Server'))
         except Exception:
-            util.messageDialog('Stream Stopped by Server', reason)
+            util.ERROR()
 
     def resetTimeout(self, fast=False):
         self.timeout = time.time() + (fast and min(0.5, self._hideDelay) or self._hideDelay)
