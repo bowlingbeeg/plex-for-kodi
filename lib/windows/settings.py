@@ -773,6 +773,13 @@ class Settings(object):
                              "watching etc., show a confirmation dialog.")
                 ),
                 BoolSetting(
+                    'disable_exit_on_back', T(35007, 'Home: Disable exit on Back'), False
+                ).description(
+                    T(35008, "When enabled, pressing Back on the Home screen no longer shows the "
+                             "exit prompt and will not exit Plex. You can still exit from the Exit "
+                             "option in your username menu.")
+                ),
+                BoolSetting(
                     'hub_season_thumbnails', T(33740, 'Home: Episodes season thumbnails'), True
                 ).description(
                     T(33741, "Use season thumbnails/posters when displaying episodes in hubs instead of "
