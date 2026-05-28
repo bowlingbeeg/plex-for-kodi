@@ -2521,6 +2521,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         return
 
                 if action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU) and not self._checkingForExit:
+                    if util.getSetting('disable_exit_on_back', False):
+                        return
                     try:
                         self._checkingForExit = True
                         if self._shuttingDown:
