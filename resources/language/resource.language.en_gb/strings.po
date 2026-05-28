@@ -3161,3 +3161,11 @@ msgstr ""
 msgctxt "#34091"
 msgid "Choose Version"
 msgstr ""
+
+msgctxt "#35007"
+msgid "Home: Disable exit on Back"
+msgstr ""
+
+msgctxt "#35008"
+msgid "When enabled, pressing Back on the Home screen no longer shows the exit prompt and will not exit Plex. You can still exit from the Exit option in your username menu."
+msgstr ""
