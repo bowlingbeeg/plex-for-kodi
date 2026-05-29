@@ -304,7 +304,8 @@
                     <width>154</width>
                     <height>{{ vscale(140) }}</height>
                     <onleft>904</onleft>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onup>999</onup>
                     <ondown>650</ondown>
                     <font>font12</font>
@@ -414,7 +415,8 @@
             <aligny>center</aligny>
             <onup>900</onup>
             <ondown>1001</ondown>
-            <onright>3000</onright>
+            <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
             <textcolor>00000000</textcolor>
             <label> </label>
             <hinttext> </hinttext>
@@ -867,7 +869,8 @@
                     <height>{{ vscale(154) }}</height>
                     <onup>650</onup>
                     <ondown>1012</ondown>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onleft>1005</onleft>
                     <font>font12</font>
                     <align>center</align>
@@ -1016,7 +1019,8 @@
                     <height>{{ vscale(154) }}</height>
                     <onup>1006</onup>
                     <ondown>1018</ondown>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onleft>1011</onleft>
                     <font>font12</font>
                     <align>center</align>
@@ -1165,7 +1169,8 @@
                     <height>{{ vscale(154) }}</height>
                     <onup>1012</onup>
                     <ondown>1024</ondown>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onleft>1017</onleft>
                     <font>font12</font>
                     <align>center</align>
@@ -1314,7 +1319,8 @@
                     <height>{{ vscale(154) }}</height>
                     <onup>1018</onup>
                     <ondown>1030</ondown>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onleft>1023</onleft>
                     <font>font12</font>
                     <align>center</align>
@@ -1463,7 +1469,8 @@
                     <height>{{ vscale(154) }}</height>
                     <onup>1024</onup>
                     <ondown>1036</ondown>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onleft>1029</onleft>
                     <font>font12</font>
                     <align>center</align>
@@ -1612,7 +1619,8 @@
                     <height>{{ vscale(154) }}</height>
                     <onup>1030</onup>
                     <ondown>953</ondown>
-                    <onright>3000</onright>
+                    <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                     <onleft>1035</onleft>
                     <font>font12</font>
                     <align>center</align>
@@ -1713,7 +1721,8 @@
                 <width>231</width>
                 <height>{{ vscale(140) }}</height>
                 <onleft>952</onleft>
-                <onright>3000</onright>
+                <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
                 <onup>1036</onup>
                 <font>font12</font>
                 <align>center</align>
@@ -1836,5 +1845,89 @@
 {% endwith %}
 {% endfor %}
 
+</control>
+
+<!-- SEARCH HISTORY LIST -->
+<control type="group">
+    <posx>564</posx>
+    <posy>0</posy>
+    <visible>!String.IsEmpty(Window.Property(show.history))</visible>
+    <control type="image">
+        <posx>0</posx>
+        <posy>0</posy>
+        <width>700</width>
+        <height>{{ vscale(1080) }}</height>
+        <texture colordiffuse="FF2D2D2D">script.plex/white-square.png</texture>
+    </control>
+    <control type="label">
+        <scroll>false</scroll>
+        <posx>60</posx>
+        <posy>{{ vscale(20) }}</posy>
+        <width>600</width>
+        <height>{{ vscale(55) }}</height>
+        <font>font12</font>
+        <align>left</align>
+        <aligny>center</aligny>
+        <textcolor>FFFFFFFF</textcolor>
+        <label>[UPPERCASE]$ADDON[script.plexmod 35004][/UPPERCASE]</label>
+    </control>
+    <control type="list" id="2050">
+        <posx>40</posx>
+        <posy>{{ vscale(75) }}</posy>
+        <width>600</width>
+        <height>{{ vscale(900) }}</height>
+        <orientation>vertical</orientation>
+        <onleft>650</onleft>
+        <onright condition="!String.IsEmpty(Window.Property(show.history))">2050</onright>
+                    <onright condition="String.IsEmpty(Window.Property(show.history))">3000</onright>
+        <scrolltime>200</scrolltime>
+        <itemlayout width="580" height="{{ vscale(50) }}">
+            <control type="image">
+                <posx>20</posx>
+                <posy>{{ vscale(13) }}</posy>
+                <width>24</width>
+                <height>{{ vscale(24) }}</height>
+                <texture colordiffuse="99FFFFFF">$INFO[ListItem.Property(icon)]</texture>
+            </control>
+            <control type="label">
+                <posx>60</posx>
+                <posy>0</posy>
+                <width>500</width>
+                <height>{{ vscale(50) }}</height>
+                <font>font13</font>
+                <align>left</align>
+                <aligny>center</aligny>
+                <textcolor>CCFFFFFF</textcolor>
+                <label>$INFO[ListItem.Label]</label>
+            </control>
+        </itemlayout>
+        <focusedlayout width="580" height="{{ vscale(50) }}">
+            <control type="image">
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>580</width>
+                <height>{{ vscale(50) }}</height>
+                <texture border="10">script.plex/home/selected.png</texture>
+            </control>
+            <control type="image">
+                <posx>20</posx>
+                <posy>{{ vscale(13) }}</posy>
+                <width>24</width>
+                <height>{{ vscale(24) }}</height>
+                <texture colordiffuse="FFFFFFFF">$INFO[ListItem.Property(icon)]</texture>
+            </control>
+            <control type="label">
+                <posx>60</posx>
+                <posy>0</posy>
+                <width>500</width>
+                <height>{{ vscale(50) }}</height>
+                <font>font13</font>
+                <align>left</align>
+                <aligny>center</aligny>
+                <textcolor>FFFFFFFF</textcolor>
+                <label>$INFO[ListItem.Label]</label>
+            </control>
+        </focusedlayout>
+    </control>
 </control>
 {% endblock controls %}

@@ -3161,3 +3161,15 @@ msgstr ""
 msgctxt "#34091"
 msgid "Choose Version"
 msgstr ""
+
+msgctxt "#35004"
+msgid "History"
+msgstr ""
+
+msgctxt "#35005"
+msgid "Clear search history"
+msgstr ""
+
+msgctxt "#35006"
+msgid "Clear all search history?"
+msgstr ""

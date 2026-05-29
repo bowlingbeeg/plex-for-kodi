@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import json
 import threading
 import time
 
@@ -7,10 +8,21 @@ from kodi_six import xbmcgui, xbmc
 from plexnet import plexapp
 
 from lib import util
+from lib.util import T
 from lib.kodijsonrpc import rpc
 from . import kodigui
 from . import opener
+from . import optionsdialog
 from . import windowutils
+
+
+class HistoryItem(object):
+    TYPE = 'history'
+
+    def __init__(self, query, is_clear=False):
+        self.query = query
+        self.title = query
+        self.is_clear = is_clear
 
 
 class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
@@ -33,6 +45,8 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
     EDIT_CONTROL_ID = 650
     BUTTON_A_ID = 1001
     SEARCH_HUB_COUNT = 12  # must match core.search_hub_count in lib/templating/context.py
+    HISTORY_LIST_ID = 2050
+    MAX_HISTORY_ITEMS = 10
 
     HUBMAP = {
         'track': {'type': 'square'},
@@ -74,6 +88,7 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             kodigui.ManagedControlList(self, 2100 + i, 5)
             for i in range(self.SEARCH_HUB_COUNT)
         ]
+        self.historyList = kodigui.ManagedControlList(self, self.HISTORY_LIST_ID, self.MAX_HISTORY_ITEMS + 1)
 
         self.edit = kodigui.SafeControlEdit(self.EDIT_CONTROL_ID, 651, self, key_callback=self.updateFromEdit,
                                             grab_focus=True)
@@ -85,7 +100,16 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
         else:
             self.setFocusId(self.BUTTON_A_ID)
         self.setProperty('search.section', 'all')
-        self.updateQuery()
+        self.showSearchHistory()
+
+    def onReInit(self):
+        # Re-displayed (e.g. returning from an opened result): re-evaluate the view.
+        # onFirstInit only runs on the first init, so without this the history view
+        # never re-renders after the dialog is shown again.
+        if self.edit.getText():
+            self.updateResults()
+        else:
+            self.showSearchHistory()
 
     def onAction(self, action):
         try:
@@ -127,6 +151,8 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             self.clearClicked()
         elif 2099 < controlID < 2200:
             self.hubItemClicked(controlID)
+        elif controlID == self.HISTORY_LIST_ID:
+            self.historyItemClicked()
 
     def onFocus(self, controlID):
         if 2099 < controlID < 2200:
@@ -162,7 +188,7 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
                 hubs = plexapp.SERVERMANAGER.selectedServer.hubs(count=10, search_query=query, section=self.sectionID)
                 self.showHubs(hubs)
         else:
-            self.clearHubs()
+            self.showSearchHistory()
 
     def sectionClicked(self, controlID):
         section = self.SECTION_BUTTONS[controlID]
@@ -184,6 +210,87 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
         self.edit.setText('')
         self.updateQuery()
 
+    def _historyKey(self):
+        server = plexapp.SERVERMANAGER.selectedServer
+        if not server:
+            return None
+        return 'search.history.{0}.{1}'.format(server.uuid[-8:], plexapp.ACCOUNT.ID)
+
+    def loadSearchHistory(self):
+        key = self._historyKey()
+        if not key:
+            return []
+        try:
+            return json.loads(util.getSetting(key, '[]'))[:self.MAX_HISTORY_ITEMS]
+        except Exception:
+            util.ERROR()
+            return []
+
+    def saveSearchHistory(self, history):
+        key = self._historyKey()
+        if not key:
+            return
+        try:
+            util.setSetting(key, json.dumps(history[:self.MAX_HISTORY_ITEMS]))
+        except Exception:
+            util.ERROR()
+
+    def addToHistory(self, title):
+        if not title or not title.strip():
+            return
+        title = title.strip()
+        history = self.loadSearchHistory()
+        if title in history:
+            history.remove(title)
+        history.insert(0, title)
+        self.saveSearchHistory(history)
+
+    def clearSearchHistory(self):
+        key = self._historyKey()
+        if key:
+            try:
+                util.setSetting(key, '[]')
+            except Exception:
+                util.ERROR()
+
+    def showSearchHistory(self):
+        self.clearHubs()
+        history = self.loadSearchHistory()
+        if not history:
+            self.setProperty('show.history', '')
+            return
+        items = []
+        for query in history:
+            mli = kodigui.ManagedListItem(query, data_source=HistoryItem(query))
+            mli.setProperty('icon', 'script.plex/buttons/search.png')
+            items.append(mli)
+        clear_label = T(35005, 'Clear search history')
+        clear_mli = kodigui.ManagedListItem(clear_label, data_source=HistoryItem(clear_label, is_clear=True))
+        clear_mli.setProperty('icon', 'script.plex/indicators/remove.png')
+        items.append(clear_mli)
+        self.historyList.reset()
+        self.historyList.addItems(items)
+        self.setProperty('show.history', '1')
+
+    def historyItemClicked(self):
+        mli = self.historyList.getSelectedItem()
+        if not mli:
+            return
+        item = mli.dataSource
+        if getattr(item, 'is_clear', False):
+            button = optionsdialog.show(
+                T(35005, 'Clear search history'),
+                T(35006, 'Clear all search history?'),
+                T(32328, 'Yes'),
+                T(32329, 'No'),
+            )
+            if button == 0:
+                self.clearSearchHistory()
+                self.showSearchHistory()
+            return
+        self.edit.setText(item.query)
+        self.updateQuery()
+
     def hubItemClicked(self, hubControlID):
         for control in self.hubControls:
             if control.controlID == hubControlID:
@@ -201,6 +308,7 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             util.DEBUG_LOG('Search: Playlist does not exist - probably wrong user')
             return
 
+        self.addToHistory(self.edit.getText())
         self.doClose()
         try:
             command = opener.open(hubItem)
@@ -312,6 +420,8 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             self.setProperty('hub.{0}'.format(hub_id), '')
             self.setProperty('hub.display.{0}'.format(hub_id), '')
         self.setProperty('hub.focus', '')
+        self.historyList.reset()
+        self.setProperty('show.history', '')
 
     def opaqueBackground(self, on=True):
         self.parentWindow.setProperty('search.dialog.hasresults', on and '1' or '')
