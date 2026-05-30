@@ -2884,7 +2884,16 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
         return mli
 
     def playQueueCallback(self, **kwargs):
+        # 'playlist.changed' is triggered from the player and can dispatch off the
+        # GUI thread. If the dialog is closing/closed (doClose sets _closing=True and
+        # handler=None before super().doClose() tears down the controls), the
+        # ControlList's underlying guilib object is gone — calling getSelectedItem()
+        # (-> getSelectedPosition()) on it would use-after-free and crash. Bail.
+        if self._closing or not self.handler:
+            return
         mli = self.playlistListControl.getSelectedItem()
+        if not mli:
+            return
         pi = mli.dataSource
         plexID = pi['comment'].split(':', 1)[0]
         viewPos = self.playlistListControl.getViewPosition()
