@@ -155,9 +155,11 @@ class Video(media.MediaItem, AudioCodecMixin):
                                fallback=False, ref="_current_subtitle_idx", force_from_plex=False):
         if ref:
             sidx = getattr(self, ref)
-            if sidx:
+            if sidx is not None:
                 try:
-                    return self.subtitleStreams[sidx]
+                    stream = self.subtitleStreams[sidx]
+                    self.current_subtitle_is_embedded = stream.embedded
+                    return stream
                 except IndexError:
                     pass
 
@@ -173,14 +175,14 @@ class Video(media.MediaItem, AudioCodecMixin):
                         return stream
 
                     sel_stream = stream
-                    stream_forced = sel_stream.forced.asBool()
+                    stream_forced = sel_stream.forced_subtitle
                     if forced_subtitles_override and \
                             stream_forced and self.manually_selected_sub_stream != sel_stream.id:
                         # try finding a non-forced variant of this stream
                         possible_alt = None
                         for alt_stream in self.subtitleStreams:
                             if alt_stream.language == stream.language and alt_stream != stream \
-                                    and not alt_stream.forced.asBool():
+                                    and not alt_stream.forced_subtitle:
                                 if possible_alt and not possible_alt.key and alt_stream.key:
                                     possible_alt = alt_stream
                                     break
@@ -207,7 +209,7 @@ class Video(media.MediaItem, AudioCodecMixin):
                     return sel_stream
             if fallback:
                 stream = self.subtitleStreams[0]
-                if deselect_subtitles and selas and str(selas.languageCode) in deselect_subtitles and not stream.forced.asBool():
+                if deselect_subtitles and selas and str(selas.languageCode) in deselect_subtitles and not stream.forced_subtitle:
                     return
                 if self._current_subtitle_idx != stream.typeIndex:
                     self._current_subtitle_idx = stream.typeIndex

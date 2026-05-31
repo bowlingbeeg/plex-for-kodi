@@ -83,7 +83,7 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
             if not self.key:
                 extras.append(translate_func("Embedded"))
 
-            if self.forced.asBool():
+            if self.forced_subtitle:
                 extras.append(translate_func("Forced"))
 
             if len(extras) > 0:
@@ -149,6 +149,21 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
     def sdh(self):
         return self.hearingImpaired or "SDH" in self.title or "SDH" in self.displayTitle \
                or "SDH" in self.extendedDisplayTitle
+
+    def _title_has_token(self, token):
+        for title in (self.title, self.displayTitle, self.extendedDisplayTitle):
+            if not title:
+                continue
+            normalized = ensure_str(title).lower()
+            for sep in "[](){}_-./,;:|+":
+                normalized = normalized.replace(sep, " ")
+            if token in normalized.split():
+                return True
+        return False
+
+    @property
+    def forced_subtitle(self):
+        return self.forced.asBool() or self._title_has_token("forced")
 
     @property
     def videoCodecRendering(self):
