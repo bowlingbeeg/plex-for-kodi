@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.7.10-beta3"
+       version="1.7.13-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,11 +34,9 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Episodes: Also use dismissOnClose
-- Player: keep absolute-seek settle gate off the SeekBackOnStart flow
-- NowPlayingManager: parse timeline reply before reading terminationCode
-- SeekDialog: use notification instead of modal dialog for server termination
-- Player: widen absolute-SOS landing tolerance for p3i fastseek undershoots
+- Home: serialize hub drawing to fix off-GUI-thread guilib crash
+- PlaylistDialog: guard playQueueCallback against post-close control access
+- Subtitles: preserve first selection and forced titles
         </news>
         <assets>
             <icon>icon2.png</icon>

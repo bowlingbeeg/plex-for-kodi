@@ -773,6 +773,13 @@ class Settings(object):
                              "watching etc., show a confirmation dialog.")
                 ),
                 BoolSetting(
+                    'disable_exit_on_back', T(35007, 'Home: Disable exit on Back'), False
+                ).description(
+                    T(35008, "When enabled, pressing Back on the Home screen no longer shows the "
+                             "exit prompt and will not exit Plex. You can still exit from the Exit "
+                             "option in your username menu.")
+                ),
+                BoolSetting(
                     'hub_season_thumbnails', T(33740, 'Home: Episodes season thumbnails'), True
                 ).description(
                     T(33741, "Use season thumbnails/posters when displaying episodes in hubs instead of "
@@ -976,6 +983,21 @@ class Settings(object):
                     T(32974, 'When finishing an episode, don\'t show Post Play but go to the next one immediately.'
                              '\nCan be disabled/enabled per TV show. Doesn\'t override enabled binge mode. '
                              'Overrides the Post Play setting.')
+                ),
+                OptionsSetting(
+                    'tv_specials_order',
+                    T(34103, 'Specials in episode queue'),
+                    'default',
+                    (
+                        ('default', T(34105, 'Library default')),
+                        ('interleave', T(34107, 'Interleave by air date')),
+                    )
+                ).description(
+                    T(34104, "Library default keeps Plex's order in the queue, with specials at the "
+                             "front - playback skips past them and starts at the first regular episode, "
+                             "so they appear in the queue but won't play. "
+                             "Interleave inserts each special by its original air date and plays them "
+                             "between regular episodes.")
                 ),
             )
         ),

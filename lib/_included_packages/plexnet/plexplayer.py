@@ -62,6 +62,16 @@ class PlexPlayer(BasePlayer):
         major, minor = channelDef.split(".") if "." in channelDef else (channelDef, 0)
         return int(major) + int(minor)
 
+    def shouldSuppressSubtitleForAudioLanguage(self):
+        audio = self.choice.audioStream
+        if not audio:
+            return True
+        if audio.languageCode not in self.item.settings.getPreference("disable_subtitle_languages", []):
+            return False
+
+        subtitle = self.choice.subtitleStream
+        return not (subtitle and subtitle.forced_subtitle)
+
     def rebuild(self, item, decision=None):
         # item.settings = self.item.settings
         oldChoice = self.choice
@@ -110,8 +120,7 @@ class PlexPlayer(BasePlayer):
             obj.frameRate = 30
 
         # Add soft subtitle info
-        if not self.choice.audioStream or self.choice.audioStream.languageCode not in self.item.settings.getPreference(
-                "disable_subtitle_languages", []):
+        if not self.shouldSuppressSubtitleForAudioLanguage():
             if self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_ANY:
                 # add sub autosync settings per item
                 auto_sync = self.item.playbackSettings.auto_sync
@@ -306,8 +315,7 @@ class PlexPlayer(BasePlayer):
 
                 subType = 'sidecar'  # AppSettings().getBoolPreference("custom_video_player"), "embedded", "sidecar")
                 # deselect subtitles if we don't need them
-                if not self.choice.audioStream or self.choice.audioStream.languageCode in self.item.settings.getPreference(
-                        "disable_subtitle_languages", []):
+                if self.shouldSuppressSubtitleForAudioLanguage():
                     subType = "none"
                 decisionPath = http.addUrlParam(decisionPath, "subtitles=" + subType)
 

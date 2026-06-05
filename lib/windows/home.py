@@ -592,7 +592,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         from . import windowutils
         windowutils.HOME = self
 
-        self.lock = threading.Lock()
+        # Re-entrant: the background hub callbacks (sectionHubsCallback,
+        # crossSectionHubsCallback, updateHubCallback) acquire this and then call
+        # showHubs()/showHub(), which re-acquire it via the showHubs() funnel.
+        # It serializes every draw pass so an off-GUI-thread refresh (wake/tick/
+        # reinit) can't run _showHub() on the same controls while a worker callback
+        # is mid-replaceItems() — that race freed list items out from under
+        # CGUIListItem::SetProperty and crashed guilib.
+        self.lock = threading.RLock()
 
         util.setGlobalBoolProperty('off.sections', '')
 
@@ -2514,6 +2521,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         return
 
                 if action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU) and not self._checkingForExit:
+                    if util.getSetting('disable_exit_on_back', False):
+                        return
                     try:
                         self._checkingForExit = True
                         if self._shuttingDown:
@@ -3786,13 +3795,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.setFocusId(self.SECTION_LIST_ID)
 
     def showHubs(self, section=None, update=False, force=False, reselect_pos_dict=None):
-        self.setBoolProperty('no.content', False)
-        if not update:
-            self.setProperty('drawing', '1')
-        try:
-            self._showHubs(section=section, update=update, force=force, reselect_pos_dict=reselect_pos_dict)
-        finally:
-            self.setProperty('drawing', '')
+        # Single choke point for all hub drawing. The lock (RLock) makes every
+        # entry point — background callbacks AND the wake/tick/reinit/click paths
+        # that previously bypassed it — mutually exclusive, so two _showHubs()
+        # passes can never mutate the same hub controls concurrently.
+        with self.lock:
+            self.setBoolProperty('no.content', False)
+            if not update:
+                self.setProperty('drawing', '1')
+            try:
+                self._showHubs(section=section, update=update, force=force, reselect_pos_dict=reselect_pos_dict)
+            finally:
+                self.setProperty('drawing', '')
 
     def getCurrentHubsPositions(self, section):
         is_home = not section or section.key is None
