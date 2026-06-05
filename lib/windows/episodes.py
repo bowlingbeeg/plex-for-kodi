@@ -1144,7 +1144,11 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if not from_auto_play:
             self.playBtnClicked = True
 
-        pl = playlist.LocalPlaylist(self.show_.all(), self.show_.getServer())
+        items = playlist.reorder_with_specials(
+            self.show_.all(),
+            mode=util.getSetting('tv_specials_order', 'default')
+        )
+        pl = playlist.LocalPlaylist(items, self.show_.getServer())
         try:
             # inject our show in case we need to access show metadata from the player
             episode._show = self.show_

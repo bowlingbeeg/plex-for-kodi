@@ -3128,7 +3128,23 @@ msgctxt "#34102"
 msgid "Categories"
 msgstr ""
 
-# Unused: 34103-35000 (898 IDs)
+msgctxt "#34103"
+msgid "Specials in episode queue"
+msgstr ""
+
+msgctxt "#34104"
+msgid "Library default keeps Plex's order in the queue, with specials at the front - playback skips past them and starts at the first regular episode, so they appear in the queue but won't play. Interleave inserts each special by its original air date and plays them between regular episodes."
+msgstr ""
+
+msgctxt "#34105"
+msgid "Library default"
+msgstr ""
+
+msgctxt "#34107"
+msgid "Interleave by air date"
+msgstr ""
+
+# Unused: 34106, 34108-35000 (894 IDs)
 
 msgctxt "#32473"
 msgid "Actor"

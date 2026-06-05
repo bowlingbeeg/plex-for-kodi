@@ -499,6 +499,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             return
 
         items = self.mediaItem.all(unwatched=True)
+        if not shuffle and self.mediaItem.type == 'show':
+            items = playlist.reorder_with_specials(
+                items, mode=util.getSetting('tv_specials_order', 'default')
+            )
         pl = playlist.LocalPlaylist(items, self.mediaItem.getServer())
         resume = False
         if not shuffle and self.mediaItem.type == 'show':
