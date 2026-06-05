@@ -644,11 +644,11 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         return ''
 
     def formatVersionLabel(self, item, media_type='movie'):
-        library = self.getItemLibraryTitle(item) or T(34090, 'Unknown')
+        library = self.getItemLibraryTitle(item) or T(34108, 'Unknown')
         if media_type == 'movie':
             resolution = self.getItemResolution(item)
             bitrate = self.getItemBitrate(item)
-            res_str = '{}p'.format(resolution) if resolution and 'k' not in str(resolution).lower() else (resolution.upper() if resolution else T(34090, 'Unknown'))
+            res_str = '{}p'.format(resolution) if resolution and 'k' not in str(resolution).lower() else (resolution.upper() if resolution else T(34108, 'Unknown'))
             if bitrate:
                 return '{}, {} ({})'.format(library, res_str, plexnetUtil.bitrateToString(bitrate * 1000))
             return '{}, {}'.format(library, res_str)
@@ -662,7 +662,7 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             pos=(660, 441),
             close_direction='none',
             set_dropdown_prop=False,
-            header=T(34091, 'Choose Version'),
+            header=T(34109, 'Choose Version'),
             align_items='left'
         )
         if choice is not None:
