@@ -3193,3 +3193,43 @@ msgstr ""
 msgctxt "#35008"
 msgid "When enabled, pressing Back on the Home screen no longer shows the exit prompt and will not exit Plex. You can still exit from the Exit option in your username menu."
 msgstr ""
+
+msgctxt "#35009"
+msgid "Shuffle Mode"
+msgstr ""
+
+msgctxt "#35010"
+msgid "Unwatched"
+msgstr ""
+
+msgctxt "#35011"
+msgid "Rewatch"
+msgstr ""
+
+msgctxt "#35012"
+msgid "Catchup"
+msgstr ""
+
+msgctxt "#35013"
+msgid "No matching items are available for this shuffle mode."
+msgstr ""
+
+msgctxt "#35014"
+msgid "Shuffle Catchup: number of series"
+msgstr ""
+
+msgctxt "#35015"
+msgid "How many series to queue in Catchup shuffle mode."
+msgstr ""
+
+msgctxt "#35016"
+msgid "Shuffle Catchup: max unwatched episodes per series"
+msgstr ""
+
+msgctxt "#35017"
+msgid "Only include a series in Catchup mode when it has this many or fewer unwatched episodes left."
+msgstr ""
+
+msgctxt "#35018"
+msgid "Shuffle All"
+msgstr ""

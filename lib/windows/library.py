@@ -13,6 +13,7 @@ import six.moves.urllib.request
 from kodi_six import xbmc
 from kodi_six import xbmcgui
 from plexnet import playqueue
+from plexnet import playlist
 from plexnet import plexobjects
 from plexnet import util as pnUtil
 from six.moves import range
@@ -20,11 +21,13 @@ from six.moves import range
 from lib import backgroundthread
 from lib import player
 from lib import util
+from lib import shuffle
 from lib.util import T
 from . import busy
 from . import dropdown
 from . import kodigui
 from . import opener
+from . import videoplayer
 from . import optionsdialog
 from . import preplay
 from . import search
@@ -827,7 +830,116 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         opener.open(pq, auto_play=True, auto_play_open=True)
 
     def shuffleButtonClicked(self):
-        self.playButtonClicked(shuffle=True)
+        # TV and movie libraries open the Shuffle Mode menu; other section types
+        # keep the classic server-side random shuffle.
+        if self.section.TYPE == 'show':
+            self.shuffleModeSelected()
+        elif self.section.TYPE == 'movie':
+            self.movieShuffleSelected()
+        else:
+            self.playButtonClicked(shuffle=True)
+
+    def movieShuffleSelected(self):
+        options = [
+            {'key': shuffle.MODE_UNWATCHED, 'display': T(35010, "Unwatched")},
+            {'key': shuffle.MODE_REWATCH, 'display': T(35011, "Rewatch")},
+            {'key': 'classic', 'display': T(35018, "Shuffle All")},
+        ]
+        choice = dropdown.showDropdown(
+            options,
+            pos=(660, 441),
+            close_direction='none',
+            set_dropdown_prop=False,
+            header=T(35009, "Shuffle Mode"),
+            select_index=0,
+            align_items="left",
+        )
+        if not choice:
+            return
+        if choice['key'] == 'classic':
+            self.playButtonClicked(shuffle=True)
+            return
+        self.startMovieShuffle(choice['key'])
+
+    def startMovieShuffle(self, mode):
+        with busy.BusyContext(delay=True, delay_time=0.2):
+            movies = self.section.all(type_=1)
+            pool = shuffle.eligible_movies(movies, mode)
+            if not pool:
+                util.messageDialog(T(35009, "Shuffle Mode"),
+                                   T(35013, "No matching items are available for this shuffle mode."))
+                return
+            ordered = shuffle.pick(pool, len(pool))
+
+        pl = playlist.LocalPlaylist(ordered, self.section.getServer())
+        self.processCommand(videoplayer.play(play_queue=pl))
+
+    def shuffleModeSelected(self):
+        options = [
+            {'key': shuffle.MODE_UNWATCHED, 'display': T(35010, "Unwatched")},
+            {'key': shuffle.MODE_REWATCH, 'display': T(35011, "Rewatch")},
+            {'key': shuffle.MODE_CATCHUP, 'display': T(35012, "Catchup")},
+            {'key': 'classic', 'display': T(35018, "Shuffle All")},
+        ]
+        choice = dropdown.showDropdown(
+            options,
+            pos=(660, 441),
+            close_direction='none',
+            set_dropdown_prop=False,
+            header=T(35009, "Shuffle Mode"),
+            select_index=0,
+            align_items="left",
+        )
+        if not choice:
+            return
+        if choice['key'] == 'classic':
+            self.playButtonClicked(shuffle=True)
+            return
+        self.startShuffleMode(choice['key'])
+
+    def startShuffleMode(self, mode):
+        section = self.section
+        threshold = util.getSetting('shuffle_catchup_episode_threshold', 3)
+        series_count = util.getSetting('shuffle_catchup_series_count', 5)
+        specials_mode = util.getSetting('tv_specials_order', 'default')
+
+        items = []
+        with busy.BusyContext(delay=True, delay_time=0.2):
+            shows = section.all(type_=2)
+            pool = shuffle.eligible_shows(shows, mode, threshold=threshold)
+            if not pool:
+                util.messageDialog(T(35009, "Shuffle Mode"),
+                                   T(35013, "No shows are available for this shuffle mode."))
+                return
+
+            pick_count = series_count if mode == shuffle.MODE_CATCHUP else 1
+            start_index = 0
+            for show in shuffle.pick(pool, pick_count):
+                episodes = show.all()
+                if mode == shuffle.MODE_CATCHUP:
+                    # Eligibility counts PMS viewedLeafCount (fully-watched leaves only),
+                    # so in-progress episodes are dropped here and a show may contribute
+                    # fewer episodes than its unwatched count implied. The empty-queue
+                    # guard below handles the case where nothing is left to play.
+                    episodes = shuffle.unwatched_episodes(episodes)
+                episodes = playlist.reorder_with_specials(episodes, mode=specials_mode)
+                for ep in episodes:
+                    # let the player reach show metadata, mirroring episodes.py
+                    ep._show = show
+                if not items:
+                    # first show that actually contributes: start on its own first real
+                    # episode (skip a leading special), not somewhere later in the queue
+                    start_index = shuffle.first_regular_index(episodes)
+                items.extend(episodes)
+
+        if not items:
+            util.messageDialog(T(35009, "Shuffle Mode"),
+                               T(35013, "No shows are available for this shuffle mode."))
+            return
+
+        pl = playlist.LocalPlaylist(items, section.getServer())
+        pl.setCurrent(items[start_index])
+        self.processCommand(videoplayer.play(play_queue=pl))
 
     def optionsButtonClicked(self):
         options = []

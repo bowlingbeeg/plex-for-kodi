@@ -999,6 +999,18 @@ class Settings(object):
                              "Interleave inserts each special by its original air date and plays them "
                              "between regular episodes.")
                 ),
+                IntegerSetting(
+                    'shuffle_catchup_series_count', T(35014, 'Shuffle Catchup: number of series'), 5
+                ).description(
+                    T(35015, 'How many series to queue in Catchup shuffle mode.')
+                ),
+                IntegerSetting(
+                    'shuffle_catchup_episode_threshold',
+                    T(35016, 'Shuffle Catchup: max unwatched episodes per series'), 3
+                ).description(
+                    T(35017, 'Only include a series in Catchup mode when it has this many or fewer '
+                             'unwatched episodes left.')
+                ),
             )
         ),
         'network': (
