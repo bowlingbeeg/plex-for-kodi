@@ -20,9 +20,11 @@ class PlexSubtitleDownloadMixin(object):
     @staticmethod
     def get_subtitle_language_tuple():
         from iso639 import languages
-        lang_code_parse, lang_code = PLEX_LEGACY_LANGUAGE_MAP.get(pnUtil.ACCOUNT.subtitlesLanguage,
-                                                                  (pnUtil.ACCOUNT.subtitlesLanguage,
-                                                                   pnUtil.ACCOUNT.subtitlesLanguage))
+        # subtitlesLanguage may be empty when the user has not set a preferred subtitle language;
+        # fall back to English so subtitle search still has a concrete language to query.
+        sub_language = pnUtil.ACCOUNT.subtitlesLanguage or 'en'
+        lang_code_parse, lang_code = PLEX_LEGACY_LANGUAGE_MAP.get(sub_language,
+                                                                  (sub_language, sub_language))
         language = languages.get(part1=lang_code_parse)
         return language, lang_code_parse, lang_code
 

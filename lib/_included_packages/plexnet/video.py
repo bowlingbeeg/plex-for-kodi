@@ -28,6 +28,7 @@ def _audioSelectionCacheId(rating_key):
     user_id = str(plexapp.ACCOUNT.ID or '') if plexapp.ACCOUNT else ''
     return "{}_{}".format(user_id, rating_key)
 from lib.util import T, shortDF, durationToShortText
+from lib.language_util import getNativeLanguages
 
 
 class PlexVideoItemList(plexobjects.PlexItemList):
@@ -672,7 +673,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
                 else:
                     subtitleStream = self.selectedSubtitleStream(fallback=False,
                                                                  forced_subtitles_override=self.settings.getPreference("forced_subtitles_override", False) and util.ACCOUNT.subtitlesForced == 0,
-                                                                 deselect_subtitles=self.settings.getPreference("disable_subtitle_languages", []))
+                                                                 deselect_subtitles=getNativeLanguages(self.settings.getPreference("disable_subtitle_languages", [])))
                 videoStream = self.selectedVideoStream(fallback=True)
                 audioStream = self.selectedAudioStream(fallback=True)
                 streamIDs = []

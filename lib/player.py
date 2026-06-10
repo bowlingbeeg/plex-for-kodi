@@ -17,6 +17,7 @@ from . import colors
 from .windows import seekdialog, windowutils, blackoutdialog
 from . import util
 from . import seamless_branching
+from .language_util import getNativeLanguages
 from plexnet import plexplayer
 from plexnet import plexapp
 from plexnet import plexstream as plexstreamModule
@@ -1531,7 +1532,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         subs = self.player.video.selectedSubtitleStream(
             forced_subtitles_override=honor_forced_subtitles_override and util.getSetting("forced_subtitles_override",
                                                                                          ) and plexnetUtil.ACCOUNT.subtitlesForced == 0,
-            deselect_subtitles=honor_deselect_subtitles and util.getSetting("disable_subtitle_languages") or [],
+            deselect_subtitles=honor_deselect_subtitles and getNativeLanguages(util.getSetting("disable_subtitle_languages") or []) or [],
             ref=ref
         )
 

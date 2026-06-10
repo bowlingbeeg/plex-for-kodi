@@ -60,7 +60,14 @@ class MyPlexAccount(object):
         # defaultSubtitleForced: 0 = prefer non forced, 1 = prefer forced, 2 = only forced, 3 = only non forced
         self.subtitlesSDH = 0
         self.subtitlesForced = 0
-        self.subtitlesLanguage = 'en'
+        # empty = user has not set a preferred subtitle language (distinct from explicitly choosing one);
+        # consumers that need a concrete language must fall back themselves.
+        self.subtitlesLanguage = ''
+        # Plex only allows a single "Preferred Audio Language"; combined with the subtitle mode below
+        # we infer native languages for subtitle suppression (see lib.language_util.getNativeLanguages).
+        self.audioLanguage = ''
+        # Plex "Subtitle Mode": 0 = manual, 1 = shown with foreign audio, 2 = always enabled.
+        self.autoSelectSubtitle = 0
 
     def init(self):
         self.loadState()
@@ -83,6 +90,8 @@ class MyPlexAccount(object):
             'subtitlesSDH': self.subtitlesSDH,
             'subtitlesForced': self.subtitlesForced,
             'subtitlesLanguage': self.subtitlesLanguage,
+            'audioLanguage': self.audioLanguage,
+            'autoSelectSubtitle': self.autoSelectSubtitle,
         }
 
         if self.cacheHomeUsers:
@@ -122,7 +131,9 @@ class MyPlexAccount(object):
                 self.lastHomeUserUpdate = obj.get('lastHomeUserUpdate')
                 self.subtitlesSDH = obj.get('subtitlesSDH', 0)
                 self.subtitlesForced = obj.get('subtitlesForced', 0)
-                self.subtitlesLanguage = obj.get('subtitlesLanguage', 'en')
+                self.subtitlesLanguage = obj.get('subtitlesLanguage', '')
+                self.audioLanguage = obj.get('audioLanguage', '')
+                self.autoSelectSubtitle = obj.get('autoSelectSubtitle', 0)
                 if self.cacheHomeUsers:
                     self.homeUsers = [HomeUser(data) for data in obj.get('homeUsers', [])]
                     self.setAdminByCHU()
@@ -158,6 +169,8 @@ class MyPlexAccount(object):
         util.LOG("subtitlesSDH: {0}", self.subtitlesSDH)
         util.LOG("subtitlesForced: {0}", self.subtitlesForced)
         util.LOG("subtitlesLanguage: {0}", self.subtitlesLanguage)
+        util.LOG("audioLanguage: {0}", self.audioLanguage)
+        util.LOG("autoSelectSubtitle: {0}", self.autoSelectSubtitle)
 
     def getHomeSubscription(self):
         """
@@ -205,7 +218,12 @@ class MyPlexAccount(object):
             prof = data.find('profile_settings')
             self.subtitlesSDH = int(prof.attrib.get('default_subtitle_accessibility', 0))
             self.subtitlesForced = int(prof.attrib.get('default_subtitle_forced', 0))
-            self.subtitlesLanguage = str(prof.attrib.get('default_subtitle_language', 'en'))
+            self.subtitlesLanguage = str(prof.attrib.get('default_subtitle_language', ''))
+            self.audioLanguage = str(prof.attrib.get('default_audio_language', ''))
+            # Plex "Subtitle Mode" (auto_select_subtitle): 0 = manually selected,
+            # 1 = shown with foreign audio, 2 = always enabled (confirmed). Only mode 1 implies
+            # suppressing same-language subtitles, which is what our native-languages logic derives from.
+            self.autoSelectSubtitle = int(prof.attrib.get('auto_select_subtitle', 0))
 
             # PIN
             if data.attrib.get('pin'):

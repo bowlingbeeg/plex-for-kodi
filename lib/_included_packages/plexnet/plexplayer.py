@@ -8,6 +8,7 @@ from . import mediadecisionengine
 from . import serverdecision
 from lib.util import KODI_VERSION_MAJOR
 from lib.cache import CACHE_SIZE
+from lib.language_util import getNativeLanguages
 
 from six.moves import range
 
@@ -66,7 +67,8 @@ class PlexPlayer(BasePlayer):
         audio = self.choice.audioStream
         if not audio:
             return True
-        if audio.languageCode not in self.item.settings.getPreference("disable_subtitle_languages", []):
+        if audio.languageCode not in getNativeLanguages(
+                self.item.settings.getPreference("disable_subtitle_languages", [])):
             return False
 
         subtitle = self.choice.subtitleStream
