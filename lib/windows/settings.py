@@ -508,11 +508,6 @@ class Settings(object):
                     T(33712, 'When playback of an in-progress media is requested, resume it by default instead'
                              ' of asking whether to resume or start from the beginning.')
                 ),
-                BoolSetting(
-                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), False
-                ).description(
-                    T(33714, 'Resume in-progress items directly instead of visiting the media.')
-                ),
             )
         ),
         'video': (
@@ -787,6 +782,11 @@ class Settings(object):
                 ).description(
                     T(33741, "Use season thumbnails/posters when displaying episodes in hubs instead of "
                              "the TV show's.")
+                ),
+                BoolSetting(
+                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), False
+                ).description(
+                    T(33714, 'Resume in-progress items directly instead of visiting the media.')
                 ),
                 BoolSetting(
                     'hubs_use_new_continue_watching', T(32998, 'Use new Continue Watching hub on Home'), False
