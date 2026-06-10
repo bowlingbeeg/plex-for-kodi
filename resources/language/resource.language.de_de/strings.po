@@ -1288,8 +1288,8 @@ msgstr "Kodi-Untertiteleinstellungen"
 
 #:
 msgctxt "#32493"
-msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible."
-msgstr "Hat eine Mediendatei erzwungenge Untertitel für eine Sprache, bei der Untertitel erwünscht sind, wählt der Plex Media Server diesen standardmäßig aus. Das Verhalten ist normalerweise unerwünscht und nicht konfigurierbar. Diese Einstellung behebt das Problem, indem versucht wird, einen Untertitel der selben Sprache ohne Erzwungen-Markierung zu wählen."
+msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible. This is skipped when the audio is one of your Native languages, so forced subtitles are kept in that case."
+msgstr "Hat eine Mediendatei erzwungenge Untertitel für eine Sprache, bei der Untertitel erwünscht sind, wählt der Plex Media Server diesen standardmäßig aus. Das Verhalten ist normalerweise unerwünscht und nicht konfigurierbar. Diese Einstellung behebt das Problem, indem versucht wird, einen Untertitel der selben Sprache ohne Erzwungen-Markierung zu wählen. Dies wird übersprungen, wenn der Ton einer deiner Muttersprachen entspricht; erzwungene Untertitel bleiben dann erhalten."
 
 #: 
 msgctxt "#32495"
@@ -3051,8 +3051,8 @@ msgid "Native languages"
 msgstr "Muttersprachen"
 
 msgctxt "#33692"
-msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled."
-msgstr "Schaust Du normalerweise in einer anderen Sprache mit Untertiteln, bist aber Muttersprachler anderer Sprachen, für die Du keine Untertitel benötigst, halte Plex davon ab, Untertitel für diese Sprachen automatisch auszuwählen. Wird auch zum Abgleich externer Audiodateien verwendet, wenn diese Einstellung aktiviert ist."
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled. Your Plex \"Preferred Audio Language\" is added to this list automatically while your Plex subtitle auto-select mode is \"Shown with foreign audio\"; forced subtitles are always kept."
+msgstr "Schaust Du normalerweise in einer anderen Sprache mit Untertiteln, bist aber Muttersprachler anderer Sprachen, für die Du keine Untertitel benötigst, halte Plex davon ab, Untertitel für diese Sprachen automatisch auszuwählen. Wird auch zum Abgleich externer Audiodateien verwendet, wenn diese Einstellung aktiviert ist. Deine Plex-„Bevorzugte Ton-Sprache“ wird dieser Liste automatisch hinzugefügt, solange der „Modus zur Automatischen Auswahl der Untertitel“ auf „bei fremdsprachigem Ton“ steht; erzwungene Untertitel bleiben immer erhalten."
 
 msgctxt "#33693"
 msgid "Download subtitles using"

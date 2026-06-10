@@ -1094,7 +1094,7 @@ msgid "Kodi Subtitle Settings"
 msgstr ""
 
 msgctxt "#32493"
-msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible."
+msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible. This is skipped when the audio is one of your Native languages, so forced subtitles are kept in that case."
 msgstr ""
 
 # Unused: 32494
@@ -2509,7 +2509,7 @@ msgid "Native languages"
 msgstr ""
 
 msgctxt "#33692"
-msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled."
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled. Your Plex \"Preferred Audio Language\" is added to this list automatically while your Plex subtitle auto-select mode is \"Shown with foreign audio\"; forced subtitles are always kept."
 msgstr ""
 
 msgctxt "#33693"

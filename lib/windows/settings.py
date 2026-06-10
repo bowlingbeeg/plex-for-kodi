@@ -611,7 +611,9 @@ class Settings(object):
                     T(33692, "When you usually watch things in a different language with subtitles, but are a"
                              " native speaker of other languages, which you don't need subtitles for, prevent Plex "
                              "from auto-selecting subtitles for those languages. Also used to match external audio "
-                             "files when that setting is enabled.")
+                             "files when that setting is enabled. Your Plex \"Preferred Audio Language\" is added to "
+                             "this list automatically while your Plex subtitle auto-select mode is \"Shown with "
+                             "foreign audio\"; forced subtitles are always kept.")
                 ),
                 BoolSetting('use_external_audio', T(34098, 'Honor external audio files'), False)
                 .description(T(34099, 'When external audio files are found alongside the video '
@@ -661,7 +663,8 @@ class Settings(object):
                     T(32493, 'When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex'
                              ' Media Server preselects it. This behaviour is usually not necessary and not configurable'
                              '. This setting fixes that by ignoring the PMSs decision and selecting the same language '
-                             'without a forced flag if possible.')
+                             'without a forced flag if possible. This is skipped when the audio is one of your Native '
+                             'languages, so forced subtitles are kept in that case.')
                 ),
                 BoolSetting('calculate_oshash', T(32958, 'Calculate OpenSubtitles.com hash'),
                             False).description(
