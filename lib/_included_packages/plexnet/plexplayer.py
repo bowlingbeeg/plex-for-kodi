@@ -210,7 +210,12 @@ class PlexPlayer(BasePlayer):
                     if adjusted_sval < self.seekValue:
                         util.LOG("Adjusted resume point from {} to {} ({})", self.seekValue, adjusted_sval,
                                  self.item.settings.getPreference("resume_offset", -3500))
-                obj.playStart = int(adjusted_sval / 1000) - obj.startOffset
+                # clamp to the selected part's start: the resume_offset rewind above can push us
+                # back across a part boundary (e.g. advancing to part 2 at its exact start offset,
+                # which arrives here as a positive seekValue and gets rewound), yielding a negative
+                # part-relative playStart that later re-resolves the absolute offset into the
+                # *previous* part -> multi-part playback loops/black-screens.
+                obj.playStart = max(0, int(adjusted_sval / 1000) - obj.startOffset)
 
         self.metadata = obj
 
