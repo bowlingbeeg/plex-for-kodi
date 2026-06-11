@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.7.13-beta1"
+       version="1.11.5-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,17 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Home: serialize hub drawing to fix off-GUI-thread guilib crash
-- PlaylistDialog: guard playQueueCallback against post-close control access
-- Subtitles: preserve first selection and forced titles
+- TV queue: interleave specials by air date (opt-in)
+- Library: build filter menu dynamically from server /filters
+- Search: render result grid via dynamic templating
+- Search: add typed-query search history
+- Home: disable exit-on-Back when 'disable_exit_on_back' setting is on
+- i18n: fix 34090-34092 ID collision between Settings and actor screen
+- Settings: move 'Home: Resume in-progress items' to User Interface category
+- Library: shuffle library mode (per-library shuffle with playback modes)
+- Player: fix multi-part episode black-screen on part advance
+- Subtitles: let native-languages keep forced subs through forced-override
+- Subtitles: derive native language from Plex Preferred Audio Language
         </news>
         <assets>
             <icon>icon2.png</icon>
