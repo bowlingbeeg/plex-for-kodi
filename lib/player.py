@@ -1044,7 +1044,12 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.waitingForSOS = False
                 self.unPauseAfterSeek = True
                 #self.reportedSeekPlayerTime = None
-                self.seek(to)
+                # seekBackTo is a part-relative target ("X ms into the current part"), the same
+                # frame the forward leg uses via seekAbsolute(). Routing it through the global
+                # seek() instead makes a sub-startOffset target (e.g. 50ms) re-resolve into the
+                # *previous* part on multi-part items (part 2's startOffset > 0) -> reload loop.
+                # Seek part-relative so we stay within the current part.
+                self.seekAbsolute(to)
             finally:
                 self.ignoreTimelines = False
 
@@ -1165,7 +1170,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                         util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: not there, yet, re-seeking: "
                                        "(low: {}, high: {}, range: {}, time: {}, diff: {})", withinSOSLow, withinSOSHigh, seekWindow, getTime(), sosDiff)
                         needsReSeek = True
-                        self.seek(origSOS)
+                        self.seekAbsolute(origSOS)
                     else:
                         if self.player.isPlayingVideo():
                             util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: we've reached {}", origSOS)
@@ -1239,7 +1244,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                             seekBackToStart()
                             return
 
-                        self.seek(origSOS)
+                        self.seekAbsolute(origSOS)
 
                         tries += 1
                         withinSOSHigh += seekWait
@@ -1296,7 +1301,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                             # Mode switch should be complete by now (~6s). Issue one final re-seek.
                             util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
                                            "after polling, re-seeking once")
-                            self.seek(origSOS)
+                            self.seekAbsolute(origSOS)
                             return
 
             # Absolute-path SOS safeguard (alternate seek disabled).
