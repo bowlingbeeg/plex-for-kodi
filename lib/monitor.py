@@ -131,17 +131,19 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
             if windowutils.HOME:
                 windowutils.HOME.closeOption = "restart"
 
-        elif sender == "xbmc" and method == "GUI.OnSkinLoaded":
-            # Skin reload finished and the active window has been restored. Recover via
-            # the same proven path as OnQuit: doClose() HOME so its native close()
-            # clears bModal and pulses doModal() out, _main sees the armed "restart" and
-            # returns, and the atexit handler RunScript()s us back from a clean state.
+        elif sender == "xbmc" and method in ("GUI.OnSkinLoaded", "GUI.OnSkinLoadFailed"):
+            # Skin reload settled (loaded, or failed outright). Recover via the same
+            # proven path as OnQuit: doClose() HOME so its native close() clears bModal
+            # and pulses doModal() out, _main sees the armed "restart" and returns, and
+            # the atexit handler RunScript()s us back from a clean state. We handle the
+            # failure case too so we don't hang if the default skin itself fails (the
+            # non-default fallback already reloads and fires OnSkinLoaded by then).
             if not self._skin_reloading:
                 return
             self._skin_reloading = False
             from .windows import windowutils
             if windowutils.HOME:
-                LOG("Skin reloaded: restarting addon to recover UI")
+                LOG("Skin reload settled ({}): restarting addon to recover UI", method)
                 windowutils.HOME.closeOption = "restart"
                 windowutils.HOME.doClose()
             return
