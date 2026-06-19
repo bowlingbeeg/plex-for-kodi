@@ -28,15 +28,24 @@ from six.moves import range
 FIVE_MINUTES_MILLIS = 300000
 
 # Fastseek (CoreELEC p3i T4+ feature, coreelec.amlogic.fastseek, default ON)
-# lands on the keyframe at-or-before the seek target instead of decoding
-# forward to it, so the player time can sit up to one GOP-length below the
-# requested SOS after a perfectly successful seek. Long-GOP WEB-DL/streaming
-# sees up to ~10s. The absolute-SOS landing safeguard widens its "below
-# target" tolerance to accept this; the "above target" side stays tight
-# (fastseek never overshoots) and the original dropped-seek case (display
-# reset around AVStarted) still reports player time ~= opened position, well
-# outside this window.
-ABSSOS_UNDERSHOOT_TOLERANCE_MS = 10000
+# snaps playback to a keyframe instead of decoding to the exact target, so
+# after a perfectly successful seek the player time can sit up to one GOP
+# length from the requested SOS -- on EITHER side. It usually lands at-or-
+# before the target (undershoot), but long-GOP WEB-DL/streaming can also put
+# the first decodable keyframe past it (overshoot, ~3s+ on NF H.265 DV). So
+# the absolute-SOS landing safeguard accepts up to ~10s of slack symmetrically.
+# The cases that must NOT be accepted are still caught: a dropped seek (display
+# reset around AVStarted) leaves player time ~= opened position, a huge
+# undershoot far outside this window. And re-seeking the same absolute target
+# can never reduce a keyframe overshoot anyway -- a tight upper bound only
+# churns ("replays ~1s on a loop") without ever landing, so do not reuse the
+# alternate-seek window here.
+ABSSOS_LANDING_TOLERANCE_MS = 10000
+
+# Cap on absolute-SOS re-issues. Every re-seek to the same target lands on the
+# same keyframe, so once a handful have not converged, more only churn; give up
+# and keep playing from where we are rather than looping the user on ~1s.
+ABSSOS_MAX_RESEEKS = 5
 
 
 class BasePlayerHandler(object):
@@ -1044,7 +1053,12 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.waitingForSOS = False
                 self.unPauseAfterSeek = True
                 #self.reportedSeekPlayerTime = None
-                self.seek(to)
+                # seekBackTo is a part-relative target ("X ms into the current part"), the same
+                # frame the forward leg uses via seekAbsolute(). Routing it through the global
+                # seek() instead makes a sub-startOffset target (e.g. 50ms) re-resolve into the
+                # *previous* part on multi-part items (part 2's startOffset > 0) -> reload loop.
+                # Seek part-relative so we stay within the current part.
+                self.seekAbsolute(to)
             finally:
                 self.ignoreTimelines = False
 
@@ -1165,7 +1179,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                         util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: not there, yet, re-seeking: "
                                        "(low: {}, high: {}, range: {}, time: {}, diff: {})", withinSOSLow, withinSOSHigh, seekWindow, getTime(), sosDiff)
                         needsReSeek = True
-                        self.seek(origSOS)
+                        self.seekAbsolute(origSOS)
                     else:
                         if self.player.isPlayingVideo():
                             util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: we've reached {}", origSOS)
@@ -1239,7 +1253,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                             seekBackToStart()
                             return
 
-                        self.seek(origSOS)
+                        self.seekAbsolute(origSOS)
 
                         tries += 1
                         withinSOSHigh += seekWait
@@ -1296,7 +1310,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                             # Mode switch should be complete by now (~6s). Issue one final re-seek.
                             util.DEBUG_LOG("SeekHandler: onPlayBackSeek: resumeFix: post-seek verification FAILED "
                                            "after polling, re-seeking once")
-                            self.seek(origSOS)
+                            self.seekAbsolute(origSOS)
                             return
 
             # Absolute-path SOS safeguard (alternate seek disabled).
@@ -1318,8 +1332,8 @@ class SeekPlayerHandler(BasePlayerHandler):
                 raw_ms = raw * 1000
                 undershoot_ms = max(0, origSOS - raw_ms)
                 overshoot_ms = max(0, raw_ms - origSOS)
-                landed = (undershoot_ms <= ABSSOS_UNDERSHOOT_TOLERANCE_MS
-                          and overshoot_ms <= seekWindow)
+                landed = (undershoot_ms <= ABSSOS_LANDING_TOLERANCE_MS
+                          and overshoot_ms <= ABSSOS_LANDING_TOLERANCE_MS)
                 if not landed:
                     util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS not landed "
                                    "(player: {}, target: {}); polling + re-seeking", raw, origSOS / 1000.0)
@@ -1327,8 +1341,9 @@ class SeekPlayerHandler(BasePlayerHandler):
                     try:
                         waited = 0
                         last_reseek = -5
+                        reseeks = 0
                         converged = False
-                        # ~15s ceiling: long enough to outlast a variable display reset
+                        # ~15s ceiling backstop; ABSSOS_MAX_RESEEKS is the real limit
                         while waited < 75 and not util.MONITOR.abortRequested():
                             if not self.player.isPlayingVideo():
                                 util.MONITOR.waitForAbort(0.2)
@@ -1338,8 +1353,8 @@ class SeekPlayerHandler(BasePlayerHandler):
                             raw_ms = raw * 1000
                             undershoot_ms = max(0, origSOS - raw_ms)
                             overshoot_ms = max(0, raw_ms - origSOS)
-                            landed = (undershoot_ms <= ABSSOS_UNDERSHOOT_TOLERANCE_MS
-                                      and overshoot_ms <= seekWindow)
+                            landed = (undershoot_ms <= ABSSOS_LANDING_TOLERANCE_MS
+                                      and overshoot_ms <= ABSSOS_LANDING_TOLERANCE_MS)
                             if raw >= 0 and landed:
                                 converged = True
                                 util.DEBUG_LOG("SeekHandler: onPlayBackSeek: absolute SOS landed "
@@ -1348,10 +1363,16 @@ class SeekPlayerHandler(BasePlayerHandler):
                             # re-issue ~every second; attempts during the reset window are
                             # dropped, a later one (after the reset completes) sticks
                             if waited - last_reseek >= 5:
+                                if reseeks >= ABSSOS_MAX_RESEEKS:
+                                    util.DEBUG_LOG("SeekHandler: onPlayBackSeek: giving up after {} "
+                                                   "re-seeks (player at {}, target {})",
+                                                   reseeks, raw, origSOS / 1000.0)
+                                    break
                                 util.DEBUG_LOG("SeekHandler: onPlayBackSeek: re-seeking to {} "
-                                               "(player at {})", origSOS / 1000.0, raw)
+                                               "(player at {}, attempt {})", origSOS / 1000.0, raw, reseeks + 1)
                                 self.player.seekTime(origSOS / 1000.0)
                                 last_reseek = waited
+                                reseeks += 1
                             util.MONITOR.waitForAbort(0.2)
                             waited += 1
                         if not converged:

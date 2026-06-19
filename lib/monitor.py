@@ -13,6 +13,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         self.device_sleeping = False
         self.wait_interval = 0.1
         self.ignore_ssevent = False
+        self._skin_reloading = False
 
     def watchStatusChanged(self):
         self.trigger('changed.watchstatus')
@@ -114,6 +115,37 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
             LOG("OnQuit: Closing Home")
             windowutils.HOME.closeOption = "kodi_exit"
             windowutils.HOME.doClose()
+            return
+
+        elif sender == "xbmc" and method == "GUI.OnSkinUnloading":
+            # The underlying Kodi skin is being torn down (most commonly a background
+            # skin-addon auto-update triggering ReloadSkin). The window manager's
+            # DeInitialize() Close()s and FreeResources() our windows, but Kodi's python
+            # binding never clears bModal on deinit (Window::OnDeinitWindow) - so HOME's
+            # native doModal() keeps spinning over a gutted window and the UI freezes.
+            # Arm the restart now so that however doModal eventually unblocks, _main is
+            # already routed to "restart"; we force the unblock on OnSkinLoaded.
+            from .windows import windowutils
+            LOG("Skin unloading: arming UI restart for after the reload")
+            self._skin_reloading = True
+            if windowutils.HOME:
+                windowutils.HOME.closeOption = "restart"
+
+        elif sender == "xbmc" and method in ("GUI.OnSkinLoaded", "GUI.OnSkinLoadFailed"):
+            # Skin reload settled (loaded, or failed outright). Recover via the same
+            # proven path as OnQuit: doClose() HOME so its native close() clears bModal
+            # and pulses doModal() out, _main sees the armed "restart" and returns, and
+            # the atexit handler RunScript()s us back from a clean state. We handle the
+            # failure case too so we don't hang if the default skin itself fails (the
+            # non-default fallback already reloads and fires OnSkinLoaded by then).
+            if not self._skin_reloading:
+                return
+            self._skin_reloading = False
+            from .windows import windowutils
+            if windowutils.HOME:
+                LOG("Skin reload settled ({}): restarting addon to recover UI", method)
+                windowutils.HOME.closeOption = "restart"
+                windowutils.HOME.doClose()
             return
 
     def stopPlayback(self):
