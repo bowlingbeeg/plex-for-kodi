@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.11.5-beta2"
+       version="1.11.6-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,12 +34,8 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- docs: subtitle-selection.md
-- player: route all on-start seeks in onPlayBackSeek part-relative (seekAbsolute)
-- monitor: restart UI on skin reload instead of freezing (for supported CE variants (p3i for now))
-- monitor: also recover on GUI.OnSkinLoadFailed
-- SeekDialog: Signal OSD when marker shown (skip intro/credits) for OSD plane of CoreELEC
-- SeekHandler: fix resume re-seek loop on long-GOP content (alternate seek off)
+- Home: harden hub-cleanup focus restore against invalid control id
+- Library: fix hard crash returning to Watchlist after a movie is watched
         </news>
         <assets>
             <icon>icon2.png</icon>
