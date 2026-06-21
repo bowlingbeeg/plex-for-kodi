@@ -450,6 +450,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.lastFocusID = None
         self.lastNonOptionsFocusID = None
         self.refill = False
+        # Bumped every time doRefill() rebuilds showPanelControl. Used to detect that
+        # the panel (and its ListItems) was replaced while a modal child window was open,
+        # so we never touch a freed ListItem afterwards (see showPanelClicked).
+        self._listGeneration = 0
         self.subOptionCache = {}
         self._filterTypeByKey = {}
         self.closing = False
@@ -523,6 +527,9 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             self.doRefill()
 
     def doRefill(self):
+        # The previous panel's ListItems are about to be freed and replaced; bump the
+        # generation so any caller holding a stale ListItem reference can detect it.
+        self._listGeneration += 1
         self.showPanelControl = kodigui.ManagedControlList(self, self.POSTERS_PANEL_ID, 5)
 
         hideFilterOptions = self.section.TYPE == 'photodirectory' or self.section.TYPE == 'collection'
@@ -1362,6 +1369,12 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         sectionType = self.section.TYPE
 
         updateUnwatchedAndProgress = False
+        # Remember the panel generation before we open any (modal) child window. If the
+        # panel gets rebuilt while we're away (e.g. a watchlist item auto-removed on full
+        # watch triggers doRefill via onReInit), `mli` below is backed by a freed ListItem
+        # and must not be touched - doing so hard-crashes Kodi (SIGSEGV in
+        # CGUIListItem::SetProperty).
+        listGeneration = self._listGeneration
 
         self.subOptionCache = {}
 
@@ -1414,6 +1427,11 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             return
 
         if not mli:
+            return
+
+        if self._listGeneration != listGeneration:
+            # Panel was rebuilt while the child window was open; `mli` is stale. The fresh
+            # panel already reflects current watched/progress state, so nothing to do.
             return
 
         if mli.dataSource and not mli.dataSource.exists():
