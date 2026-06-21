@@ -4017,7 +4017,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 control.reset()
 
             if focus is not None:
-                self.setFocusId(focus)
+                # `focus`/`lastSkip` are 0-based hub indices, NOT Kodi control IDs
+                # (hub controls are 400+index). focusFirstValidHub() does the
+                # conversion, verifies the target still has content, and falls back
+                # to the section list. Passing the raw index straight to setFocusId()
+                # targets a non-existent control and throws off the GUI thread, which
+                # takes the whole window down when the focused hub empties out on an
+                # update refresh - e.g. returning to the Watchlist after its last item
+                # was auto-removed as watched.
+                try:
+                    self.focusFirstValidHub(focus)
+                except Exception:
+                    util.ERROR("Home: failed to restore focus after hub cleanup")
         self.storeLastBG()
 
     def showHub(self, hub, items=None, is_home=False, reselect_pos=None, hub_index=None):
