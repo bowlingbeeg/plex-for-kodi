@@ -31,6 +31,7 @@ class AvailabilityCheckTask(WatchlistCheckBaseTask):
             return
 
         server = None
+        found = None
         try:
             if self.isCanceled():
                 return
@@ -64,14 +65,14 @@ class AvailabilityCheckTask(WatchlistCheckBaseTask):
                     # sort by quality
                     if self.media_type == "movie" and len(found) > 1:
                         found.sort(key=lambda item: int(item[1]["bitrate"]), reverse=True)
-
-                self.callback(found)
-                return
-            self.callback(None)
         except:
             util.ERROR()
+            found = None
         finally:
             del server
+
+        # always resolve the callback, otherwise the window's availability-checking state never settles
+        self.callback(found or None)
 
 
 class IsWatchlistedTask(WatchlistCheckBaseTask):
@@ -79,17 +80,26 @@ class IsWatchlistedTask(WatchlistCheckBaseTask):
         if self.isCanceled():
             return
 
+        is_wl = None
         try:
-            if self.isCanceled():
-                return
             is_wl = is_watchlisted(guid=self.guid, server=self.getServer())
-            self.callback(is_wl)
         except:
             util.ERROR()
 
+        # always resolve the callback; None = state unknown, keep the old one
+        self.callback(is_wl)
+
 
 def is_watchlisted(guid, server):
-    res = server.query("/library/metadata/{}/userState".format(guid))
+    """
+    Returns True/False for the item's watchlist state, None if the state couldn't be determined
+    (e.g. discover endpoint gateway timeout).
+    """
+    try:
+        res = server.query("/library/metadata/{}/userState".format(guid))
+    except Exception as e:
+        util.LOG("Watchlist: userState check for {} failed: {}", guid, repr(e))
+        return None
 
     # some etree foo to find the watchlisted state
     if res and res.get("size", 0):
@@ -128,12 +138,17 @@ def removeFromWatchlistBlind(guid, ref):
 
         g = GUIDToRatingKey(guid)
         if not is_watchlisted(g, server):
+            # False or None (state unknown, e.g. gateway timeout); don't touch the watchlist blindly
             return
 
         tries = 0
         while tries < 3:
             server.query("/actions/removeFromWatchlist", ratingKey=g, method="put")
-            if not is_watchlisted(g, server):
+            state = is_watchlisted(g, server)
+            if state is None:
+                util.LOG("Watchlist: Blind: Couldn't verify removal of {}", guid)
+                return
+            if not state:
                 break
             util.LOG("Watchlist: Blind: Item still watchlisted, retrying ({}/3)", tries + 1)
             util.MONITOR.waitForAbort(0.1)
@@ -244,7 +259,11 @@ class WatchlistUtilsMixin(object):
     def wl_auto_remove(self, ref):
         util.LOG("Watchlist: DEBUG: %s, %s, %s %s" % (ref.ratingKey, self.is_watchlisted, ref.isFullyWatched, util.getUserSetting('watchlist_auto_remove', True)))
         if self.is_watchlisted and ref.isFullyWatched and util.getUserSetting('watchlist_auto_remove', True):
-            self.removeFromWatchlist(ref)
+            # _modifyWatchlist returns the new watchlisted state; anything other than False means
+            # the removal couldn't be verified (e.g. gateway timeout)
+            if self.removeFromWatchlist(ref) is not False:
+                util.LOG("Watchlist: Couldn't auto-remove item {} from watchlist", ref.ratingKey)
+                return
             util.LOG("Watchlist: Item {} is fully watched, removed from watchlist", ref.ratingKey)
             util.showNotification(T(34077, "{} successfully removed from Watchlist").format(ref.defaultTitle),
                                   time_ms=3000, header=T(34000, "Watchlist"))
@@ -342,6 +361,11 @@ class WatchlistUtilsMixin(object):
             while tries < 3:
                 server.query("/actions/{}".format(method), ratingKey=g, method="put")
                 is_wl = is_watchlisted(g, server)
+                if is_wl is None:
+                    # couldn't verify the action (e.g. gateway timeout); don't claim success, don't keep retrying
+                    util.LOG("Watchlist: Couldn't verify action {} for {}", method, item.ratingKey)
+                    wl_action_failed = True
+                    break
                 if (is_wl and method == "addToWatchlist") or (not is_wl and method == "removeFromWatchlist"):
                     break
                 util.LOG("Watchlist: Action didn't succeed, retrying ({}/3)", tries + 1)
@@ -361,6 +385,7 @@ class WatchlistUtilsMixin(object):
             return method == "addToWatchlist"
         except exceptions.BadRequest:
             util.LOG("Watchlist action {} for {} failed", method, item.ratingKey)
+            return self.is_watchlisted
 
     @wl_wrap
     def addToWatchlist(self, item):
