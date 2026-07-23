@@ -671,6 +671,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
             controlID = self.getFocusId()
             self.idleTime = None
+            # user input means someone's actually watching
+            util.MONITOR.tv_standby = False
 
             lastAction = self._lastAction
             lastActionID = self._lastAction[0] if self._lastAction else None
@@ -2462,6 +2464,11 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         # go to next video immediately (post play or next episode on bingeMode)
         if self.handler.playlist and self.handler.playlist.hasNext():
+            if util.MONITOR.tv_standby:
+                util.DEBUG_LOG("{}: TV in standby, stopping instead of auto-advancing", context)
+                self.handler.endedManually = True
+                self.player.stop()
+                return True
             if self.bingeMode or self.skipPostPlay:
                 if not self.handler.queuingNext:
                     # skip final marker

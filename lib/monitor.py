@@ -11,6 +11,7 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         xbmc.Monitor.__init__(self, *args, **kwargs)
         signalsmixin.SignalsMixin.__init__(self)
         self.device_sleeping = False
+        self.tv_standby = False
         self.wait_interval = 0.1
         self.ignore_ssevent = False
         self._skin_reloading = False
@@ -106,7 +107,20 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
         elif sender == "xbmc" and method == "System.OnWake":
             self.device_sleeping = False
+            self.tv_standby = False
             self.trigger('system.wakeup')
+
+        elif sender == "xbmc" and method in ("Other.OnTVStandby", "Other.OnCECSourceDeactivated"):
+            # announced by p3i/CE Kodi when the TV sends a CEC standby or another
+            # CEC device becomes the active source; not available on stock Kodi
+            LOG("Monitor: TV/CEC display gone ({0})".format(method))
+            self.tv_standby = True
+            self.trigger('tv.standby')
+
+        elif sender == "xbmc" and method == "Other.OnCECSourceActivated":
+            if self.tv_standby:
+                LOG("Monitor: CEC source re-activated")
+            self.tv_standby = False
         elif sender == "xbmc" and method == "System.OnQuit":
             from .windows import windowutils
             LOG("OnQuit: Stopping playback")

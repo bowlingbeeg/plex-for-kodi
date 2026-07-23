@@ -488,6 +488,10 @@ class SeekPlayerHandler(BasePlayerHandler):
         if not self.playlist or self.stoppedManually or self.endedManually or (self.playlist and not hasNext):
             return False
 
+        if on_end and util.MONITOR.tv_standby:
+            util.DEBUG_LOG("SeekHandler: TV in standby, not auto-advancing playlist")
+            return False
+
         if hasNext:
             self.seeking = self.SEEK_PLAYLIST
 
@@ -981,6 +985,11 @@ class SeekPlayerHandler(BasePlayerHandler):
                 if self.seeking != self.SEEK_PLAYLIST and self.duration:
                     util.DEBUG_LOG("Player - played-threshold: {}%/{}%",
                                    int(self.videoPlayedFac * 100), int(self.playedThresholdPerc))
+                    if not (self.stoppedManually or self.endedManually):
+                        # the stop didn't come from our own UI (CEC TV-standby, JSON-RPC
+                        # remote, ...); show post-play, but don't auto-advance
+                        util.DEBUG_LOG("SeekHandler: external stop, disabling post-play auto-advance")
+                        self.stoppedManually = True
                     if self.videoWatched and self.next(on_end=True):
                         return
 
