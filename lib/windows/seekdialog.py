@@ -1222,6 +1222,16 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         except NotFound:
             util.DEBUG_LOG("PPI: Couldn't find session: {}", self.handler.sessionID)
+            try:
+                for s in currentVideo.server.sessions:
+                    util.DEBUG_LOG(
+                        "PPI: candidate session: id={} ratingKey={} sessionKey={} playbackId={}, "
+                        "wanted: id={} ratingKey={}",
+                        s.session and s.session.id, s.ratingKey, getattr(s, "sessionKey", None),
+                        getattr(getattr(s, "player", None), "playbackId", None),
+                        self.handler.sessionID, currentVideo.ratingKey)
+            except:
+                util.ERROR()
             self.setProperty('ppi.Status', 'Info not available (session not found)')
 
         except:
