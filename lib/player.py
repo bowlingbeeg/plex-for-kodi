@@ -7,6 +7,7 @@ import re
 import os
 import random
 import uuid
+from functools import wraps
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -2246,6 +2247,23 @@ class BGMPlayerTask(backgroundthread.Task):
             self.player.play(self.source, windowed=True)
 
 
+def consumeStaleTerminal(event):
+    """
+    Swallow the previous playback's terminal player event when it arrives after
+    _playVideo's stop fence has been lifted, so it isn't mistaken for the new item failing.
+    """
+    def wrap(fn):
+        @wraps(fn)
+        def inner(self, *args, **kwargs):
+            if self._pendingStaleStop:
+                self._pendingStaleStop = False
+                util.DEBUG_LOG('Player - ignoring stale {} event of the previous playback', event)
+                return
+            return fn(self, *args, **kwargs)
+        return inner
+    return wrap
+
+
 class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     STATE_STOPPED = "stopped"
     STATE_PLAYING = "playing"
@@ -2258,6 +2276,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         xbmc.Player.__init__(self, *args, **kwargs)
         signalsmixin.SignalsMixin.__init__(self)
         self.sessionID = None
+        self._pendingStaleStop = False
         self.handler = AudioPlayerHandler(self)
         self.isExternal = False
 
@@ -2283,6 +2302,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.currentTime = 0
         self.thread = None
         self.ignoreStopEvents = False
+        self._pendingStaleStop = False
         self.isExternal = False
         self.dontRequeueBGM = False
         self.lavSettingControl = None
@@ -2487,6 +2507,10 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         util.DEBUG_LOG('Playing URL(+{1}ms): {0}{2}', plexnetUtil.cleanToken(url), offset, bifURL and ' - indexed' or '')
 
         self.ignoreStopEvents = True
+        if self.isPlaying():
+            # Kodi delivers the stopped playback's terminal event on its own time; if it lands
+            # after the fence below is lifted, it must not be mistaken for the new item failing
+            self._pendingStaleStop = True
         self.stopAndWait()  # Stop before setting up the handler to prevent player events from causing havoc
         if self.handler and self.handler.queuingNext and util.addonSettings.consecutiveVideoPbWait:
             util.DEBUG_LOG(
@@ -2907,6 +2931,10 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         if not self.sessionID:
             return
         util.DEBUG_LOG('Player - STARTED')
+        if self._pendingStaleStop:
+            # the player event queue is ordered; the previous item's terminal event can't
+            # arrive after our start event anymore
+            self._pendingStaleStop = False
         self.trigger('playback.started')
 
         if not self.handler:
@@ -2954,6 +2982,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
         self.handler.onPlayBackResumed()
 
+    @consumeStaleTerminal('stop')
     def onPlayBackStopped(self):
         if not self.sessionID:
             return
@@ -2968,6 +2997,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
         self.handler.onPlayBackStopped()
 
+    @consumeStaleTerminal('ended')
     def onPlayBackEnded(self):
         if not self.sessionID:
             return
@@ -2994,6 +3024,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             return
         self.handler.onPlayBackSeek(time, offset)
 
+    @consumeStaleTerminal('error')
     def onPlayBackError(self):
         if not self._ignorePlaybackFailure:
             self.trigger('playback.failed')
