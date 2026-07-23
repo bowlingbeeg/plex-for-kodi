@@ -65,7 +65,8 @@ class EpisodesReloadTask(backgroundthread.Task):
             elif epLen > 1:
                 # fetch data for all episodes in one go
                 epMap = {str(ep.ratingKey): ep for ep, _ in self.episodes}
-                data = plexobjects.listItems(self.episodes[0][0].server, '/library/metadata/{0}'.format(",".join(list(e.ratingKey for e, _ in self.episodes))), return_data=True)
+                data = plexobjects.listItems(self.episodes[0][0].server, '/library/metadata/{0}'.format(",".join(list(e.ratingKey for e, _ in self.episodes))), return_data=True,
+                                             checkFiles=1, includeChapters=1, includeMarkers=1)
                 rl_cnt = 0
                 for d in data:
                     ep = epMap.get(d.attrib.get("ratingKey"), None)
