@@ -182,6 +182,26 @@ class LibrarySection(plexobjects.PlexObject):
         self._isMapped = False
         return self._isMapped
 
+    @property
+    def mappedPaths(self):
+        """The Kodi-side roots this section's locations map to, deduplicated."""
+        paths = []
+        for loc in self.locations:
+            map_path, pms_path = self.getMappedPath(loc)
+            if map_path and pms_path and map_path not in paths:
+                paths.append(map_path)
+        return paths
+
+    @property
+    def mappingBroken(self):
+        """True when any of this section's mapped roots was found unreachable. Never cached;
+        the probe and playback both update the state behind it.
+        """
+        for map_path in self.mappedPaths:
+            if pmm.isMappingBroken(self.server.name, map_path):
+                return True
+        return False
+
     def getAbsolutePath(self, key):
         if key == 'key':
             return '/library/sections/{0}/all'.format(self.key)

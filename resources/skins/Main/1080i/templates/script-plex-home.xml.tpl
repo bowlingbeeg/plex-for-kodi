@@ -87,13 +87,22 @@
                             <aspectratio>keep</aspectratio>
                         </control>
                         <control type="image">
-                            <visible>!String.IsEmpty(ListItem.Property(is.mapped))</visible>
+                            <visible>!String.IsEmpty(ListItem.Property(is.mapped)) + String.IsEmpty(ListItem.Property(is.mapped.broken))</visible>
                             <posx>230</posx>
                             <posy>0</posy>
                             <width>8</width>
                             <height>{{ vscale(8) }}</height>
                             <texture>script.plex/white-square-rounded-4r.png</texture>
                             <colordiffuse>FF666666</colordiffuse>
+                        </control>
+                        <control type="image">
+                            <visible>!String.IsEmpty(ListItem.Property(is.mapped.broken))</visible>
+                            <posx>230</posx>
+                            <posy>0</posy>
+                            <width>8</width>
+                            <height>{{ vscale(8) }}</height>
+                            <texture>script.plex/white-square-rounded-4r.png</texture>
+                            <colordiffuse>FFCC2222</colordiffuse>
                         </control>
                     </control>
 
@@ -192,13 +201,22 @@
                                 <aspectratio>keep</aspectratio>
                             </control>
                             <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.mapped))</visible>
+                                <visible>!String.IsEmpty(ListItem.Property(is.mapped)) + String.IsEmpty(ListItem.Property(is.mapped.broken))</visible>
                                 <posx>230</posx>
                                 <posy>0</posy>
                                 <width>8</width>
                                 <height>{{ vscale(8) }}</height>
                                 <texture>script.plex/white-square-rounded-4r.png</texture>
-                                <colordiffuse>AAFFFFFFF</colordiffuse>
+                                <colordiffuse>AAFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <visible>!String.IsEmpty(ListItem.Property(is.mapped.broken))</visible>
+                                <posx>230</posx>
+                                <posy>0</posy>
+                                <width>8</width>
+                                <height>{{ vscale(8) }}</height>
+                                <texture>script.plex/white-square-rounded-4r.png</texture>
+                                <colordiffuse>FFFF4444</colordiffuse>
                             </control>
                         </control>
                         <control type="group">

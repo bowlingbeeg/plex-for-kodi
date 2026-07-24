@@ -3233,3 +3233,15 @@ msgstr ""
 msgctxt "#35018"
 msgid "Shuffle All"
 msgstr ""
+
+msgctxt "#35019"
+msgid "Path mapping"
+msgstr ""
+
+msgctxt "#35020"
+msgid "Mapped path unavailable: {}"
+msgstr ""
+
+msgctxt "#35021"
+msgid "Mapped file missing, streaming from the server instead"
+msgstr ""

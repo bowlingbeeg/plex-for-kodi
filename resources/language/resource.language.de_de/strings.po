@@ -3591,3 +3591,15 @@ msgstr "Server-Verbindungen regelmäßig prüfen"
 msgctxt "#34101"
 msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
 msgstr "Erreichbarkeit der Server-Verbindungen alle 10 Minuten erneut prüfen, um Netzwerkänderungen zu erkennen (z.B. WLAN zu Mobilfunk). Nützlich auf mobilen Geräten. Standard: Aus"
+
+msgctxt "#35019"
+msgid "Path mapping"
+msgstr "Pfadzuordnung"
+
+msgctxt "#35020"
+msgid "Mapped path unavailable: {}"
+msgstr "Zugeordneter Pfad nicht erreichbar: {}"
+
+msgctxt "#35021"
+msgid "Mapped file missing, streaming from the server instead"
+msgstr "Zugeordnete Datei fehlt, es wird stattdessen vom Server gestreamt"

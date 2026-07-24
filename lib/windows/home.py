@@ -102,6 +102,29 @@ class SectionHubsTask(backgroundthread.Task):
             self.callback(self.section, hubs)
 
 
+class PathMappingProbeTask(backgroundthread.Task):
+    """Checks the Kodi-side roots of mapped libraries. Runs in the background because a
+    dead SMB/NFS share blocks for the full mount timeout, which would stall the section
+    list every time Home is drawn.
+    """
+    def setup(self, targets, callback):
+        self.targets = targets
+        self.callback = callback
+        return self
+
+    def run(self):
+        changed = False
+        for server_name, map_path in self.targets:
+            if self.isCanceled():
+                return
+
+            if pmm.verifyMapping(server_name, map_path, notify=True):
+                changed = True
+
+        if changed and not self.isCanceled():
+            self.callback()
+
+
 class UpdateHubTask(backgroundthread.Task):
     def setup(self, hub, callback, reselect_pos=None):
         self.hub = hub
@@ -255,6 +278,8 @@ class DiscoverHubsTask(backgroundthread.Task):
 class VirtualSection(object):
     locations = []
     isMapped = False
+    mappedPaths = []
+    mappingBroken = False
 
     @property
     def server(self):
@@ -3772,8 +3797,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 mli.setThumbnailImage('script.plex/home/type/playlists.png')
             elif section == watchlist_section:
                 mli.setThumbnailImage('script.plex/home/type/watchlist.png')
-            if pmm.mapping and show_pm_indicator:
-                mli.setBoolProperty('is.mapped', section.isMapped)
+            if pmm.mapping:
+                # a mapping that doesn't work is an error rather than decoration, so it shows
+                # even when the indicator setting is off
+                mli.setBoolProperty('is.mapped.broken', section.mappingBroken)
+                if show_pm_indicator:
+                    mli.setBoolProperty('is.mapped', section.isMapped)
             items.append(mli)
 
         self.bottomItem = len(items) - 1
@@ -3786,6 +3815,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.sectionList.reset()
         self.sectionList.addItems(items)
 
+        if pmm.mapping:
+            self.startPathMappingProbe(sections)
+
         if not focus_section:
             if items:
                 self.setFocusId(self.SECTION_LIST_ID)
@@ -3793,6 +3825,32 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 self.setFocusId(self.SERVER_BUTTON_ID)
         else:
             self.setFocusId(self.SECTION_LIST_ID)
+
+    def startPathMappingProbe(self, sections):
+        targets = []
+        for section in sections:
+            server_name = section.server and section.server.name
+            if not server_name:
+                continue
+
+            for map_path in section.mappedPaths:
+                if (server_name, map_path) not in targets:
+                    targets.append((server_name, map_path))
+
+        if not targets:
+            return
+
+        task = PathMappingProbeTask().setup(targets, self.pathMappingProbeCallback)
+        self.tasks.append(task)
+        backgroundthread.BGThreader.addTask(task)
+
+    def pathMappingProbeCallback(self):
+        with self.lock:
+            for mli in self.sectionList:
+                section = mli.dataSource
+                if section is None:
+                    continue
+                mli.setBoolProperty('is.mapped.broken', section.mappingBroken)
 
     def showHubs(self, section=None, update=False, force=False, reselect_pos_dict=None):
         # Single choke point for all hub drawing. The lock (RLock) makes every
