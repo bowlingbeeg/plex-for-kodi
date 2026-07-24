@@ -418,6 +418,11 @@ def refreshResources(force=False):
     gdm.DISCOVERY.discover()
     if util.LOCAL_MODE:
         util.LOG("[LOCAL] skipping plex.tv resource refresh")
+        # without the plex.tv resource response nothing else kicks reachability testing;
+        # do it ourselves so the server search can settle on a local connection
+        if force:
+            SERVERMANAGER.resetReachabilityState()
+        SERVERMANAGER.updateReachability(force, True)
     else:
         util.MANAGER.refreshResources(force)
     SERVERMANAGER.refreshManualConnections()
