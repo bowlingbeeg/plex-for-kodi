@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 import json
 
+import six.moves.urllib.parse
+
 from . import http
 from . import plexconnection
 from . import plexresource
@@ -375,13 +377,33 @@ class PlexServerManager(signalsmixin.SignalsMixin):
                 if conn['address'].endswith(":None"):
                     continue
 
+                address = conn['address']
+
                 # local mode only considers direct LAN connections; plex.direct needs public DNS
-                if util.LOCAL_MODE and (not conn['isLocal'] or ".plex.direct" in conn['address']):
+                if util.LOCAL_MODE and (not conn['isLocal'] or ".plex.direct" in address):
+                    if not conn['isLocal'] or ".plex.direct" not in address:
+                        continue
+
+                    # local plex.direct hostnames embed the LAN IP; synthesize a direct
+                    # connection from it, so servers that were never GDM-discovered and have
+                    # no manual IP (e.g. the server sits on another subnet - GDM broadcasts
+                    # don't cross those) still survive going local. Plain http, so servers
+                    # requiring secure connections won't accept it - same limitation as
+                    # manually added IPs.
+                    try:
+                        pUrl = six.moves.urllib.parse.urlparse(address)
+                        address = 'http://{0}:{1}'.format(util.parsePlexDirectHost(pUrl.hostname), pUrl.port)
+                        util.DEBUG_LOG("[LOCAL] synthesized {0} from {1}", address, conn['address'])
+                    except:
+                        continue
+
+                # synthesized connections can collide with a stored plain one (and vice versa)
+                if any(c.address == address for c in server.connections):
                     continue
 
                 isFallback = hasSecureConn and conn['address'][:5] != "https" and not util.LOCAL_OVER_SECURE
                 sources = plexconnection.PlexConnection.SOURCE_BY_VAL[conn['sources']]
-                connection = plexconnection.PlexConnection(sources, conn['address'], conn['isLocal'], conn['token'], isFallback)
+                connection = plexconnection.PlexConnection(sources, address, conn['isLocal'], conn['token'], isFallback)
 
                 # Keep the secure connection on top
                 if connection.isSecure and not util.LOCAL_OVER_SECURE:
