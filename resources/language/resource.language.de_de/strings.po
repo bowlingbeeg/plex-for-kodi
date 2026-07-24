@@ -3603,3 +3603,7 @@ msgstr "Zugeordneter Pfad nicht erreichbar: {}"
 msgctxt "#35021"
 msgid "Mapped file missing, streaming from the server instead"
 msgstr "Zugeordnete Datei fehlt, es wird stattdessen vom Server gestreamt"
+
+msgctxt "#35022"
+msgid "Path mapping unavailable for: {}"
+msgstr "Pfadzuordnung nicht verfügbar für: {}"

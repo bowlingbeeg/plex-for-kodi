@@ -99,14 +99,25 @@ class PathMappingManager(object):
     def isMappingBroken(self, server_name, map_path):
         return self.BROKEN_MAP.get(server_name, {}).get(map_path, False)
 
+    def claimNotification(self, server_name, map_path, kind):
+        """True the first time a given failure needs announcing. Callers that can batch
+        several roots claim them all and emit a single popup; Kodi queues notifications,
+        so one per root would keep the screen covered for 5s * number of libraries.
+        """
+        key = (server_name, map_path, kind)
+        if key in self.NOTIFIED:
+            return False
+        self.NOTIFIED.add(key)
+        return True
+
     def notifyOnce(self, server_name, map_path, kind, message):
         """Notify at most once per mapped root per session and cause, so a multi-part
         title can't produce a burst of identical popups.
         """
-        key = (server_name, map_path, kind)
-        if key in self.NOTIFIED:
-            return
-        self.NOTIFIED.add(key)
+        if self.claimNotification(server_name, map_path, kind):
+            showNotification(message, time_ms=5000, header=T(35019, "Path mapping"))
+
+    def notify(self, message):
         showNotification(message, time_ms=5000, header=T(35019, "Path mapping"))
 
     def verifyMapping(self, server_name, map_path, notify=False):

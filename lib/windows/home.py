@@ -32,6 +32,7 @@ from .mixins.common import CommonMixin
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
 REACHABILITY_CHECK_INTERVAL = 600  # 10 Minutes
+PATH_MAPPING_PROBE_INTERVAL = 60  # 1 Minute
 HUB_PAGE_SIZE = 10
 
 MOVE_SET = frozenset(
@@ -114,14 +115,28 @@ class PathMappingProbeTask(backgroundthread.Task):
 
     def run(self):
         changed = False
-        for server_name, map_path in self.targets:
+        announce = []
+        for server_name, map_path, title in self.targets:
             if self.isCanceled():
                 return
 
-            if pmm.verifyMapping(server_name, map_path, notify=True):
+            if pmm.verifyMapping(server_name, map_path):
                 changed = True
 
-        if changed and not self.isCanceled():
+            if (pmm.isMappingBroken(server_name, map_path)
+                    and pmm.claimNotification(server_name, map_path, "root")):
+                # commas would be eaten by the Notification() builtin's argument split
+                announce.append((title or map_path).replace(",", " "))
+
+        if self.isCanceled():
+            return
+
+        if announce:
+            # one popup for the whole run: Kodi queues notifications, so one per library
+            # would keep the screen covered for 5s * number of mapped libraries
+            pmm.notify(T(35022, "Path mapping unavailable for: {}").format(" / ".join(announce)))
+
+        if changed:
             self.callback()
 
 
@@ -613,6 +628,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.go_root = False
         self.kodi_exiting = False
         self._lastReachabilityCheck = 0
+        self._lastPathMappingProbe = 0
+        self._pathMappingTargets = []
 
         from . import windowutils
         windowutils.HOME = self
@@ -2339,6 +2356,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self._lastReachabilityCheck = now
             plexapp.SERVERMANAGER.periodicReachabilityCheck()
 
+        # re-probe mapped roots, otherwise a share that comes back keeps its red dot until
+        # the next full home refresh
+        if (not playing and self._pathMappingTargets and
+                now - self._lastPathMappingProbe > PATH_MAPPING_PROBE_INTERVAL):
+            self.startPathMappingProbe()
+
     def doClose(self, force=True):
         util.DEBUG_LOG("Home: doClose called, triggering close.windows")
         plexapp.util.APP.trigger('close.windows')
@@ -3826,21 +3849,27 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         else:
             self.setFocusId(self.SECTION_LIST_ID)
 
-    def startPathMappingProbe(self, sections):
-        targets = []
-        for section in sections:
-            server_name = section.server and section.server.name
-            if not server_name:
-                continue
+    def startPathMappingProbe(self, sections=None):
+        if sections is not None:
+            targets = []
+            seen = set()
+            for section in sections:
+                server_name = section.server and section.server.name
+                if not server_name:
+                    continue
 
-            for map_path in section.mappedPaths:
-                if (server_name, map_path) not in targets:
-                    targets.append((server_name, map_path))
+                for map_path in section.mappedPaths:
+                    if (server_name, map_path) in seen:
+                        continue
+                    seen.add((server_name, map_path))
+                    targets.append((server_name, map_path, section.title))
+            self._pathMappingTargets = targets
 
-        if not targets:
+        if not self._pathMappingTargets:
             return
 
-        task = PathMappingProbeTask().setup(targets, self.pathMappingProbeCallback)
+        self._lastPathMappingProbe = time.time()
+        task = PathMappingProbeTask().setup(self._pathMappingTargets, self.pathMappingProbeCallback)
         self.tasks.append(task)
         backgroundthread.BGThreader.addTask(task)
 

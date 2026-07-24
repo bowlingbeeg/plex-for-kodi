@@ -3245,3 +3245,7 @@ msgstr ""
 msgctxt "#35021"
 msgid "Mapped file missing, streaming from the server instead"
 msgstr ""
+
+msgctxt "#35022"
+msgid "Path mapping unavailable for: {}"
+msgstr ""
