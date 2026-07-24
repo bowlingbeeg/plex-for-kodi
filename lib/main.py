@@ -103,6 +103,11 @@ def realExit():
 
 def signout():
     util.setSetting('auth.token', '')
+    # signing out always leaves local mode - staying in it would bounce us straight
+    # back into an account-less local session, making the sign-out a visual no-op
+    if util.getSetting('local_mode', False):
+        util.setSetting('local_mode', False)
+        plexapp.util.LOCAL_MODE = False
     util.DEBUG_LOG('Main: Signing out...')
     plexapp.ACCOUNT.signOut()
 
