@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.11.6-beta1"
+       version="1.11.10-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,8 +34,11 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Home: harden hub-cleanup focus restore against invalid control id
-- Library: fix hard crash returning to Watchlist after a movie is watched
+- Watchlist: Gracefully handle discover endpoint failures (e.g. 504 gateway timeout)
+- Player: don't auto-play the next episode when the TV is off
+- Episodes: don't wipe chapters/markers on batch episode reload
+- SeekDialog: log server session candidates when PPI lookup fails
+- Player: don't mistake the previous item's late stop event for a playback failure
         </news>
         <assets>
             <icon>icon2.png</icon>
