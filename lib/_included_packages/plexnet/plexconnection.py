@@ -311,7 +311,12 @@ class PlexConnection(object):
             # for this server have one. That will let us use a plex.tv token for
             # something like a manually configured connection.
 
-            token = self.token or server.getToken()
+            if util.LOCAL_MODE:
+                # per-user identity in local mode lives in the account token (see
+                # PlexServer.getToken); the per-connection token is the fallback
+                token = server.getToken() or self.token
+            else:
+                token = self.token or server.getToken()
 
             if token:
                 url = http.addUrlParam(url, "X-Plex-Token=" + token)
@@ -319,7 +324,10 @@ class PlexConnection(object):
         return url
 
     def simpleBuildUrl(self, server, path):
-        token = (self.token or server.getToken())
+        if util.LOCAL_MODE:
+            token = server.getToken() or self.token
+        else:
+            token = (self.token or server.getToken())
         param = ''
         if token:
             param = '&X-Plex-Token={0}'.format(token)

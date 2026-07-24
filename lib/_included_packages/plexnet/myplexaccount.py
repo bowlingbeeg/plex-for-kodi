@@ -563,6 +563,10 @@ class MyPlexAccount(object):
                     self.saveState()
 
                 self.validateToken(token, True)
+                # the transport block answers the validation synchronously, so
+                # onAccountResponse has already consumed switchUser; restore it -
+                # callers check it to detect an actual switch
+                self.switchUser = True
                 return True
         else:
             # build path and post to myplex to switch the user
