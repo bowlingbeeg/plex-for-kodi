@@ -216,6 +216,14 @@ class PlexConnection(object):
         self.getScore(True)
 
     def testReachability(self, server, allowFallback=False):
+        # local mode: never test (and thereby never activate) non-LAN or plex.direct connections
+        if util.LOCAL_MODE and (not self.isLocal or ".plex.direct" in self.address):
+            if self.state == self.STATE_REACHABLE:
+                self.state = self.STATE_UNKNOWN
+            if server.activeConnection is self:
+                server.activeConnection = None
+            return False
+
         # Check if we will allow the connection test. If this is a fallback connection,
         # then we will defer it until we "allowFallback" (test insecure connections
         # after secure tests have completed and failed). Insecure connections will be

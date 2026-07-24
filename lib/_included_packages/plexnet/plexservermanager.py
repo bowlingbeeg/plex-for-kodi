@@ -375,6 +375,10 @@ class PlexServerManager(signalsmixin.SignalsMixin):
                 if conn['address'].endswith(":None"):
                     continue
 
+                # local mode only considers direct LAN connections; plex.direct needs public DNS
+                if util.LOCAL_MODE and (not conn['isLocal'] or ".plex.direct" in conn['address']):
+                    continue
+
                 isFallback = hasSecureConn and conn['address'][:5] != "https" and not util.LOCAL_OVER_SECURE
                 sources = plexconnection.PlexConnection.SOURCE_BY_VAL[conn['sources']]
                 connection = plexconnection.PlexConnection(sources, conn['address'], conn['isLocal'], conn['token'], isFallback)
@@ -386,6 +390,10 @@ class PlexServerManager(signalsmixin.SignalsMixin):
                     server.connections.insert(0, connection)
                 else:
                     server.connections.append(connection)
+
+            if util.LOCAL_MODE and not server.connections:
+                util.DEBUG_LOG("[LOCAL] skipping server {0} (no local connections)", repr(server.name))
+                continue
 
             self.serversByUuid[server.uuid] = server
 
@@ -662,6 +670,8 @@ class PlexServerManager(signalsmixin.SignalsMixin):
             context.address = conn.connection
             context.proto = proto
             context.port = port
+            context.token = conn.token
+            context.name = conn.name
             util.APP.startRequest(request, context)
 
     def onManualConnectionsResponse(self, request, response, context):
@@ -674,12 +684,13 @@ class PlexServerManager(signalsmixin.SignalsMixin):
             util.DEBUG_LOG("Received manual connection response for {0}", serverAddress)
 
             machineID = data.attrib.get('machineIdentifier')
-            name = context.address
+            name = context.name or context.address
             if not name or not machineID:
                 return
 
             # TODO(rob): Do we NOT want to consider manual connections local?
-            conn = plexconnection.PlexConnection(plexresource.ResourceConnection.SOURCE_MANUAL, serverAddress, True, None)
+            conn = plexconnection.PlexConnection(plexresource.ResourceConnection.SOURCE_MANUAL, serverAddress, True,
+                                                 context.token)
             server = plexserver.createPlexServerForConnection(conn)
             server.uuid = machineID
             server.name = name
