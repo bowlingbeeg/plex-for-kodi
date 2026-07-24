@@ -4455,6 +4455,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 key=lambda x: (x.owned and '0' or '1') + x.name.lower()
             )
 
+            if plexapp.util.LOCAL_MODE:
+                # local mode can only ever use servers with a plain LAN connection
+                servers = [s for s in servers if s.hasLocalModeConnection()]
+
             items = []
             for s in servers:
                 item = ServerListItem(s.name, not s.owned and s.owner or '', data_source=s)
