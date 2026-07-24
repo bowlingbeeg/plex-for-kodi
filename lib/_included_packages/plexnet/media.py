@@ -340,13 +340,14 @@ class Role(MediaTag):
             util.DEBUG_LOG('Failed to fetch actor details from local PMS for {0}: {1}'.format(self.tag, e))
 
         # If local PMS didn't yield a tagKey (actor not in library), resolve via Discover people search
-        if not tag_key:
+        if not tag_key and not util.LOCAL_MODE:
             tag_key = self._resolveTagKeyViaDiscover(self.tag)
             if tag_key:
                 result['tagKey'] = tag_key
 
         # If we have a tagKey and no biography yet, try the online metadata provider
-        if tag_key and not result.get('summary'):
+        # (never in local mode; these use requests directly and bypass the transport block)
+        if tag_key and not result.get('summary') and not util.LOCAL_MODE:
             try:
                 # Query the metadata provider for rich actor details
                 # The tagKey is the actor's GUID on plex.tv
@@ -408,7 +409,7 @@ class Role(MediaTag):
         Resolve an actor's tagKey via Plex Discover people search.
         Returns the tagKey of the highest-score result, or None.
         """
-        if not name:
+        if not name or util.LOCAL_MODE:
             return None
         try:
             from . import plexapp
@@ -613,6 +614,9 @@ class Role(MediaTag):
         tag_key = getattr(self, 'tagKey', None)
         if not tag_key:
             util.DEBUG_LOG('getDiscoverCredits: No tagKey available for {0}'.format(self.tag))
+            return []
+
+        if util.LOCAL_MODE:
             return []
 
         try:
