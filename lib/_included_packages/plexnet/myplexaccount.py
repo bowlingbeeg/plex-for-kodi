@@ -50,6 +50,10 @@ class MyPlexAccount(object):
         self.switchUser = False
         self.forceResourceRefresh = False
 
+        # local mode: the current user's per-server access tokens ({machineIdentifier: token}),
+        # loaded from the LocalUsers registry on setLocal()/local user switches
+        self.serverTokens = {}
+
         self.adminHasPlexPass = False
 
         self.lastHomeUserUpdate = None
@@ -78,6 +82,7 @@ class MyPlexAccount(object):
         self.isOffline = True
         self.isSignedIn = False
         self.isAuthenticated = False
+        self.serverTokens = self.loadLocalUsers().get(str(self.ID), {}).get('serverTokens', {})
 
         # consider a single, unprotected user authenticated
         if not self.isProtected:
@@ -96,7 +101,7 @@ class MyPlexAccount(object):
     def saveLocalUsers(self, localUsers):
         util.INTERFACE.setRegistry("LocalUsers", json.dumps(localUsers), "myplex")
 
-    def cacheLocalUser(self, userId, token=None, pin=None, thumb=None):
+    def cacheLocalUser(self, userId, token=None, pin=None, thumb=None, serverTokens=None):
         if not userId:
             return
         localUsers = self.loadLocalUsers()
@@ -107,8 +112,36 @@ class MyPlexAccount(object):
                 user['pinHash'] = hashlib.sha256((pin + token).encode('utf-8')).hexdigest()
         if thumb:
             user['thumb'] = thumb
+        if serverTokens:
+            user['serverTokens'] = serverTokens
         localUsers[str(userId)] = user
         self.saveLocalUsers(localUsers)
+
+    def fetchServerTokens(self, token):
+        """
+        While online, resolve a user's plex.tv token into their per-server access tokens
+        ({machineIdentifier: accessToken}). The PMS validates access tokens against its own
+        database, so they keep working in local mode - unlike plex.tv account tokens, which
+        the transcoder rejects with a bare 400 for managed users.
+        """
+        serverTokens = {}
+        try:
+            import requests
+
+            headers = util.getPlexHeaders()
+            headers['X-Plex-Token'] = token
+            r = requests.get('https://plex.tv/api/resources?includeHttps=1', headers=headers, timeout=10)
+            data = ElementTree.fromstring(r.content)
+            for device in data.findall('Device'):
+                if 'server' not in (device.attrib.get('provides') or ''):
+                    continue
+                cid = device.attrib.get('clientIdentifier')
+                accessToken = device.attrib.get('accessToken')
+                if cid and accessToken:
+                    serverTokens[cid] = accessToken
+        except:
+            util.WARN_LOG("Local mode: couldn't fetch server access tokens")
+        return serverTokens
 
     def harvestLocalUsers(self):
         """
@@ -121,7 +154,8 @@ class MyPlexAccount(object):
             return
 
         self.cacheLocalUser(self.ID, token=self.authToken, pin=None,
-                            thumb=self.downloadAvatar(self.ID, self.thumb))
+                            thumb=self.downloadAvatar(self.ID, self.thumb),
+                            serverTokens=self.fetchServerTokens(self.authToken))
 
         for user in self.homeUsers:
             if user.id == self.ID:
@@ -141,7 +175,8 @@ class MyPlexAccount(object):
                 data = ElementTree.fromstring(res)
                 token = data.attrib.get('authenticationToken')
                 if token:
-                    self.cacheLocalUser(user.id, token=token)
+                    self.cacheLocalUser(user.id, token=token,
+                                        serverTokens=self.fetchServerTokens(token))
                     util.DEBUG_LOG("Local mode: harvested token for home user {0}", user.id)
             except:
                 util.WARN_LOG("Local mode: couldn't harvest token for home user {0}", user.id)
@@ -426,6 +461,7 @@ class MyPlexAccount(object):
 
         # Clear harvested local mode user tokens
         util.INTERFACE.clearRegistry("LocalUsers", "myplex")
+        self.serverTokens = {}
 
         # Remove all saved servers
         plexapp.SERVERMANAGER.clearServers()
@@ -549,6 +585,7 @@ class MyPlexAccount(object):
             if granted:
                 util.DEBUG_LOG("OFFLINE/LOCAL access granted for {0}", userId)
                 self.isAuthenticated = True
+                self.serverTokens = localUser.get('serverTokens', {})
 
                 if localUser.get('token') and userId != self.ID and homeUser is not None:
                     # real switch: adopt the harvested identity/token; the PMS validates home user
@@ -585,7 +622,8 @@ class MyPlexAccount(object):
             if data.attrib.get('authenticationToken'):
                 self.isAuthenticated = True
                 # keep the per-user token/PIN cache fresh for local mode
-                self.cacheLocalUser(userId, token=data.attrib.get('authenticationToken'), pin=pin or None)
+                self.cacheLocalUser(userId, token=data.attrib.get('authenticationToken'), pin=pin or None,
+                                    serverTokens=self.fetchServerTokens(data.attrib.get('authenticationToken')))
                 # validate the token (trigger change:user) on user change or channel startup
                 if userId != self.ID or not locks.LOCKS.isLocked("idleLock"):
                     self.revalidatePlexPass = True

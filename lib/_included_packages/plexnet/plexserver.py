@@ -392,10 +392,16 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
         return False
 
     def getToken(self):
-        # local mode: per-user identity comes from the (possibly harvested) account token;
-        # the stored connection tokens belong to whoever last fetched the plex.tv resources
-        if util.LOCAL_MODE and util.ACCOUNT and util.ACCOUNT.authToken:
-            return util.ACCOUNT.authToken
+        # local mode: per-user identity comes from the harvested per-server access token
+        # (the PMS validates those against its own DB; its transcoder rejects plex.tv
+        # account tokens of managed users), falling back to the account token; the stored
+        # connection tokens belong to whoever last fetched the plex.tv resources
+        if util.LOCAL_MODE and util.ACCOUNT:
+            token = (util.ACCOUNT.serverTokens or {}).get(self.uuid)
+            if token:
+                return token
+            if util.ACCOUNT.authToken:
+                return util.ACCOUNT.authToken
 
         # It's dangerous to use for each here, because it may reset the index
         # on self.connections when something else was in the middle of an iteration.
