@@ -10,6 +10,7 @@ import platform
 import uuid
 import threading
 import six
+import six.moves.urllib.parse
 import math
 import socket
 from copy import copy
@@ -87,6 +88,26 @@ USE_CERT_BUNDLE = False
 
 SKIP_HOST_CHECK = {}
 NO_HOST_CHECK = False
+
+# Explicit local-only mode ("Go local"): user opted out of any plex.tv/provider traffic.
+# Distinct from MyPlexAccount.isOffline, which is the degraded state when plex.tv is unreachable.
+LOCAL_MODE = False
+LOCAL_MODE_BLOCKED_HOSTS = ("plex.tv", "node.plexapp.com")
+
+
+def urlBlockedInLocalMode(url):
+    if not LOCAL_MODE:
+        return False
+
+    try:
+        host = six.moves.urllib.parse.urlparse(url).hostname or ""
+    except (ValueError, AttributeError):
+        return False
+
+    for blocked in LOCAL_MODE_BLOCKED_HOSTS:
+        if host == blocked or host.endswith("." + blocked):
+            return True
+    return False
 
 INTERFACE = None
 TIMER = None

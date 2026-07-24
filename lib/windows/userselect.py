@@ -105,7 +105,8 @@ class UserSelectWindow(kodigui.BaseWindow):
             items = []
             selectIndex = None
             for idx, user in enumerate(users):
-                mli = kodigui.ManagedListItem(user.title, user.title[0].upper(), thumbnailImage=user.thumb,
+                thumb = plexapp.ACCOUNT.safeUserThumb(user.id, thumb=user.thumb)
+                mli = kodigui.ManagedListItem(user.title, user.title[0].upper(), thumbnailImage=thumb,
                                               data_source=user)
                 mli.setProperty('back.image', user.id)
                 mli.setProperty('pin', user.title)

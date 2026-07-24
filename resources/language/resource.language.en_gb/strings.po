@@ -3235,17 +3235,77 @@ msgid "Shuffle All"
 msgstr ""
 
 msgctxt "#35019"
-msgid "Path mapping"
+msgid "Go local"
 msgstr ""
 
 msgctxt "#35020"
-msgid "Mapped path unavailable: {}"
+msgid "Go online"
 msgstr ""
 
 msgctxt "#35021"
-msgid "Mapped file missing, streaming from the server instead"
+msgid "Local mode (no plex.tv)"
 msgstr ""
 
 msgctxt "#35022"
+msgid "Use a local server"
+msgstr ""
+
+msgctxt "#35023"
+msgid "Local server IP or hostname"
+msgstr ""
+
+msgctxt "#35024"
+msgid "Local server port"
+msgstr ""
+
+msgctxt "#35025"
+msgid "Plex token (optional)"
+msgstr ""
+
+msgctxt "#35026"
+msgid "Could not reach a Plex Media Server at {0}."
+msgstr ""
+
+msgctxt "#35027"
+msgid "Authentication required"
+msgstr ""
+
+msgctxt "#35028"
+msgid "The server requires authentication. Enter a Plex token for it, or add this device's network to the server's \"List of IP addresses and networks that are allowed without auth\" setting."
+msgstr ""
+
+msgctxt "#35029"
+msgid "Only talk to local Plex Media Servers and never contact plex.tv. Best enabled via \"Go local\" in the user menu, which prepares local user switching while plex.tv is still reachable. Watchlist, Discover and other plex.tv-based features are disabled. Takes full effect after a restart of the addon."
+msgstr ""
+
+msgctxt "#35030"
+msgid "No local server found"
+msgstr ""
+
+msgctxt "#35031"
+msgid "No local Plex Media Server was reachable. Add one by IP address?"
+msgstr ""
+
+msgctxt "#35032"
+msgid "Try again"
+msgstr ""
+
+msgctxt "#35033"
+msgid "Add anyway"
+msgstr ""
+
+msgctxt "#35034"
+msgid "Path mapping"
+msgstr ""
+
+msgctxt "#35035"
+msgid "Mapped path unavailable: {}"
+msgstr ""
+
+msgctxt "#35036"
+msgid "Mapped file missing, streaming from the server instead"
+msgstr ""
+
+msgctxt "#35037"
 msgid "Path mapping unavailable for: {}"
 msgstr ""

@@ -436,6 +436,10 @@ class PersonWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             except Exception as e:
                 util.DEBUG_LOG('PersonWindow: Local open failed for {0}: {1}', item.guid, e)
 
+        if pnUtil.LOCAL_MODE:
+            util.DEBUG_LOG('PersonWindow: Not opening discover item in local mode')
+            return
+
         discover_server = pnUtil.SERVERMANAGER.getDiscoverServer()
         if not discover_server:
             util.DEBUG_LOG('PersonWindow: No discover server available')

@@ -3593,17 +3593,77 @@ msgid "Re-test server connection reachability every 10 minutes to detect network
 msgstr "Erreichbarkeit der Server-Verbindungen alle 10 Minuten erneut prüfen, um Netzwerkänderungen zu erkennen (z.B. WLAN zu Mobilfunk). Nützlich auf mobilen Geräten. Standard: Aus"
 
 msgctxt "#35019"
+msgid "Go local"
+msgstr "Lokal gehen"
+
+msgctxt "#35020"
+msgid "Go online"
+msgstr "Online gehen"
+
+msgctxt "#35021"
+msgid "Local mode (no plex.tv)"
+msgstr "Lokaler Modus (ohne plex.tv)"
+
+msgctxt "#35022"
+msgid "Use a local server"
+msgstr "Lokalen Server verwenden"
+
+msgctxt "#35023"
+msgid "Local server IP or hostname"
+msgstr "IP oder Hostname des lokalen Servers"
+
+msgctxt "#35024"
+msgid "Local server port"
+msgstr "Port des lokalen Servers"
+
+msgctxt "#35025"
+msgid "Plex token (optional)"
+msgstr "Plex-Token (optional)"
+
+msgctxt "#35026"
+msgid "Could not reach a Plex Media Server at {0}."
+msgstr "Unter {0} wurde kein Plex Media Server gefunden."
+
+msgctxt "#35027"
+msgid "Authentication required"
+msgstr "Authentifizierung erforderlich"
+
+msgctxt "#35028"
+msgid "The server requires authentication. Enter a Plex token for it, or add this device's network to the server's \"List of IP addresses and networks that are allowed without auth\" setting."
+msgstr "Der Server erfordert Authentifizierung. Bitte einen Plex-Token angeben oder das Netzwerk dieses Geräts in der Server-Einstellung \"Liste der IP-Adressen und Netzwerke, die ohne Authentifizierung erlaubt sind\" eintragen."
+
+msgctxt "#35029"
+msgid "Only talk to local Plex Media Servers and never contact plex.tv. Best enabled via \"Go local\" in the user menu, which prepares local user switching while plex.tv is still reachable. Watchlist, Discover and other plex.tv-based features are disabled. Takes full effect after a restart of the addon."
+msgstr "Kommuniziert ausschließlich mit lokalen Plex Media Servern und kontaktiert plex.tv nie. Am besten über \"Lokal gehen\" im Benutzermenü aktivieren; dies bereitet den lokalen Benutzerwechsel vor, solange plex.tv noch erreichbar ist. Watchlist, Discover und andere plex.tv-Funktionen sind deaktiviert. Wird nach einem Neustart des Addons vollständig wirksam."
+
+msgctxt "#35030"
+msgid "No local server found"
+msgstr "Kein lokaler Server gefunden"
+
+msgctxt "#35031"
+msgid "No local Plex Media Server was reachable. Add one by IP address?"
+msgstr "Es war kein lokaler Plex Media Server erreichbar. Einen per IP-Adresse hinzufügen?"
+
+msgctxt "#35032"
+msgid "Try again"
+msgstr "Erneut versuchen"
+
+msgctxt "#35033"
+msgid "Add anyway"
+msgstr "Trotzdem hinzufügen"
+
+msgctxt "#35034"
 msgid "Path mapping"
 msgstr "Pfadzuordnung"
 
-msgctxt "#35020"
+msgctxt "#35035"
 msgid "Mapped path unavailable: {}"
 msgstr "Zugeordneter Pfad nicht erreichbar: {}"
 
-msgctxt "#35021"
+msgctxt "#35036"
 msgid "Mapped file missing, streaming from the server instead"
 msgstr "Zugeordnete Datei fehlt, es wird stattdessen vom Server gestreamt"
 
-msgctxt "#35022"
+msgctxt "#35037"
 msgid "Path mapping unavailable for: {}"
 msgstr "Pfadzuordnung nicht verfügbar für: {}"

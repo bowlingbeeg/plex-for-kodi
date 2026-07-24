@@ -115,10 +115,10 @@ class PathMappingManager(object):
         title can't produce a burst of identical popups.
         """
         if self.claimNotification(server_name, map_path, kind):
-            showNotification(message, time_ms=5000, header=T(35019, "Path mapping"))
+            showNotification(message, time_ms=5000, header=T(35034, "Path mapping"))
 
     def notify(self, message):
-        showNotification(message, time_ms=5000, header=T(35019, "Path mapping"))
+        showNotification(message, time_ms=5000, header=T(35034, "Path mapping"))
 
     def verifyMapping(self, server_name, map_path, notify=False):
         """Stat a mapped root. Blocks for the full mount timeout on a dead network share,
@@ -133,7 +133,7 @@ class PathMappingManager(object):
         changed = self.markMappingState(server_name, map_path, works)
         if notify and not works:
             self.notifyOnce(server_name, map_path, "root",
-                            T(35020, "Mapped path unavailable: {}").format(map_path))
+                            T(35035, "Mapped path unavailable: {}").format(map_path))
         return changed
 
     def reportMappedFileMissing(self, server_name, map_path):
@@ -148,7 +148,7 @@ class PathMappingManager(object):
         changed = self.verifyMapping(server_name, map_path, notify=True)
         if not self.isMappingBroken(server_name, map_path):
             self.notifyOnce(server_name, map_path, "file",
-                            T(35021, "Mapped file missing, streaming from the server instead"))
+                            T(35036, "Mapped file missing, streaming from the server instead"))
         return changed
 
     def deletePathMapping(self, target, server=None, save=True):

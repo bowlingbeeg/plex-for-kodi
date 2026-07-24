@@ -379,7 +379,30 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
 
         return url.startswith(schemeAndHost)
 
+    def hasLocalModeConnection(self):
+        # whether this server is usable in local mode: only plain LAN connections count,
+        # plex.direct hostnames need public DNS
+        for i in range(len(self.connections)):
+            try:
+                conn = self.connections[i]
+            except IndexError:
+                continue
+            if conn.isLocal and ".plex.direct" not in conn.address:
+                return True
+        return False
+
     def getToken(self):
+        # local mode: per-user identity comes from the harvested per-server access token
+        # (the PMS validates those against its own DB; its transcoder rejects plex.tv
+        # account tokens of managed users), falling back to the account token; the stored
+        # connection tokens belong to whoever last fetched the plex.tv resources
+        if util.LOCAL_MODE and util.ACCOUNT:
+            token = (util.ACCOUNT.serverTokens or {}).get(self.uuid)
+            if token:
+                return token
+            if util.ACCOUNT.authToken:
+                return util.ACCOUNT.authToken
+
         # It's dangerous to use for each here, because it may reset the index
         # on self.connections when something else was in the middle of an iteration.
 

@@ -126,7 +126,7 @@ def GUIDToRatingKey(guid):
 
 
 def removeFromWatchlistBlind(guid, ref):
-    if not util.getUserSetting("use_watchlist", True):
+    if not util.getUserSetting("use_watchlist", True) or pnUtil.ACCOUNT.isOffline:
         return
 
     util.DEBUG_LOG("Watchlist: Blind: Trying to blindly remove {}", guid)
@@ -189,7 +189,8 @@ class WatchlistUtilsMixin(object):
         self.wl_item_children = []
 
     def watchlist_setup(self, item):
-        self.wl_enabled = util.getUserSetting("use_watchlist", True) and item.guid and item.guid.startswith("plex://")
+        self.wl_enabled = util.getUserSetting("use_watchlist", True) and not pnUtil.ACCOUNT.isOffline \
+            and item.guid and item.guid.startswith("plex://")
         self.wl_ref = GUIDToRatingKey(item.guid)
         self.setBoolProperty("watchlist_enabled", self.wl_enabled)
 
