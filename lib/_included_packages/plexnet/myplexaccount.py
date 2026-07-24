@@ -153,33 +153,51 @@ class MyPlexAccount(object):
         if self.isOffline or not self.isSignedIn:
             return
 
-        self.cacheLocalUser(self.ID, token=self.authToken, pin=None,
-                            thumb=self.downloadAvatar(self.ID, self.thumb),
-                            serverTokens=self.fetchServerTokens(self.authToken))
+        import threading
 
-        for user in self.homeUsers:
+        # collect per-user data in parallel (avatar + switch-token + server access tokens
+        # each cost a full plex.tv round trip; doing 3 x users of them sequentially made
+        # "Go local" take ages); the registry writes happen serialized below, as
+        # cacheLocalUser read-modify-writes the whole LocalUsers blob
+        results = {}
+
+        def harvest(user):
+            entry = {'thumb': self.downloadAvatar(user.id, user.thumb)}
+
             if user.id == self.ID:
-                continue
+                entry['token'] = self.authToken
+                entry['serverTokens'] = self.fetchServerTokens(self.authToken)
+            elif not user.isProtected:
+                try:
+                    path = '/api/home/users/{0}/switch'.format(user.id)
+                    req = myplexrequest.MyPlexRequest(path)
+                    res = req.postToStringWithTimeout({'pin': ''}, timeout=util.PLEXTV_TIMEOUT)
+                    data = ElementTree.fromstring(res)
+                    token = data.attrib.get('authenticationToken')
+                    if token:
+                        entry['token'] = token
+                        entry['serverTokens'] = self.fetchServerTokens(token)
+                        util.DEBUG_LOG("Local mode: harvested token for home user {0}", user.id)
+                except:
+                    util.WARN_LOG("Local mode: couldn't harvest token for home user {0}", user.id)
 
-            thumb = self.downloadAvatar(user.id, user.thumb)
-            if thumb:
-                self.cacheLocalUser(user.id, thumb=thumb)
+            results[user.id] = entry
 
-            if user.isProtected:
-                continue
+        users = [u for u in self.homeUsers if u.id != self.ID]
+        if not any(u.id == self.ID for u in self.homeUsers):
+            users.append(util.AttributeDict(id=self.ID, thumb=self.thumb, isProtected=self.isProtected))
+        else:
+            users.append(self.getHomeUser(self.ID))
 
-            try:
-                path = '/api/home/users/{0}/switch'.format(user.id)
-                req = myplexrequest.MyPlexRequest(path)
-                res = req.postToStringWithTimeout({'pin': ''}, timeout=util.PLEXTV_TIMEOUT)
-                data = ElementTree.fromstring(res)
-                token = data.attrib.get('authenticationToken')
-                if token:
-                    self.cacheLocalUser(user.id, token=token,
-                                        serverTokens=self.fetchServerTokens(token))
-                    util.DEBUG_LOG("Local mode: harvested token for home user {0}", user.id)
-            except:
-                util.WARN_LOG("Local mode: couldn't harvest token for home user {0}", user.id)
+        threads = [threading.Thread(target=harvest, args=(user,), name='localharvest') for user in users]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(30)
+
+        for userId, entry in results.items():
+            self.cacheLocalUser(userId, token=entry.get('token'),
+                                thumb=entry.get('thumb'), serverTokens=entry.get('serverTokens'))
 
     def downloadAvatar(self, userId, thumbUrl):
         if not thumbUrl or not thumbUrl.startswith('http') or not userId:
@@ -190,8 +208,11 @@ class MyPlexAccount(object):
             import requests
 
             path = os.path.join(util.translatePath(util.ADDON.getAddonInfo('profile')), 'local_avatars')
-            if not os.path.exists(path):
+            try:
+                # racy when the harvest downloads avatars in parallel
                 os.makedirs(path)
+            except OSError:
+                pass
             fn = os.path.join(path, '{0}.jpg'.format(userId))
 
             r = requests.get(thumbUrl, timeout=10)
