@@ -1018,6 +1018,14 @@ class Settings(object):
         ),
         'network': (
             T(33624, 'Network'), (
+                BoolSetting('local_mode', T(35021, 'Local mode (no plex.tv)'), False)
+                    .description(
+                    T(35029, "Only talk to local Plex Media Servers and never contact plex.tv. "
+                             "Best enabled via \"Go local\" in the user menu, which prepares local user "
+                             "switching while plex.tv is still reachable. Watchlist, Discover and other "
+                             "plex.tv-based features are disabled. Takes full effect after a restart of "
+                             "the addon.")
+                ),
                 OptionsSetting(
                     'allow_insecure', T(32032), 'never',
                     (('never', T(32033)), ('same_network', T(32034)), ('always', T(32035)))
