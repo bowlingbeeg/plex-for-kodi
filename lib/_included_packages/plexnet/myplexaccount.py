@@ -560,13 +560,15 @@ class MyPlexAccount(object):
                     self.isAdmin = homeUser.isAdmin
                     self.isManaged = homeUser.isManaged
                     self.isProtected = homeUser.isProtected
-                    self.saveState()
 
                 self.validateToken(token, True)
                 # the transport block answers the validation synchronously, so
                 # onAccountResponse has already consumed switchUser; restore it -
                 # callers check it to detect an actual switch
                 self.switchUser = True
+                # only save after validateToken has adopted the token - saving earlier
+                # persists the new identity paired with the previous user's token
+                self.saveState()
                 return True
         else:
             # build path and post to myplex to switch the user
