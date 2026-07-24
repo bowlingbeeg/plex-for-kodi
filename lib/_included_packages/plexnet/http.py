@@ -225,6 +225,11 @@ class HttpRequest(object):
                 return None
 
             util.LOG("Got a {0} from {1}", res.status_code, util.cleanToken(self.url))
+            if res.status_code >= 400:
+                try:
+                    util.LOG("Response body: {0}", res.text[:512])
+                except:
+                    pass
             # self.event = msg
             return res
         except Exception as e:
