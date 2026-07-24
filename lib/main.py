@@ -258,6 +258,18 @@ def _main():
                             finally:
                                 background.setBusy(False)
 
+                        # local mode: nothing reachable - offer manual server entry instead of
+                        # silently landing on an empty home
+                        while plexapp.util.LOCAL_MODE and not selectedServer and localmode.offerServerIfNoneFound():
+                            background.setBusy()
+                            try:
+                                plexapp.SERVERMANAGER.refreshManualConnections()
+                                plex.CallbackEvent(plexapp.util.APP, 'change:selectedServer', timeout=15).wait()
+                                selectedServer = plexapp.SERVERMANAGER.checkSelectedServerSearch(
+                                    skip_preferred=True, skip_owned=True)
+                            finally:
+                                background.setBusy(False)
+
                         util.DEBUG_LOG('Main: STARTING WITH SERVER: {0}', selectedServer)
 
                         # account-less local mode: offer user profiles known to the PMS

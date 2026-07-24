@@ -3263,7 +3263,7 @@ msgid "Plex token (optional)"
 msgstr ""
 
 msgctxt "#35026"
-msgid "Could not reach a Plex Media Server at {0}. Add it anyway?"
+msgid "Could not reach a Plex Media Server at {0}."
 msgstr ""
 
 msgctxt "#35027"
@@ -3276,4 +3276,19 @@ msgstr ""
 
 msgctxt "#35029"
 msgid "Only talk to local Plex Media Servers and never contact plex.tv. Best enabled via \"Go local\" in the user menu, which prepares local user switching while plex.tv is still reachable. Watchlist, Discover and other plex.tv-based features are disabled. Takes full effect after a restart of the addon."
+msgstr ""
+msgctxt "#35030"
+msgid "No local server found"
+msgstr ""
+
+msgctxt "#35031"
+msgid "No local Plex Media Server was reachable. Add one by IP address?"
+msgstr ""
+
+msgctxt "#35032"
+msgid "Try again"
+msgstr ""
+
+msgctxt "#35033"
+msgid "Add anyway"
 msgstr ""

@@ -67,26 +67,41 @@ def probe(ip, port, token=None):
 
 def addServerDialog():
     """
-    Dialog-driven manual server entry. Returns True if a server was stored.
+    Dialog-driven manual server entry with an immediate connection check; on failure
+    the entry dialogs are re-offered (values prefilled). Returns True if a server was
+    stored.
     """
-    ip = xbmcgui.Dialog().input(T(35023, 'Local server IP or hostname'), '')
-    if not ip:
-        return False
-
-    port = xbmcgui.Dialog().input(T(35024, 'Local server port'), '32400', xbmcgui.INPUT_NUMERIC)
-    if not port:
-        return False
-
-    token = xbmcgui.Dialog().input(T(35025, 'Plex token (optional)'), '') or None
-
-    ok, name, needsAuth = probe(ip, port, token)
-    if not ok:
-        if not xbmcgui.Dialog().yesno(
-                T(32427, 'Failed'),
-                T(35026, 'Could not reach a Plex Media Server at {0}. Add it anyway?').format(
-                    '{0}:{1}'.format(ip, port))):
+    ip = ''
+    port = '32400'
+    token = None
+    while True:
+        ip = xbmcgui.Dialog().input(T(35023, 'Local server IP or hostname'), ip)
+        if not ip:
             return False
-    elif needsAuth:
+
+        port = xbmcgui.Dialog().input(T(35024, 'Local server port'), port, xbmcgui.INPUT_NUMERIC)
+        if not port:
+            return False
+
+        token = xbmcgui.Dialog().input(T(35025, 'Plex token (optional)'), token or '') or None
+
+        ok, name, needsAuth = probe(ip, port, token)
+        if ok:
+            break
+
+        button = xbmcgui.Dialog().yesnocustom(
+            T(32427, 'Failed'),
+            T(35026, 'Could not reach a Plex Media Server at {0}.').format('{0}:{1}'.format(ip, port)),
+            customlabel=T(35033, 'Add anyway'),
+            nolabel=T(32337, 'Cancel'),
+            yeslabel=T(35032, 'Try again'))
+        if button == 1:
+            continue
+        elif button == 2:
+            break
+        return False
+
+    if needsAuth:
         xbmcgui.Dialog().ok(
             T(35027, 'Authentication required'),
             T(35028, 'The server requires authentication. Enter a Plex token for it, or add this device\'s '
@@ -99,6 +114,19 @@ def addServerDialog():
 
     util.DEBUG_LOG('Local mode: stored local server {0}:{1} ({2})', ip, port, name or 'unnamed')
     return True
+
+
+def offerServerIfNoneFound():
+    """
+    Local mode ended up without any reachable server - offer manual entry.
+    Returns True if a server was stored (caller should re-check connections).
+    """
+    if not xbmcgui.Dialog().yesno(
+            T(35030, 'No local server found'),
+            T(35031, 'No local Plex Media Server was reachable. Add one by IP address?')):
+        return False
+
+    return addServerDialog()
 
 
 def bootstrap():

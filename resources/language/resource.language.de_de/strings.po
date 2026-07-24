@@ -3621,8 +3621,8 @@ msgid "Plex token (optional)"
 msgstr "Plex-Token (optional)"
 
 msgctxt "#35026"
-msgid "Could not reach a Plex Media Server at {0}. Add it anyway?"
-msgstr "Unter {0} wurde kein Plex Media Server gefunden. Trotzdem hinzufügen?"
+msgid "Could not reach a Plex Media Server at {0}."
+msgstr "Unter {0} wurde kein Plex Media Server gefunden."
 
 msgctxt "#35027"
 msgid "Authentication required"
@@ -3635,3 +3635,18 @@ msgstr "Der Server erfordert Authentifizierung. Bitte einen Plex-Token angeben o
 msgctxt "#35029"
 msgid "Only talk to local Plex Media Servers and never contact plex.tv. Best enabled via \"Go local\" in the user menu, which prepares local user switching while plex.tv is still reachable. Watchlist, Discover and other plex.tv-based features are disabled. Takes full effect after a restart of the addon."
 msgstr "Kommuniziert ausschließlich mit lokalen Plex Media Servern und kontaktiert plex.tv nie. Am besten über \"Lokal gehen\" im Benutzermenü aktivieren; dies bereitet den lokalen Benutzerwechsel vor, solange plex.tv noch erreichbar ist. Watchlist, Discover und andere plex.tv-Funktionen sind deaktiviert. Wird nach einem Neustart des Addons vollständig wirksam."
+msgctxt "#35030"
+msgid "No local server found"
+msgstr "Kein lokaler Server gefunden"
+
+msgctxt "#35031"
+msgid "No local Plex Media Server was reachable. Add one by IP address?"
+msgstr "Es war kein lokaler Plex Media Server erreichbar. Einen per IP-Adresse hinzufügen?"
+
+msgctxt "#35032"
+msgid "Try again"
+msgstr "Erneut versuchen"
+
+msgctxt "#35033"
+msgid "Add anyway"
+msgstr "Trotzdem hinzufügen"
