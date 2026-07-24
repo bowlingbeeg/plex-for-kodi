@@ -3486,7 +3486,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def displayServerAndUser(self, **kwargs):
         title = plexapp.ACCOUNT.title or plexapp.ACCOUNT.username or ' '
         self.setProperty('user.name', title)
-        self.setProperty('user.avatar', plexapp.ACCOUNT.thumb)
+        self.setProperty('user.avatar', plexapp.ACCOUNT.safeUserThumb(plexapp.ACCOUNT.ID,
+                                                                      thumb=plexapp.ACCOUNT.thumb))
         self.setProperty('user.avatar.letter', title[0].upper())
 
         if plexapp.SERVERMANAGER.selectedServer:
@@ -4545,11 +4546,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 items.append(kodigui.ManagedListItem(T(32342, 'Switch User'), data_source='switch'))
             else:
                 items.append(kodigui.ManagedListItem(T(32980, 'Refresh Users'), data_source='refresh_users'))
+        elif plexapp.ACCOUNT.isOffline and plexapp.util.LOCAL_MODE and len(plexapp.ACCOUNT.homeUsers) > 1:
+            items.append(kodigui.ManagedListItem(T(32342, 'Switch User'), data_source='switch'))
         items.append(kodigui.ManagedListItem(T(32343, 'Settings'), data_source='settings'))
         if plexapp.ACCOUNT.isSignedIn:
+            items.append(kodigui.ManagedListItem(T(35019, 'Go local'), data_source='go_local'))
             items.append(kodigui.ManagedListItem(T(32344, 'Sign Out'), data_source='signout'))
         elif plexapp.ACCOUNT.isOffline:
-            items.append(kodigui.ManagedListItem(T(32459, 'Offline Mode'), data_source='go_online'))
+            if plexapp.util.LOCAL_MODE:
+                items.append(kodigui.ManagedListItem(T(35020, 'Go online'), data_source='go_online'))
+            else:
+                items.append(kodigui.ManagedListItem(T(32459, 'Offline Mode'), data_source='go_online'))
         else:
             items.append(kodigui.ManagedListItem(T(32460, 'Sign In'), data_source='signin'))
         items.append(kodigui.ManagedListItem(T(32924, 'Minimize'), data_source='minimize'))
@@ -4600,6 +4607,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.setFocusId(self.SECTION_LIST_ID)
             util.setGlobalProperty('update_requested', '1', wait=True)
         elif option == 'go_online':
+            if plexapp.util.LOCAL_MODE:
+                # leave local mode via a clean re-init (re-verifies the account or opens sign-in)
+                self.closeOption = option
+                kill_background()
+                self.doClose()
+                return
             plexapp.ACCOUNT.refreshAccount()
         elif option == 'refresh_users':
             plexapp.ACCOUNT.updateHomeUsers(refreshSubscription=True)
