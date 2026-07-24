@@ -116,12 +116,15 @@ class PathMappingProbeTask(backgroundthread.Task):
     def run(self):
         changed = False
         announce = []
+        util.DEBUG_LOG("Path mapping probe: checking {} root(s)", len(self.targets))
         for server_name, map_path, title in self.targets:
             if self.isCanceled():
                 return
 
             if pmm.verifyMapping(server_name, map_path):
                 changed = True
+            util.DEBUG_LOG("Path mapping probe: {} -> {}", map_path,
+                           pmm.isMappingBroken(server_name, map_path) and "unreachable" or "ok")
 
             if (pmm.isMappingBroken(server_name, map_path)
                     and pmm.claimNotification(server_name, map_path, "root")):
