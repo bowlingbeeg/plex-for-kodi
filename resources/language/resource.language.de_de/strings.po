@@ -3686,3 +3686,15 @@ msgstr "Der Server hat dieses Token nicht akzeptiert."
 msgctxt "#35042"
 msgid "Local users"
 msgstr "Lokale Benutzer"
+
+msgctxt "#35043"
+msgid "{} Collections"
+msgstr "Sammlungen: {}"
+
+msgctxt "#35044"
+msgid "Pin collections to the top bar"
+msgstr "Sammlungen an die obere Leiste anheften"
+
+msgctxt "#35045"
+msgid "Unpin collections from the top bar"
+msgstr "Sammlungen von der oberen Leiste lösen"

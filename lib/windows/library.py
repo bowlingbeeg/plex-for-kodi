@@ -345,15 +345,24 @@ class PhotoPropertiesTask(backgroundthread.Task):
             util.DEBUG_LOG('404 on photo reload: {0}', self.photo)
 
 
+def realSection(section):
+    """The library a section belongs to. Pinned top bar item-type views proxy one."""
+    return section.__dict__.get('librarySection') or section
+
+
 class LibrarySettings(object):
     def __init__(self, section_or_server_id, ignoreLibrarySettings=False):
         self.ignoreLibrarySettings = ignoreLibrarySettings
+        self.forcedItemType = None
         if isinstance(section_or_server_id, six.string_types):
             self.serverID = section_or_server_id
             self.sectionID = None
         else:
             self.serverID = section_or_server_id.getServer().uuid
             self.sectionID = section_or_server_id.key
+            # a pinned item-type view always opens in its own type, no matter which type was
+            # last selected while inside it
+            self.forcedItemType = section_or_server_id.__dict__.get('itemType')
 
         self._loadSettings()
 
@@ -374,7 +383,7 @@ class LibrarySettings(object):
         except:
             util.ERROR()
 
-        setItemType(self.getItemType() or ITEM_TYPE)
+        setItemType(self.forcedItemType or self.getItemType() or ITEM_TYPE)
 
     def getItemType(self):
         if not self._settings or self.sectionID not in self._settings:
@@ -773,11 +782,13 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.keyListControl.selectItem(li.pos())
 
     def searchButtonClicked(self):
-        self.processCommand(search.dialog(self, section_id=self.section.key))
+        # a pinned item-type view searches the library it belongs to
+        self.processCommand(search.dialog(self, section_id=realSection(self.section).key))
 
     def browseGenres(self):
         from . import genres as genres_window
-        self.processCommand(opener.handleOpen(genres_window.GenreBrowserWindow, section=self.section))
+        self.processCommand(opener.handleOpen(genres_window.GenreBrowserWindow,
+                                              section=realSection(self.section)))
 
     def keyClicked(self):
         li = self.keyListControl.getSelectedItem()

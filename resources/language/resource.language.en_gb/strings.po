@@ -3328,3 +3328,15 @@ msgstr ""
 msgctxt "#35042"
 msgid "Local users"
 msgstr ""
+
+msgctxt "#35043"
+msgid "{} Collections"
+msgstr ""
+
+msgctxt "#35044"
+msgid "Pin collections to the top bar"
+msgstr ""
+
+msgctxt "#35045"
+msgid "Unpin collections from the top bar"
+msgstr ""
