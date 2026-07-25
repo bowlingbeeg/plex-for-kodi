@@ -4639,8 +4639,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 items.append(kodigui.ManagedListItem(T(32342, 'Switch User'), data_source='switch'))
             else:
                 items.append(kodigui.ManagedListItem(T(32980, 'Refresh Users'), data_source='refresh_users'))
-        elif plexapp.ACCOUNT.isOffline and plexapp.util.LOCAL_MODE and len(plexapp.ACCOUNT.homeUsers) > 1:
-            items.append(kodigui.ManagedListItem(T(32342, 'Switch User'), data_source='switch'))
+        elif plexapp.ACCOUNT.isOffline and plexapp.util.LOCAL_MODE:
+            from lib import localmode
+            if len(plexapp.ACCOUNT.homeUsers) > 1:
+                items.append(kodigui.ManagedListItem(T(32342, 'Switch User'), data_source='switch'))
+            if localmode.isAccountLess():
+                items.append(kodigui.ManagedListItem(T(35042, 'Local users'), data_source='local_users'))
         items.append(kodigui.ManagedListItem(T(32343, 'Settings'), data_source='settings'))
         if plexapp.ACCOUNT.isSignedIn:
             items.append(kodigui.ManagedListItem(T(35019, 'Go local'), data_source='go_local'))
@@ -4709,6 +4713,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             plexapp.ACCOUNT.refreshAccount()
         elif option == 'refresh_users':
             plexapp.ACCOUNT.updateHomeUsers(refreshSubscription=True)
+            return True
+        elif option == 'local_users':
+            from lib import localmode
+            localmode.seedUsersFromServer(reselect=True)
             return True
         elif option == 'signout':
             button = optionsdialog.show(

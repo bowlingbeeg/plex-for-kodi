@@ -3667,3 +3667,22 @@ msgstr "Zugeordnete Datei fehlt, es wird stattdessen vom Server gestreamt"
 msgctxt "#35037"
 msgid "Path mapping unavailable for: {}"
 msgstr "Pfadzuordnung nicht verfügbar für: {}"
+msgctxt "#35038"
+msgid "Which users do you want to use on this device?"
+msgstr "Welche Benutzer möchtest du auf diesem Gerät verwenden?"
+
+msgctxt "#35039"
+msgid "Plex token for {0} (optional)"
+msgstr "Plex-Token für {0} (optional)"
+
+msgctxt "#35040"
+msgid "That token does not belong to {0}."
+msgstr "Dieses Token gehört nicht zu {0}."
+
+msgctxt "#35041"
+msgid "The server did not accept that token."
+msgstr "Der Server hat dieses Token nicht akzeptiert."
+
+msgctxt "#35042"
+msgid "Local users"
+msgstr "Lokale Benutzer"

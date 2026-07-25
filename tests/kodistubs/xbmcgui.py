@@ -205,7 +205,7 @@ class Dialog(object):
         return self._answer("select", (heading, list), {"preselect": preselect}, -1)
 
     def multiselect(self, heading, options, autoclose=0, preselect=None, useDetails=False):
-        return self._answer("multiselect", (heading, options), {}, None)
+        return self._answer("multiselect", (heading, options), {"preselect": preselect}, None)
 
     def contextmenu(self, list):
         return self._answer("contextmenu", (list,), {}, -1)

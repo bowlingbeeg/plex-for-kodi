@@ -47,6 +47,9 @@ class MyPlexAccount(object):
         self.hasQueue = False
 
         self.isAdmin = False
+        # only ever assigned from saved state or a plex.tv response, so without either
+        # (fresh install straight into account-less local mode) it wouldn't exist at all
+        self.isProtected = False
         self.switchUser = False
         self.forceResourceRefresh = False
 
@@ -101,7 +104,8 @@ class MyPlexAccount(object):
     def saveLocalUsers(self, localUsers):
         util.INTERFACE.setRegistry("LocalUsers", json.dumps(localUsers), "myplex")
 
-    def cacheLocalUser(self, userId, token=None, pin=None, thumb=None, serverTokens=None):
+    def cacheLocalUser(self, userId, token=None, pin=None, thumb=None, serverTokens=None,
+                       tokenPrompted=None):
         if not userId:
             return
         localUsers = self.loadLocalUsers()
@@ -113,7 +117,12 @@ class MyPlexAccount(object):
         if thumb:
             user['thumb'] = thumb
         if serverTokens:
-            user['serverTokens'] = serverTokens
+            # merge, so a token added for one server doesn't drop the others
+            merged = user.get('serverTokens', {})
+            merged.update(serverTokens)
+            user['serverTokens'] = merged
+        if tokenPrompted is not None:
+            user['tokenPrompted'] = tokenPrompted
         localUsers[str(userId)] = user
         self.saveLocalUsers(localUsers)
 
@@ -605,10 +614,16 @@ class MyPlexAccount(object):
 
             if granted:
                 util.DEBUG_LOG("OFFLINE/LOCAL access granted for {0}", userId)
+                oldId = self.ID
                 self.isAuthenticated = True
                 self.serverTokens = localUser.get('serverTokens', {})
 
-                if localUser.get('token') and userId != self.ID and homeUser is not None:
+                # account-less local mode has no plex.tv token at all; the profile's server
+                # token (if any) is the whole identity there
+                accountLess = not self.authToken and not self.isSignedIn
+                hasIdentity = bool(localUser.get('token') or localUser.get('serverTokens'))
+
+                if (hasIdentity or accountLess) and userId != self.ID and homeUser is not None:
                     # real switch: adopt the harvested identity/token; the PMS validates home user
                     # tokens against its own database, no plex.tv needed
                     self.ID = userId
@@ -619,14 +634,21 @@ class MyPlexAccount(object):
                     self.isManaged = homeUser.isManaged
                     self.isProtected = homeUser.isProtected
 
-                self.validateToken(token, True)
-                # the transport block answers the validation synchronously, so
-                # onAccountResponse has already consumed switchUser; restore it -
-                # callers check it to detect an actual switch
-                self.switchUser = True
-                # only save after validateToken has adopted the token - saving earlier
-                # persists the new identity paired with the previous user's token
-                self.saveState()
+                if token:
+                    self.validateToken(token, True)
+                    # the transport block answers the validation synchronously, so
+                    # onAccountResponse has already consumed switchUser; restore it -
+                    # callers check it to detect an actual switch
+                    self.switchUser = True
+                    # only save after validateToken has adopted the token - saving earlier
+                    # persists the new identity paired with the previous user's token
+                    self.saveState()
+                else:
+                    # nothing to validate against plex.tv - announce the switch ourselves
+                    self.switchUser = True
+                    self.saveState()
+                    util.APP.trigger("change:user", account=self, reallyChanged=oldId != self.ID)
+                    plexapp.refreshResources(True)
                 return True
         else:
             # build path and post to myplex to switch the user
