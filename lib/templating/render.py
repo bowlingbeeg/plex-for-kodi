@@ -32,8 +32,10 @@ def render_templates(theme=None, templates=None, force=False):
     if xbmcvfs.exists(custom_context_data_fn):
         try:
             f = xbmcvfs.File(custom_context_data_fn)
-            data = f.read()
-            f.close()
+            try:
+                data = f.read()
+            finally:
+                f.close()
             if data:
                 js = json.loads(data)
                 deep_update(context, js)

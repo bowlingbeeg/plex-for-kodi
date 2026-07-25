@@ -70,8 +70,10 @@ class SeamlessBranchingManager(object):
         if xbmcvfs.exists(bundled_path):
             try:
                 f = xbmcvfs.File(bundled_path)
-                data = json.loads(f.read())
-                f.close()
+                try:
+                    data = json.loads(f.read())
+                finally:
+                    f.close()
 
                 # Extract IMDB IDs from movie list
                 for movie in data.get("movies", []):
@@ -94,8 +96,10 @@ class SeamlessBranchingManager(object):
         if xbmcvfs.exists(user_path):
             try:
                 f = xbmcvfs.File(user_path)
-                data = json.loads(f.read())
-                f.close()
+                try:
+                    data = json.loads(f.read())
+                finally:
+                    f.close()
 
                 # Count before for logging
                 count_before = len(self.seamless_branching_movies)

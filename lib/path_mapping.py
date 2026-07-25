@@ -37,17 +37,21 @@ class PathMappingManager(object):
         if xbmcvfs.exists(self.mapfile):
             try:
                 f = xbmcvfs.File(self.mapfile)
+                try:
+                    raw = f.read()
+                finally:
+                    f.close()
+
                 # sanitize json
 
                 # remove multiline comments
-                data = PM_MCMT_RE.sub("", f.read())
+                data = PM_MCMT_RE.sub("", raw)
                 # remove comments
                 data = PM_CMT_RE.sub("", data)
                 # remove invalid trailing comma
 
                 data = PM_COMMA_RE.sub("}}", data)
                 self.PATH_MAP = json.loads(data)
-                f.close()
             except:
                 ERROR("Couldn't read path_mapping.json")
             else:
@@ -203,8 +207,10 @@ class PathMappingManager(object):
     def save(self):
         try:
             f = xbmcvfs.File(self.mapfile, "w")
-            f.write(json.dumps(self.PATH_MAP))
-            f.close()
+            try:
+                f.write(json.dumps(self.PATH_MAP))
+            finally:
+                f.close()
         except:
             ERROR("Couldn't write path_mapping.json")
         else:

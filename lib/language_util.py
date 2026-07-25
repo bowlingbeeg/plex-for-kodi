@@ -5,19 +5,43 @@ from __future__ import absolute_import
 from plexnet import util as pnUtil
 
 
+# Codes Plex emits that are not ISO-639 at all, mapped to the closest part2t.
+# iso639 raises KeyError on these, so every lookup has to go through
+# resolveLanguage() rather than calling languages.get() directly.
+PLEX_LANGUAGE_ALIASES = {
+    "pob": "por",  # Plex's Brazilian Portuguese
+}
+
+
+def resolveLanguage(code, part="part2t"):
+    """The iso639 language for `code`, or None if it cannot be resolved.
+
+    Accepts 2-letter (part1) or 3-letter (part2t/part2b) codes, with or without a region
+    suffix (e.g. "pt-BR", "pob-BR"), and the Plex-only codes in PLEX_LANGUAGE_ALIASES.
+    Never raises - iso639 signals "unknown" with KeyError, which callers in playback
+    paths must not have to guard individually."""
+    code = (code or "").strip().lower().replace("_", "-").split("-")[0]
+    if len(code) not in (2, 3):
+        return None
+
+    from iso639 import languages
+    if len(code) == 2:
+        part = "part1"
+    else:
+        code = PLEX_LANGUAGE_ALIASES.get(code, code)
+
+    try:
+        return languages.get(**{part: code})
+    except KeyError:
+        return None
+
+
 def normalizeLanguagePart2t(code):
     """Normalize an ISO-639 code to its part2t form (matching plex stream languageCodes and the
     disable_subtitle_languages setting). Accepts 2-letter (part1) or 3-letter (part2t) codes,
     with or without a region suffix (e.g. "pt-BR", "pob-BR"); None if unresolved."""
-    code = (code or "").strip().lower().replace("_", "-").split("-")[0]
-    if len(code) not in (2, 3):
-        return None
-    from iso639 import languages
-    try:
-        lang = languages.get(part1=code) if len(code) == 2 else languages.get(part2t=code)
-    except KeyError:
-        return None
-    return lang.part2t
+    lang = resolveLanguage(code)
+    return lang.part2t if lang else None
 
 
 def getNativeLanguages(configured):

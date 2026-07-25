@@ -866,9 +866,11 @@ def dumpSettings():
 
     try:
         f = xbmcvfs.File(os.path.join(translatePath(ADDON.getAddonInfo("profile")), "settings.xml"))
-        data = f.read()
+        try:
+            data = f.read()
+        finally:
+            f.close()
         all_settings = SETTING_RE.findall(data)
-        f.close()
     except:
         LOG('script.plexmod: No settings.xml found')
         return

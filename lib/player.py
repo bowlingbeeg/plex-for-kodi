@@ -18,7 +18,7 @@ from . import colors
 from .windows import seekdialog, windowutils, blackoutdialog
 from . import util
 from . import seamless_branching
-from .language_util import getNativeLanguages
+from .language_util import getNativeLanguages, resolveLanguage
 from plexnet import plexplayer
 from plexnet import plexapp
 from plexnet import plexstream as plexstreamModule
@@ -1513,7 +1513,9 @@ class SeekPlayerHandler(BasePlayerHandler):
 
                 # use iso639 to determine the streams' languages (Kodi uses the bibliographic language code, Plex uses
                 # the terminological one (e.g: ger vs. deu, fre vs. fra)
-                ess_lang = languages.get(part2t=ess.languageCode)
+                # resolveLanguage rather than languages.get: Plex also emits codes that
+                # aren't ISO-639 (e.g. "pob"), and a KeyError here would abort the seek
+                ess_lang = resolveLanguage(ess.languageCode)
                 for sub in kodisubs[ext_subs_amount:]:
                     sub_language = sub['language'].strip(",.()- \x00")
                     # we're expecting Kodi to return a 3-char part2b, if it doesn't, try to fix
@@ -1531,8 +1533,10 @@ class SeekPlayerHandler(BasePlayerHandler):
                             util.LOG("SeekHandler: subtitleStreamOffset: Couldn't find language for Kodi subtitle {}; ignoring", sub)
                             continue
 
-                    if (sub['isdefault'] == ess.default.asBool() and sub['isforced'] == ess.forced.asBool() and
-                            sub['name'] == six.ensure_str(ess.title) and languages.get(part2b=sub_language) == ess_lang):
+                    if (ess_lang is not None and
+                            sub['isdefault'] == ess.default.asBool() and sub['isforced'] == ess.forced.asBool() and
+                            sub['name'] == six.ensure_str(ess.title) and
+                            resolveLanguage(sub_language, part="part2b") == ess_lang):
                         self._subtitleStreamOffset = sub['index'] - ess.typeIndex
                         util.DEBUG_LOG("SeekHandler: subtitleStreamOffset: Returning offset: {} ({})",
                                        self._subtitleStreamOffset, sub)
