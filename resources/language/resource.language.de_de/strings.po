@@ -2918,7 +2918,7 @@ msgid "Disable Auto-Sync"
 msgstr "Auto-Sync deakt."
 
 msgctxt "#33659"
-msgid "Disable hub: {}"
+msgid "Disable Hub: {}"
 msgstr "Hub entfernen: {}"
 
 msgctxt "#33660"
@@ -3433,8 +3433,8 @@ msgid "UI wait poll rate (Hz)"
 msgstr "UI Warteabtastrate (Hz)"
 
 msgctxt "#34045"
-msgid "When waiting for certain events to occur, poll this often. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
-msgstr "Warten wir auf bestimmte Ereignisse, frage so häufig ab. Standard: 10 Hz. Mit einem leistungsfähigen Gerät, versuche 100 Hz, was sich in bestimmten Situationen schneller anfühlen sollte."
+msgid "When waiting for certain events to occur, wait this long. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
+msgstr "Beim Warten auf bestimmte Ereignisse so lange warten. Standard: 10 Hz. Mit einem leistungsfähigen Gerät versuche 100 Hz, was sich in bestimmten Situationen schneller anfühlen sollte."
 
 msgctxt "#34046"
 msgid "Fade theme music in/out"
