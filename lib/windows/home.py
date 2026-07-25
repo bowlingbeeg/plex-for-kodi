@@ -128,8 +128,7 @@ class PathMappingProbeTask(backgroundthread.Task):
 
             if (pmm.isMappingBroken(server_name, map_path)
                     and pmm.claimNotification(server_name, map_path, "root")):
-                # commas would be eaten by the Notification() builtin's argument split
-                announce.append((title or map_path).replace(",", " "))
+                announce.append(title or map_path)
 
         if self.isCanceled():
             return
