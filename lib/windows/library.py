@@ -1031,15 +1031,21 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
         self.librarySettings.setItemType(choice)
 
+        # LibrarySettings keys sort and filters by item type, so reset() below restores
+        # whatever this type was left in. Only the outgoing type's in-memory filter has to
+        # go, otherwise reset() would carry it over ("self.filter or <stored>").
+        self.filter = None
         self.reset()
-
-        self.clearFilters()
-        if self.section.TYPE != 'movies_shows':
-            self.resetSort()
+        self.updateFilterDisplay()
+        util.setGlobalProperty('sort', self.sort)
 
         if not self.nextWindow(False):
             self.setProperty('media.type', TYPE_PLURAL.get(ITEM_TYPE or self.section.TYPE, self.section.TYPE))
-            self.setProperty('sort.display', SORT_KEYS[self.section.TYPE].get(self.sort, SORT_KEYS['movie'].get(self.sort))['title'])
+            try:
+                self.setProperty('sort.display', SORT_KEYS[self.section.TYPE].get(self.sort, SORT_KEYS['movie'].get(self.sort))['title'])
+            except TypeError:
+                # stored sort isn't valid for this item type
+                self.resetSort()
             self.fill()
 
     def sortButtonClicked(self):
