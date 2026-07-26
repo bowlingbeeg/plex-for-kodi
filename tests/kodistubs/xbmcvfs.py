@@ -28,8 +28,16 @@ def makeLegalFilename(filename):
 
 
 def exists(path):
+    """Kodi branches on the trailing separator: with one this is a directory lookup
+    (CDirectory::Exists), without one a file lookup (CFile::Exists) - see
+    xbmc/interfaces/legacy/ModuleXbmcvfs.cpp. So a directory asked about without the
+    separator does NOT exist. os.path.exists() would answer yes to both and hide a
+    real, easy-to-hit trap.
+    """
     real = ENV.translate_path(path)
-    return os.path.exists(real)
+    if path.endswith("/") or path.endswith("\\"):
+        return os.path.isdir(real)
+    return os.path.isfile(real)
 
 
 def mkdir(path):

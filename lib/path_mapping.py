@@ -128,8 +128,15 @@ class PathMappingManager(object):
         """Stat a mapped root. Blocks for the full mount timeout on a dead network share,
         so keep this off the UI thread. Returns True when the broken/working state changed.
         """
+        # xbmcvfs.exists() only treats a path as a directory when it ends in a separator,
+        # otherwise it stats it as a file and a perfectly good mount reports missing.
+        # path_mapping.json is hand-written and its documented examples have no trailing
+        # separator, so normalize before asking.
+        sep = norm_sep(map_path)
+        probe_path = map_path if map_path.endswith(sep) else map_path + sep
+
         try:
-            works = bool(xbmcvfs.exists(map_path))
+            works = bool(xbmcvfs.exists(probe_path))
         except:
             ERROR("Path mapping: couldn't check {}".format(map_path))
             works = False

@@ -155,6 +155,39 @@ class BrokenMappingTest(KodiTestCase):
         self.assertTrue(self.mgr.verifyMapping("Tower", os.path.join(present, "gone")))
         self.assertTrue(self.mgr.isMappingBroken("Tower", os.path.join(present, "gone")))
 
+    def test_a_root_without_a_trailing_separator_still_verifies(self):
+        """
+        path_mapping.json is hand written and every example in
+        path_mapping.example.json omits the trailing separator
+        ("smb://serverip/mountname"). xbmcvfs.exists() stats a separator-less
+        path as a *file*, so probing the root verbatim reported a perfectly
+        mounted share as unreachable - a permanent red dot that only cleared
+        once playback happened to mark the mapping working.
+        """
+        root = self.mktemp().rstrip("/")
+        self.assertFalse(self.mgr.verifyMapping("Tower", root))
+        self.assertFalse(self.mgr.isMappingBroken("Tower", root))
+
+    def test_an_already_terminated_root_is_not_doubled(self):
+        asked = self._recordProbe("/mnt/nas/")
+        self.assertEqual(["/mnt/nas/"], asked)
+
+    def test_a_windows_root_is_probed_with_a_backslash(self):
+        asked = self._recordProbe("\\\\server\\share")
+        self.assertEqual(["\\\\server\\share\\"], asked)
+
+    def _recordProbe(self, map_path):
+        """The path verifyMapping() actually hands to xbmcvfs.exists()."""
+        from lib import path_mapping
+        asked = []
+        original = path_mapping.xbmcvfs.exists
+        path_mapping.xbmcvfs.exists = lambda p: asked.append(p) or True
+        try:
+            self.mgr.verifyMapping("Tower", map_path)
+        finally:
+            path_mapping.xbmcvfs.exists = original
+        return asked
+
     def test_verify_mapping_can_notify_on_failure(self):
         self.mgr.verifyMapping("Tower", "/definitely/not/here", notify=True)
         self.assertTrue(any("Notification(" in call for call in ENV.builtins))
