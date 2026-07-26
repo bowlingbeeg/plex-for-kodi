@@ -129,6 +129,36 @@ def offerServerIfNoneFound():
     return addServerDialog()
 
 
+def ensureInsecureConnectionsAllowed(warn=True):
+    """
+    Local mode only ever talks to LAN addresses over plain HTTP - plex.direct hostnames
+    need public DNS, so they're dropped. With "Allow Insecure Connections" left at its
+    default of never, those connections are never even tested (they're parked as
+    STATE_INSECURE and the insecure fallback round never runs), which looks exactly like
+    "no server found". The server needs the matching setting, hence the warning.
+
+    Returns True if the preference was changed.
+    """
+    from plexnet import util as pnUtil
+
+    if util.getSetting('allow_insecure', 'never') == 'always':
+        return False
+
+    util.setSetting('allow_insecure', 'always')
+    pnUtil.APP.trigger('change:allow_insecure', value='always')
+    util.LOG('Local mode: allowing insecure connections')
+
+    if warn:
+        xbmcgui.Dialog().ok(
+            T(35048, 'Insecure connections enabled'),
+            T(35049, 'Local mode reaches your server over plain HTTP, so "Allow Insecure '
+                     'Connections" has been set to "Always".\n\nYour server needs the matching '
+                     'setting: in Plex under Settings > Network, "Secure connections" has to be '
+                     '"Preferred" - with "Required" the server refuses these connections.'))
+
+    return True
+
+
 def bootstrap():
     """
     Account-less local mode entry from the pre-signin screen.
@@ -136,6 +166,7 @@ def bootstrap():
     if not addServerDialog():
         return False
 
+    ensureInsecureConnectionsAllowed()
     util.setSetting('local_mode', True)
     return True
 

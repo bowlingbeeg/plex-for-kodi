@@ -3706,3 +3706,11 @@ msgstr "Titel-Logos auf Detailseiten anzeigen"
 msgctxt "#35047"
 msgid "Replace the written title with the logo image your server has stored for the item. Items without a logo keep their written title."
 msgstr "Ersetzt den geschriebenen Titel durch das Logo, das dein Server für den Eintrag hinterlegt hat. Einträge ohne Logo behalten ihren geschriebenen Titel."
+
+msgctxt "#35048"
+msgid "Insecure connections enabled"
+msgstr "Unsichere Verbindungen aktiviert"
+
+msgctxt "#35049"
+msgid "Local mode reaches your server over plain HTTP, so \"Allow Insecure Connections\" has been set to \"Always\".\n\nYour server needs the matching setting: in Plex under Settings > Network, \"Secure connections\" has to be \"Preferred\" - with \"Required\" the server refuses these connections."
+msgstr "Der lokale Modus erreicht deinen Server über einfaches HTTP, daher wurde \"Unsichere Verbindungen erlauben\" auf \"Immer\" gesetzt.\n\nDein Server braucht die passende Einstellung: in Plex unter Einstellungen > Netzwerk muss \"Sichere Verbindungen\" auf \"Bevorzugt\" stehen - bei \"Erforderlich\" lehnt der Server diese Verbindungen ab."

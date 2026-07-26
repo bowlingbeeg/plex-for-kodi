@@ -750,3 +750,58 @@ class FreshAccountTest(KodiTestCase):
         from plexnet import myplexaccount
 
         self.assertFalse(myplexaccount.MyPlexAccount().isProtected)
+
+
+class InsecureConnectionsTest(KodiTestCase):
+    """
+    Local mode reaches the server over plain HTTP. With "allow insecure connections"
+    at its default of never those connections are parked as STATE_INSECURE and the
+    fallback round never runs, which presents as "no server found".
+    """
+
+    def setUp(self):
+        KodiTestCase.setUp(self)
+        from .base import ensure_plex_interface
+        ensure_plex_interface()
+
+    def test_going_local_allows_insecure_connections(self):
+        self.assertTrue(localmode.ensureInsecureConnectionsAllowed(warn=False))
+        self.assertEqual("always", util.getSetting("allow_insecure", "never"))
+
+    def test_the_user_is_told_the_server_needs_the_same_treatment(self):
+        localmode.ensureInsecureConnectionsAllowed()
+        self.assertIn("ok", [call[0] for call in ENV.dialog_calls])
+
+    def test_an_already_permissive_setting_is_left_alone_and_does_not_warn(self):
+        ENV.settings["allow_insecure"] = "always"
+        self.assertFalse(localmode.ensureInsecureConnectionsAllowed())
+        self.assertEqual([], ENV.dialog_calls)
+
+    def test_same_network_is_not_enough_and_gets_upgraded(self):
+        # same_network leans on plex.tv's sameNetwork flag, which local mode never has
+        ENV.settings["allow_insecure"] = "same_network"
+        self.assertTrue(localmode.ensureInsecureConnectionsAllowed(warn=False))
+        self.assertEqual("always", util.getSetting("allow_insecure", "never"))
+
+    def test_the_change_is_announced_so_the_server_manager_retests(self):
+        from plexnet import util as pnUtil
+        seen = []
+
+        def listener(value=None, **kwargs):
+            seen.append(value)
+
+        pnUtil.APP.on("change:allow_insecure", listener)
+        try:
+            localmode.ensureInsecureConnectionsAllowed(warn=False)
+        finally:
+            pnUtil.APP.off("change:allow_insecure", listener)
+        self.assertEqual(["always"], seen)
+
+    def test_the_bootstrap_allows_them_too(self):
+        original = localmode.addServerDialog
+        localmode.addServerDialog = lambda: True
+        try:
+            localmode.bootstrap()
+        finally:
+            localmode.addServerDialog = original
+        self.assertEqual("always", util.getSetting("allow_insecure", "never"))

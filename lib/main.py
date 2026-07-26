@@ -302,6 +302,7 @@ def _main():
                             util.DEBUG_LOG('Main: Going local...')
                             # harvest per-user tokens while plex.tv is still reachable
                             plexapp.ACCOUNT.harvestLocalUsers()
+                            localmode.ensureInsecureConnectionsAllowed()
                             util.setSetting('local_mode', True)
                             break
                         elif closeOption == 'go_online':
