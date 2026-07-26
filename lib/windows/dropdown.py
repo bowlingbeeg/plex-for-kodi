@@ -144,6 +144,14 @@ class DropdownDialog(kodigui.BaseDialog):
             # Ignore other actions while moving
             return
 
+        if action == xbmcgui.ACTION_CONTEXT_MENU:
+            # Kodi turns an Enter held for 500ms into ContextMenu, and a dropdown opened by
+            # long-pressing Enter is usually followed by more of the same. Ignoring it left
+            # the menu sitting there, unresponsive to the very key that opened it, so treat
+            # it as a dismissal like Back: no choice, dialog closed.
+            self.doClose()
+            return
+
         if self.roundRobin and action in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN) and \
                 controlID == self.OPTIONS_LIST_ID:
             now = time.time()
