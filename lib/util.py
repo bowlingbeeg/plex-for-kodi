@@ -48,7 +48,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 97
+THEME_VERSION = 98
 
 UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
 
@@ -807,6 +807,20 @@ def backgroundFromArt(art, width=1920, height=1080, background=colors.noAlpha.Ba
         opacity=addonSettings.backgroundArtOpacityAmount2,
         background=background
     )
+
+
+def clearLogoFrom(item):
+    """
+    The item's clear logo as a plain server URL, or '' when it has none or the user doesn't want them. Not run
+    through the photo transcoder on purpose: logos are transparent PNGs and small enough that resizing them
+    server-side would only cost us the alpha channel.
+    """
+    if not getSetting('clear_logos', True):
+        return ''
+
+    # anything that isn't a Video (artists, albums) has no clearLogo and yields an empty PlexValue here
+    logo = getattr(item, 'clearLogo', None)
+    return logo and logo.asURL(includeToken=True) or ''
 
 
 def trackIsPlaying(track):

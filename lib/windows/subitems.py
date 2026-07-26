@@ -146,6 +146,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
     def updateProperties(self):
         self.setProperty('title', self.mediaItem.title)
+        self.setProperty('clear.logo', util.clearLogoFrom(self.mediaItem))
         self.setProperty('summary', self.mediaItem.summary)
         self.setProperty('thumb', self.mediaItem.defaultThumb.asTranscodedImageURL(*self.THUMB_DIMS[self.mediaItem.type]['main.thumb']))
         self.updateBackgroundFrom(self.mediaItem)

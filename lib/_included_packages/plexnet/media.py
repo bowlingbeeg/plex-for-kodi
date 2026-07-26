@@ -750,6 +750,18 @@ class Bandwidth(plexobjects.PlexObject):
     TYPE = 'Bandwidth'
 
 
+class Image(plexobjects.PlexObject):
+    """
+    Image variants the server offers for an item; carries alt, type and url. Known types are coverPoster, snapshot,
+    background, clearLogo and backgroundSquare. For episodes and seasons the server already points clearLogo at the
+    show, so no parent lookup is necessary.
+    """
+    TYPE = 'Image'
+
+    def __repr__(self):
+        return '<%s:%s:%s>' % (self.__class__.__name__, self.type, self.url)
+
+
 class Marker(MediaTag):
     TYPE = 'Marker'
     FILTER = 'Marker'

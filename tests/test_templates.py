@@ -305,3 +305,50 @@ class TemplateWriteTest(KodiTestCase):
         engine = make_engine(self.mktemp())
         real_skin_dir = os.path.join(REPO_ROOT, "resources", "skins", "Main", "1080i")
         self.assertNotEqual(os.path.abspath(real_skin_dir), os.path.abspath(engine.target_dir))
+
+
+class ClearLogoTest(KodiTestCase):
+    """
+    The detail screens swap the written title for the server's clear logo. Both controls must exist and their
+    visibility must be exact opposites, or an item without a logo ends up with no title at all.
+    """
+
+    WINDOWS = ("pre_play", "pre_play-wl", "seasons")
+
+    def setUp(self):
+        super(ClearLogoTest, self).setUp()
+        self.rendered = render_theme(make_engine(self.mktemp()), "modern-colored")
+
+    def controlsFor(self, window):
+        root = ET.fromstring(self.rendered[window])
+        title, logo = None, None
+        for control in root.iter("control"):
+            visible = control.findtext("visible") or ""
+            if "clear.logo" not in visible:
+                continue
+            if control.get("type") == "label":
+                title = control
+            elif control.get("type") == "image":
+                logo = control
+        return title, logo
+
+    def test_both_windows_carry_a_logo_and_a_title(self):
+        for window in self.WINDOWS:
+            with self.subTest(window=window):
+                title, logo = self.controlsFor(window)
+                self.assertIsNotNone(title, "no title label gated on clear.logo")
+                self.assertIsNotNone(logo, "no logo image gated on clear.logo")
+
+    def test_the_two_are_mutually_exclusive(self):
+        for window in self.WINDOWS:
+            with self.subTest(window=window):
+                title, logo = self.controlsFor(window)
+                self.assertEqual("String.IsEmpty(Window.Property(clear.logo))", title.findtext("visible"))
+                self.assertEqual("!String.IsEmpty(Window.Property(clear.logo))", logo.findtext("visible"))
+
+    def test_the_logo_keeps_its_aspect_ratio(self):
+        # logos run from near-square to 4:1 wordmarks; scaling one to the box would distort it
+        for window in self.WINDOWS:
+            with self.subTest(window=window):
+                _, logo = self.controlsFor(window)
+                self.assertEqual("keep", logo.findtext("aspectratio"))

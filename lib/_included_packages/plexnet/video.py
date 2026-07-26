@@ -105,6 +105,18 @@ class Video(media.MediaItem, AudioCodecMixin):
     def __repr__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.ratingKey)
 
+    def _setData(self, data):
+        media.MediaItem._setData(self, data)
+        self.images = plexobjects.PlexItemList(data, media.Image, media.Image.TYPE, server=self.server)
+
+    @property
+    def clearLogo(self):
+        for image in self.images:
+            if image.type == 'clearLogo':
+                return image.url
+
+        return None
+
     @property
     def settings(self):
         if not self._settings:

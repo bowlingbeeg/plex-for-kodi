@@ -715,6 +715,12 @@ class Settings(object):
                 ).description(
                     T(34088, 'Number of hub rows displayed on the home screen. More rows require more memory.')
                 ),
+                BoolSetting(
+                    'clear_logos', T(35046, 'Show title logos on detail screens'), True
+                ).description(
+                    T(35047, "Replace the written title with the logo image your server has stored for the "
+                             "item. Items without a logo keep their written title.")
+                ),
                 BoolUserSetting(
                     'use_watchlist', T(34007, 'Use Watchlist'), True
                 ).description(

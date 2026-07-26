@@ -72,6 +72,7 @@
         {% include "includes/watched_indicator.xml.tpl" with itemref="Window" & xoff=347+60 & uw_size=48 & with_count=True & scale="large" %}
 
         <control type="label">
+            <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>466</posx>
             <posy>0</posy>
             <width>1360</width>
@@ -80,6 +81,15 @@
             <align>left</align>
             <textcolor>FFFFFFFF</textcolor>
             <label>$INFO[Window.Property(title)]</label>
+        </control>
+        <control type="image">
+            <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
+            <posx>466</posx>
+            <posy>0</posy>
+            <width>1360</width>
+            <height>{{ vscale(60) }}</height>
+            <aspectratio align="left" aligny="center">keep</aspectratio>
+            <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
         </control>
         <control type="grouplist">
             <posx>466</posx>

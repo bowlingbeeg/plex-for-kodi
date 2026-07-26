@@ -208,3 +208,38 @@ class ProgressTest(KodiTestCase):
         from plexnet import exceptions
         with self.assertRaises(exceptions.NotFound):
             plexobjects.searchType("nonsense")
+
+
+def episodeWithImages():
+    ensure_plex_interface()
+    root = ET.fromstring(fixture("plexnet", "episode_images.xml"))
+    return video.Episode(root.find("Video"))
+
+
+class ImagesTest(KodiTestCase):
+    """
+    The Image children carry the art variants the server picked, clearLogo among them. They only show up in full
+    metadata responses, so an item built from a listing simply has none of them.
+    """
+
+    def setUp(self):
+        super(ImagesTest, self).setUp()
+        self.episode = episodeWithImages()
+
+    def test_images_are_parsed(self):
+        self.assertEqual(["coverPoster", "snapshot", "background", "clearLogo", "backgroundSquare"],
+                         [i.type for i in self.episode.images])
+
+    def test_clear_logo_points_at_the_show(self):
+        # the server resolves the parent walk for us; 2101 is the grandparent, 2103 the episode
+        self.assertEqual("/library/metadata/2101/clearLogo/1600000000", self.episode.clearLogo)
+
+    def test_clear_logo_is_none_without_images(self):
+        self.assertIsNone(movie().clearLogo)
+
+    def test_clear_logo_survives_a_reload(self):
+        # _setData rebuilds the lists, so a reloaded item must not keep the old element's images
+        item = movie()
+        self.assertIsNone(item.clearLogo)
+        item._setData(ET.fromstring(fixture("plexnet", "episode_images.xml")).find("Video"))
+        self.assertEqual("/library/metadata/2101/clearLogo/1600000000", item.clearLogo)

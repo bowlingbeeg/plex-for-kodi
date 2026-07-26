@@ -141,12 +141,22 @@
                 <orientation>horizontal</orientation>
                 <usecontrolcoords>true</usecontrolcoords>
                 <control type="label">
+                    <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
                     <width>auto</width>
                     <height>{{ vscale(60) }}</height>
                     <font>font13</font>
                     <align>left</align>
                     <textcolor>FFFFFFFF</textcolor>
                     <label>$INFO[Window.Property(title)]</label>
+                </control>
+                <!-- fixed box because a grouplist can't size a control to its texture; narrow logos just leave
+                     some air before the remaining-time button -->
+                <control type="image">
+                    <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
+                    <width>500</width>
+                    <height>{{ vscale(60) }}</height>
+                    <aspectratio align="left" aligny="center">keep</aspectratio>
+                    <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
                 </control>
                 <control type="button">
                     <visible>!String.IsEmpty(Window.Property(remainingTime))</visible>
