@@ -913,6 +913,59 @@ class PlaylistHub(BaseHub):
         return items
 
 
+class CollectionsHub(BaseHub):
+    """A library's collections as one hub.
+
+    Plex serves no such hub: a server only returns hubs for collections an admin promoted
+    individually, and those hold the collection's *contents*. This one is built client-side
+    for a library pinned to the top bar as a collections view, so its row shows the
+    collections themselves. Items come from the section, so the row and the pinned view
+    always show the same thing in the same order.
+    """
+    TYPE = "Hub"
+    type = 'collection'
+
+    def __init__(self, section, *args, **kwargs):
+        self.librarySection = section
+        self.hubIdentifier = 'collections.{0}'.format(section.key)
+        kwargs.setdefault('server', section.server)
+        super(CollectionsHub, self).__init__(False, *args, **kwargs)
+
+    def __repr__(self):
+        return '<{0}:{1}>'.format(self.__class__.__name__, self.hubIdentifier)
+
+    def getCleanHubIdentifier(self, is_home=False):
+        # the base strips trailing numeric suffixes, which would collapse every library's
+        # collections onto one identifier and with it their stored item states
+        return self.hubIdentifier
+
+    def init(self, data):
+        try:
+            self.items = self.extend(0, 10) or []
+        except exceptions.BadRequest:
+            util.DEBUG_LOG('CollectionsHub: Bad request: {0}', self)
+            self.items = []
+
+    def reload(self, **kwargs):
+        # the base reloads from self.key, which a client-built hub doesn't have; re-query
+        # the section instead, so the periodic hub update still refreshes this row
+        self.items = self.extend(0, kwargs.get('limit') or 10) or []
+        return self
+
+    def extend(self, start=None, size=None):
+        items = self.librarySection.all(start, size, sort=('titleSort', 'asc'),
+                                        type_=plexobjects.SEARCHTYPES.get('collection'))
+        if not items:
+            return
+
+        container = items[0].container
+        self.set('offset', start or 0)
+        self.set('size', len(items))
+        self.set('more', (container.offset.asInt() + container.size.asInt()
+                          < container.totalSize.asInt()) and '1' or '')
+        return items
+
+
 class AudioPlaylistHub(PlaylistHub):
     type = 'audio'
     hubIdentifier = 'playlists.audio'

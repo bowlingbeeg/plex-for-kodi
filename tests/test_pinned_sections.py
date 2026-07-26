@@ -21,7 +21,8 @@ from kodienv import ENV
 
 ENV.abort_requested = True
 from lib.windows import home, library  # noqa: E402
-from lib.windows.home import HomeWindow, PinnedTypeSection, hubsSectionKey  # noqa: E402
+from lib.windows.home import HomeWindow, PinnedTypeSection  # noqa: E402
+from plexnet.plexlibrary import CollectionsHub  # noqa: E402
 from lib.windows.library import LibrarySettings, realSection  # noqa: E402
 
 from .base import KodiTestCase  # noqa: E402
@@ -89,13 +90,103 @@ class PinnedTypeSectionTest(KodiTestCase):
         self.assertEqual("collection", self.pin.__dict__.get("itemType"))
         self.assertIsNone(self.section.__dict__.get("itemType"))
 
-    def test_hubs_belong_to_the_library(self):
-        self.assertEqual("3", hubsSectionKey(self.pin))
-        self.assertEqual("3", hubsSectionKey(self.section))
-
     def test_real_section_unwraps_only_pins(self):
         self.assertIs(self.section, realSection(self.pin))
         self.assertIs(self.section, realSection(self.section))
+
+
+class FakeValue(object):
+    def __init__(self, value):
+        self.value = value
+
+    def asInt(self):
+        return self.value
+
+
+class FakeContainer(object):
+    def __init__(self, offset=0, size=2, total=2):
+        self.offset = FakeValue(offset)
+        self.size = FakeValue(size)
+        self.totalSize = FakeValue(total)
+
+
+class FakeCollection(object):
+    def __init__(self, title, container):
+        self.title = title
+        self.container = container
+
+
+class CollectingSection(FakeSection):
+    """Records how the hub asked for its items."""
+
+    def __init__(self, count=2, total=2):
+        FakeSection.__init__(self)
+        self.queries = []
+        container = FakeContainer(size=count, total=total)
+        self.collections = [FakeCollection("Collection {0}".format(i), container) for i in range(count)]
+
+    def all(self, start=None, size=None, sort=None, type_=None, **kwargs):
+        self.queries.append({"start": start, "size": size, "sort": sort, "type_": type_})
+        return list(self.collections)
+
+
+class CollectionsHubTest(KodiTestCase):
+    """
+    Plex serves no all-collections hub, so PM4K builds one for a pinned view's hub row.
+
+    It draws its items from the section itself, which is what keeps the row and the pinned
+    view showing the same collections in the same order.
+    """
+
+    def test_it_asks_the_section_for_collections_alphabetically(self):
+        section = CollectingSection()
+        CollectionsHub(section)
+
+        self.assertEqual(1, len(section.queries))
+        query = section.queries[0]
+        self.assertEqual(18, query["type_"])  # SEARCHTYPES['collection']
+        self.assertEqual(("titleSort", "asc"), query["sort"])
+
+    def test_items_come_from_the_section(self):
+        hub = CollectionsHub(CollectingSection(count=3, total=3))
+
+        self.assertEqual(["Collection 0", "Collection 1", "Collection 2"],
+                         [c.title for c in hub.items])
+
+    def test_a_library_without_collections_yields_an_empty_hub(self):
+        hub = CollectionsHub(CollectingSection(count=0))
+
+        self.assertEqual([], hub.items)
+
+    def test_each_library_gets_its_own_identifier(self):
+        movies = CollectingSection()
+        shows = CollectingSection()
+        shows.key = "5"
+
+        self.assertNotEqual(CollectionsHub(movies).getCleanHubIdentifier(),
+                            CollectionsHub(shows).getCleanHubIdentifier())
+
+    def test_the_identifier_survives_suffix_stripping(self):
+        # the base class strips trailing numeric suffixes, which would merge every
+        # library's collections into one identifier and with it their stored item states
+        hub = CollectionsHub(CollectingSection())
+
+        self.assertEqual("collections.3", hub.getCleanHubIdentifier())
+        self.assertEqual("collections.3", hub.getCleanHubIdentifier(is_home=True))
+
+    def test_more_is_set_when_the_library_has_further_collections(self):
+        hub = CollectionsHub(CollectingSection(count=10, total=40))
+
+        self.assertEqual("1", hub.more)
+
+    def test_reload_requeries_the_section(self):
+        # the base reloads from self.key, which a client-built hub hasn't got
+        section = CollectingSection()
+        hub = CollectionsHub(section)
+        hub.reload(limit=10)
+
+        self.assertEqual(2, len(section.queries))
+        self.assertEqual(2, len(hub.items))
 
 
 class PinBookkeepingTest(KodiTestCase):

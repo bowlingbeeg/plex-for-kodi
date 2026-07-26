@@ -8,7 +8,7 @@ import math
 import plexnet
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexapp, plexresource
+from plexnet import plexapp, plexlibrary, plexresource
 from six.moves import range
 
 from lib import backgroundthread
@@ -98,6 +98,45 @@ class SectionHubsTask(backgroundthread.Task):
         except:
             util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
             util.DEBUG_LOG('Generic exception when fetching section: {0}', repr(self.section.title))
+            hubs = HubsList().init()
+            hubs.invalid = True
+            self.callback(self.section, hubs)
+
+
+class PinnedTypeHubsTask(backgroundthread.Task):
+    """Builds the one hub a pinned item-type view shows: the library's collections."""
+
+    def setup(self, section, callback, reselect_pos_dict=None):
+        self.section = section
+        self.callback = callback
+        self.reselect_pos_dict = reselect_pos_dict
+        return self
+
+    def run(self):
+        if self.isCanceled():
+            return
+
+        if not plexapp.SERVERMANAGER.selectedServer or not self.section.server:
+            # Could happen during sign-out for instance
+            return
+
+        try:
+            hub = plexlibrary.CollectionsHub(self.section.librarySection)
+            # the server names its hubs; this one is ours, so it needs its own title
+            hub.set('title', T(32490, 'Collections'))
+            hubs = HubsList([hub] if hub.items else []).init()
+            hubs.identifier = self.section.key
+            if self.isCanceled():
+                return
+            self.callback(self.section, hubs, reselect_pos_dict=self.reselect_pos_dict)
+        except plexnet.exceptions.BadRequest:
+            util.DEBUG_LOG('404 on collections of: {0}', repr(self.section.title))
+            hubs = HubsList().init()
+            hubs.invalid = True
+            self.callback(self.section, hubs)
+        except:
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
+            util.DEBUG_LOG('Generic exception when fetching collections of: {0}', repr(self.section.title))
             hubs = HubsList().init()
             hubs.invalid = True
             self.callback(self.section, hubs)
@@ -370,17 +409,6 @@ class PinnedTypeSection(object):
 
 def pinnedSectionKey(section_key, item_type):
     return '{0}#{1}'.format(section_key, item_type)
-
-
-def hubsSectionKey(section):
-    """The key a section's hubs are cached and configured under.
-
-    Hubs exist per library, never per item type, so a pinned item-type view shares the
-    ones of the library it was pinned from.
-    """
-    if isinstance(section, PinnedTypeSection):
-        return section.librarySection.key
-    return section.key
 
 
 class ServerListItem(kodigui.ManagedListItem):
@@ -816,7 +844,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     self.focusFirstValidHub(hubControlIndex)
 
             elif self.lastFocusID == self.SECTION_LIST_ID:
-                if self.lastSection and self.lastHubs != self.lastSectionHubsKey:
+                if self.lastSection and self.lastHubs != self.lastSection.key:
                     self.showHubs(self.lastSection)
 
             else:
@@ -827,7 +855,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self._odHubsDirty = False
             # If section is stale, do a full section refresh instead of individual
             # hub updates. Running both causes race conditions and index errors.
-            hubs = self.sectionHubs.get(self.lastSectionHubsKey) if self.lastSection else None
+            hubs = self.sectionHubs.get(self.lastSection.key) if self.lastSection else None
             if hubs is not None and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL:
                 util.DEBUG_LOG('UpdateOnDeckHubs: Section stale, doing full refresh instead')
                 self.showHubs(self.lastSection, update=True)
@@ -1351,7 +1379,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Store the section key for use in the toggle callback
         # (self.lastSection might not be reliable during dialog interaction)
-        self._managingHubsForSection = hubsSectionKey(section)
+        self._managingHubsForSection = section.key
         self._hubsSettingsChanged = False  # Track if any hubs were toggled
 
         # Lazy discovery - only fetch hubs when user actually opens Manage Hubs
@@ -1431,10 +1459,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Refresh the home screen after dialog closes if any changes were made
         if self._hubsSettingsChanged:
-            last_key = self.lastSectionHubsKey
-            str_last_key = str(last_key) if self.lastSection and last_key is not None else None
+            str_last_key = str(self.lastSection.key) if self.lastSection and self.lastSection.key is not None else None
             str_section_key = str(section_key) if section_key is not None else None
-            if self.lastSection and (str_last_key == str_section_key or last_key == section_key):
+            if self.lastSection and (str_last_key == str_section_key or self.lastSection.key == section_key):
                 self.showHubs(self.lastSection, update=False, force=True)
 
     def _hubSubOptionCallback(self, choice):
@@ -1462,7 +1489,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Handle Refresh Hub List - re-discover hubs from server and rebuild list
         if choice.get('key') == 'refresh_hubs':
-            section_key = getattr(self, '_managingHubsForSection', self.lastSectionHubsKey)
+            section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
             section_title = getattr(self, '_managingHubsForSectionTitle', '')
             self._discoverHubsSync()
             options = self._buildHubSettingsOptions(section_key, section_title)
@@ -1470,7 +1497,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Handle Reset to Defaults - rebuild list in place
         if choice.get('key') == 'reset_hubs':
-            section_key = getattr(self, '_managingHubsForSection', self.lastSectionHubsKey)
+            section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
             section_title = getattr(self, '_managingHubsForSectionTitle', '')
             self.resetSectionHubs(section_key)
             self._hubsSettingsChanged = True
@@ -1482,7 +1509,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         catalog_id = choice.get('catalog_id', choice.get('identifier'))
         # Use the stored section key from when the dialog was opened
-        section_key = getattr(self, '_managingHubsForSection', self.lastSectionHubsKey)
+        section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
         is_currently_enabled = choice.get('enabled', False)
 
         # If hub is currently enabled, show Move/Disable sub-menu
@@ -2188,7 +2215,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     should_redisplay = False
 
                     # Check if this section is required for custom config
-                    required = self.getRequiredSourceSections(self.lastSectionHubsKey)
+                    required = self.getRequiredSourceSections(self.lastSection.key)
                     str_section_key = str(section.key) if section.key is not None else None
                     required_as_str = {str(k) if k is not None else None for k in required}
                     if str_section_key in required_as_str:
@@ -2196,7 +2223,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
                     # Also redisplay if we're on Home with default settings (no custom config)
                     # and a library section was just fetched (for per-library Recently Added hubs)
-                    if self.lastSectionHubsKey is None and section.key is not None:
+                    if self.lastSection.key is None and section.key is not None:
                         section_config = self.hubSettings.get(None) if self.hubSettings else None
                         has_custom = section_config and section_config.get('custom')
                         if not has_custom:
@@ -2204,14 +2231,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
                     # Fallback: Also redisplay if the current section has custom hub config
                     # This ensures cross-section hubs are shown even if required_sources check fails
-                    if not should_redisplay and self.lastSectionHubsKey is not None:
-                        config_key = str(self.lastSectionHubsKey)
+                    if not should_redisplay and self.lastSection.key is not None:
+                        config_key = str(self.lastSection.key)
                         section_config = self.hubSettings.get(config_key) if self.hubSettings else None
                         if section_config and section_config.get('custom'):
                             should_redisplay = True
 
                     if should_redisplay:
-                        if self.lastSectionHubsKey is None:
+                        if self.lastSection.key is None:
                             # Defer Home drawing until all cross-section sources complete
                             if self._pendingCrossSources == 0:
                                 home_hubs = self.sectionHubs.get(None)
@@ -2222,11 +2249,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                             self.showHubs(self.lastSection, update=False)
         except Exception:
             util.ERROR("Error in crossSectionHubsCallback")
-
-    @property
-    def lastSectionHubsKey(self):
-        """Hub cache/config key of the selected section, see hubsSectionKey()."""
-        return hubsSectionKey(self.lastSection) if self.lastSection else None
 
     @property
     def currentHub(self):
@@ -2400,7 +2422,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.lastSection or self._ignoreTick:
             return
 
-        hubs = self.sectionHubs.get(self.lastSectionHubsKey)
+        hubs = self.sectionHubs.get(self.lastSection.key)
         if hubs is None:
             return
 
@@ -3305,9 +3327,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         ds = mli.dataSource
 
         # Determine the hub's source section and catalog_id
-        is_home = not self.lastSection or self.lastSectionHubsKey is None
+        is_home = not self.lastSection or self.lastSection.key is None
         cross_source = hub.__dict__.get('_crossSectionSource')
-        hub_source_key = cross_source if cross_source is not None else self.lastSectionHubsKey
+        hub_source_key = cross_source if cross_source is not None else self.lastSection.key
         hub_is_home = hub_source_key is None
         clean_identifier = hub.getCleanHubIdentifier(is_home=hub_is_home)
 
@@ -3398,7 +3420,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         elif choice["key"] == "disable_hub":
             # Disable hub via Manage Hubs settings (same as disabling in the dialog)
-            section_key = self.lastSectionHubsKey
+            section_key = self.lastSection.key
             self._ensureCustomConfigExists(section_key)
             self._disableHub(catalog_id, section_key)
             self.showHubs(self.lastSection, update=False, force=True)
@@ -3762,15 +3784,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     # User is viewing this library section — draw it
                     self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
 
-                # Track library section completion
-                pending = getattr(self, '_pendingLibrarySections', 0)
-                if pending > 0:
-                    self._pendingLibrarySections = pending - 1
+                # Track library section completion. A pinned view is not a library and feeds
+                # no cross-section hub, so counting it here would let Home draw before the
+                # libraries its hubs are built from have arrived.
+                if not isinstance(section, PinnedTypeSection):
+                    pending = getattr(self, '_pendingLibrarySections', 0)
+                    if pending > 0:
+                        self._pendingLibrarySections = pending - 1
 
-                # When all libraries are done and we're on Home with cross-section hubs, draw once
-                if self._pendingLibrarySections == 0 and on_home and has_cross:
-                    if self.sectionHubs.get(None) is not None:
-                        self.showHubs(self.lastSection, update=False)
+                    # When all libraries are done and we're on Home with cross-section hubs, draw once
+                    if self._pendingLibrarySections == 0 and on_home and has_cross:
+                        if self.sectionHubs.get(None) is not None:
+                            self.showHubs(self.lastSection, update=False)
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
         with self.lock:
@@ -3929,8 +3954,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections)
                           for s in [home_section] + fetch_sections if not s.server.DEFER_HUBS]
-            # Track pending library sections for cross-section hub rendering
+            # Track pending library sections for cross-section hub rendering. Pinned views
+            # are not hub sources for anything, so they're counted nowhere and fetched apart.
             self._pendingLibrarySections = len([s for s in fetch_sections if not s.server.DEFER_HUBS])
+            self.tasks += [PinnedTypeHubsTask().setup(s, self.sectionHubsCallback)
+                           for s in sections if isinstance(s, PinnedTypeSection)
+                           and not s.server.DEFER_HUBS]
             backgroundthread.BGThreader.addTasks(self.tasks)
 
         show_pm_indicator = util.getSetting('path_mapping_indicators')
@@ -4046,10 +4075,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     @busy.busy_property()
     def _showHubs(self, section=None, update=False, force=False, reselect_pos_dict=None):
-        if isinstance(section, PinnedTypeSection):
-            # hubs exist per library, not per item type: a pinned view shows its library's
-            section = section.librarySection
-
         if not update:
             self.clearHubs()
 
@@ -4104,8 +4129,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if not update:
                 if section.key in self.sectionHubs:
                     self.sectionHubs[section.key] = None
-            task = SectionHubsTask().setup(section, self.sectionHubsCallback, self.wantedSections,
-                                           reselect_pos_dict=rpd)
+            if isinstance(section, PinnedTypeSection):
+                task = PinnedTypeHubsTask().setup(section, self.sectionHubsCallback, reselect_pos_dict=rpd)
+            else:
+                task = SectionHubsTask().setup(section, self.sectionHubsCallback, self.wantedSections,
+                                               reselect_pos_dict=rpd)
             self.tasks.append(task)
             backgroundthread.BGThreader.addTask(task)
 
@@ -4390,6 +4418,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/{0}.png'.format(obj.playlistType == 'audio' and 'music' or 'movie'))
         return mli
 
+    def createCollectionListItem(self, obj, wide=False):
+        w, h = self.THUMB_POSTER_DIM
+        # a collection often has no poster of its own; the library grid falls back to the
+        # composite of its members, so match that here
+        if obj.defaultThumb:
+            thumb = obj.defaultThumb.asTranscodedImageURL(w, h)
+        else:
+            thumb = obj.server.getImageTranscodeURL(obj.artCompositeURL(w * 2, h * 2), w, h)
+
+        mli = kodigui.ManagedListItem(obj.title or '', thumbnailImage=thumb, data_source=obj)
+        mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie.png')
+        return mli
+
     def unhandledHub(self, self2, obj, wide=False):
         util.DEBUG_LOG('Unhandled Hub item: {0}', obj.type)
 
@@ -4404,7 +4445,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         'photodirectory': createPhotoListItem,
         'clip': createClipListItem,
         'artist': createArtistListItem,
-        'playlist': createPlaylistListItem
+        'playlist': createPlaylistListItem,
+        'collection': createCollectionListItem
     }
 
     def createListItem(self, obj, wide=False):
