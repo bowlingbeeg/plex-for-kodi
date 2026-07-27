@@ -2090,16 +2090,36 @@ class AudioPlayerHandler(BasePlayerHandler):
 
 
 class BGMPlayerHandler(BasePlayerHandler):
-    def __init__(self, player, init_data):
+    def __init__(self, player, init_data, old_volume=None):
         BasePlayerHandler.__init__(self, player)
         self.timelineType = 'music'
         self.initData = init_data
         self.currentlyPlaying = init_data[2]
         self.abort = False
         self.fading = False
+        self.generation = player.bgmGeneration
+        self.fadeSeq = 0
+        self._fadesActive = 0
+        self._fadeLock = threading.Lock()
         util.setGlobalProperty('track.ID', '')
 
-        self.oldVolume = self._getVolume()
+        # a fade still in flight is dragging the system volume down toward 1, so reading it here would record
+        # near-silence as the user's volume and resetVolume() would later restore that. Carry the outgoing
+        # handler's value across the switch instead - it was read while nothing was fading.
+        self.oldVolume = old_volume if old_volume is not None else self._getVolume()
+
+    def owns(self, fade_seq=None):
+        """
+        True while this handler is still the player's BGM owner and, when fade_seq is given, while that fade is
+        still the newest one started on it.
+
+        There is one global Kodi volume and no lock on it. A theme switch installs a new handler and bumps the
+        player's generation; a newer fade on this handler bumps fadeSeq. Either leaves an older fade writing
+        volume for a theme nobody is listening to, so it has to drop out rather than finish its ramp.
+        """
+        if self.generation != self.player.bgmGeneration:
+            return False
+        return fade_seq is None or fade_seq == self.fadeSeq
 
     def onPlayBackStarted(self):
         self.player.bgmStarting = False
@@ -2125,7 +2145,13 @@ class BGMPlayerHandler(BasePlayerHandler):
         self.setVolume(reset=True)
 
     def fade(self, to, fast=False, stop=False, fade_time=1.0):
-        self.fading = True
+        with self._fadeLock:
+            self.fadeSeq += 1
+            my_seq = self.fadeSeq
+            self._fadesActive += 1
+            self.fading = True
+
+        superseded = False
         try:
             cur_vol = float(self._getVolume())
             is_out = to < cur_vol
@@ -2141,6 +2167,14 @@ class BGMPlayerHandler(BasePlayerHandler):
             vol_step = (to - cur_vol) / num_steps  # automatically handles direction
 
             for step in range(int(num_steps) + 1):
+                # someone else owns the volume now; every step from here would fight them, and cur_vol was
+                # sampled before they started so the whole remaining ramp is wrong anyway
+                if not self.owns(my_seq):
+                    util.DEBUG_LOG("BGM: fade {} superseded at step {}, dropping out",
+                                   "out" if is_out else "in", step)
+                    superseded = True
+                    break
+
                 # Stop immediately if system requests abort
                 if util.MONITOR.abortRequested() or self.abort:
                     util.LOG("BGM: Abort requested, cancelling fade {}",
@@ -2159,12 +2193,22 @@ class BGMPlayerHandler(BasePlayerHandler):
                 self._setVolume(vol, wait=False)
                 util.MONITOR.waitFor(step_delay)
 
-            # Guarantee final target (but still not below 1)
-            self._setVolume(max(1, int(to)))
+            # Guarantee final target (but still not below 1). Skipped when superseded: this write lands after
+            # the new owner's, so it would undo them.
+            if not superseded:
+                self._setVolume(max(1, int(to)))
         finally:
-            self.fading = False
+            with self._fadeLock:
+                self._fadesActive -= 1
+                self.fading = self._fadesActive > 0
+
+        # stop() acts on the player, not on us. A superseded fade reaching it would stop the theme that
+        # replaced ours, which is what killed themes on fast navigation.
         if stop:
-            self.player.stop()
+            if superseded or not self.owns():
+                util.DEBUG_LOG("BGM: not stopping player, theme {} is no longer current", self.currentlyPlaying)
+            else:
+                self.player.stop()
 
     def fadeIn(self, volume, fast=False):
         waited = 0
@@ -2176,7 +2220,12 @@ class BGMPlayerHandler(BasePlayerHandler):
 
     def fadeOut(self, fast=False, stop=False, fade_time=1.5):
         if not self.player.isPlayingAudio():
-            self.resetVolume()
+            # the deferred fade-out thread can land here after a new theme replaced us but before its audio is
+            # up. This is the one volume write outside fade(), so it needs the same ownership check.
+            if self.owns():
+                self.resetVolume()
+            else:
+                util.DEBUG_LOG("BGM: not restoring volume, theme {} is no longer current", self.currentlyPlaying)
             return
         return self.fade(0, fast=fast, stop=stop, fade_time=fade_time)
 
@@ -2186,8 +2235,15 @@ class BGMPlayerHandler(BasePlayerHandler):
         self.abort = True
         while self.fading:
             util.MONITOR.waitFor()
-        self.player.bgmPlaying = False
-        self.resetVolume()
+
+        if self.owns():
+            self.player.bgmPlaying = False
+            self.resetVolume()
+        else:
+            # a newer theme owns the volume and the flag now. Clearing bgmPlaying would report the live theme
+            # as stopped, and resetVolume() would drop it to the pre-BGM value mid-playback.
+            util.DEBUG_LOG("BGM: stop for superseded theme {}, leaving volume and state alone",
+                           self.currentlyPlaying)
 
         if rm:
             fn = os.path.join(util.translatePath("special://temp/"), "theme_{}.mp3".format(self.currentlyPlaying))
@@ -2281,6 +2337,11 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         signalsmixin.SignalsMixin.__init__(self)
         self.sessionID = None
         self._pendingStaleStop = False
+        # serialises theme switches, and retires the fades of the theme being switched away from. Monotonic
+        # on purpose and never reset: a handler that compares equal to a generation it no longer owns would
+        # be exactly the bug this counter exists to stop. See BGMPlayerHandler.owns().
+        self.bgmLock = threading.RLock()
+        self.bgmGeneration = 0
         self.handler = AudioPlayerHandler(self)
         self.isExternal = False
 
@@ -2417,44 +2478,58 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         xbmc.Player.play(self, *args, **kwargs)
 
     def playBackgroundMusic(self, source, volume, rating_key, *args, **kwargs):
-        if self.startingVideoPlayback:
-            return
-        if self.isPlaying():
-            if not self.lastPlayWasBGM:
+        # rapid navigation queues one ThemeMusicTask per screen and BGThreader runs three at once, so without
+        # this every check below races its own outcome: two callers both find no theme of theirs playing, both
+        # stop the incumbent, and both install a handler. Only ever entered from a BGThreader worker or the
+        # player event thread, never from the UI thread, so holding it across the fade below blocks nothing
+        # the user can see.
+        with self.bgmLock:
+            if self.startingVideoPlayback:
                 return
-
-            else:
-                # don't re-queue the currently playing theme
-                if isinstance(self.handler, BGMPlayerHandler) and self.handler.currentlyPlaying == rating_key:
+            if self.isPlaying():
+                if not self.lastPlayWasBGM:
                     return
 
-                # cancel any currently playing theme before starting the new one
                 else:
-                    self.stopAndWait(fade=self.bgmPlaying and kwargs.get("fade", True), fade_fast=self.bgmPlaying)
-                    if self.startingVideoPlayback:
+                    # don't re-queue the currently playing theme
+                    if isinstance(self.handler, BGMPlayerHandler) and self.handler.currentlyPlaying == rating_key:
                         return
 
-        self.sessionID = "BGM{}".format(rating_key)
-        curVol = self.handler.getVolume()
-        # no current volume, don't play BGM either
-        if not curVol:
-            return
+                    # cancel any currently playing theme before starting the new one
+                    else:
+                        self.stopAndWait(fade=self.bgmPlaying and kwargs.get("fade", True), fade_fast=self.bgmPlaying)
+                        if self.startingVideoPlayback:
+                            return
 
-        if self.BGMTask and self.BGMTask.isValid():
-            self.BGMTask.cancel()
+            self.sessionID = "BGM{}".format(rating_key)
+            curVol = self.handler.getVolume()
+            # no current volume, don't play BGM either
+            if not curVol:
+                return
 
-        self.started = False
-        self.bgmStarting = True
-        self.dontRequeueBGM = False
-        self.handler = BGMPlayerHandler(self, [source, volume, rating_key])
+            if self.BGMTask and self.BGMTask.isValid():
+                self.BGMTask.cancel()
 
-        # store current volume if it's different from the BGM volume
-        if volume < curVol:
-            util.setSetting('last_good_volume', curVol)
+            self.started = False
+            self.bgmStarting = True
+            self.dontRequeueBGM = False
 
-        self.lastPlayWasBGM = True
-        self.BGMTask = BGMPlayerTask().setup(source, self, volume, *args, **kwargs)
-        backgroundthread.BGThreader.addTask(self.BGMTask)
+            # bumping the generation retires every fade still running on the outgoing handler, and its stored
+            # oldVolume comes with us: curVol was read while that fade may have been part-way down, so trusting
+            # it here is how the user's volume ends up permanently at 1.
+            outgoing = self.handler
+            carried = outgoing.oldVolume if isinstance(outgoing, BGMPlayerHandler) else None
+            self.bgmGeneration += 1
+            self.handler = BGMPlayerHandler(self, [source, volume, rating_key], old_volume=carried)
+
+            # store current volume if it's different from the BGM volume
+            refVol = carried if carried is not None else curVol
+            if volume < refVol:
+                util.setSetting('last_good_volume', refVol)
+
+            self.lastPlayWasBGM = True
+            self.BGMTask = BGMPlayerTask().setup(source, self, volume, *args, **kwargs)
+            backgroundthread.BGThreader.addTask(self.BGMTask)
 
     def playVideo(self, video, resume=False, force_update=False, session_id=None, handler=None):
         if self.bgmPlaying:
@@ -3115,13 +3190,25 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             util.DEBUG_LOG('Player: Stopping and waiting...')
             self.dontRequeueBGM = True
             if fade and self.isPlayingAudio() and self.bgmPlaying and isinstance(self.handler, BGMPlayerHandler):
+                # bind the handler now. The deferred lambda used to re-read self.handler when the thread got
+                # around to running, by which point a new theme could own it - so closing one screen faded out
+                # the theme of the screen after it.
+                handler = self.handler
+                generation = handler.generation
+
                 # fade out
                 # don't block main thread if we're simply waiting for the theme music to fade out
                 if deferred:
-                    threading.Thread(target=lambda: self.handler.fadeOut(fast=fade_fast, stop=True)).start()
+                    threading.Thread(target=lambda: handler.fadeOut(fast=fade_fast, stop=True),
+                                     name='PLEX:BGM-FADEOUT').start()
                     return
                 else:
-                    self.handler.fadeOut(fast=fade_fast)
+                    handler.fadeOut(fast=fade_fast)
+                    if generation != self.bgmGeneration:
+                        # a new theme took over while we were fading; stopping the player now would stop it
+                        # rather than the theme we were asked to end
+                        util.DEBUG_LOG('Player: Stopping and waiting...superseded during fade, not stopping')
+                        return
             self.stop()
             if not util.MONITOR.abortRequested():
                 while not util.MONITOR.waitFor() and self.isPlaying():
