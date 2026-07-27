@@ -52,6 +52,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
     EXTRA_DIM = util.scaleResolution(329, 185)
     RELATED_DIM = util.scaleResolution(268, 402)
     ROLES_DIM = util.scaleResolution(334, 334)
+    CLEAR_LOGO_DIM = util.scaleResolution(380, 72)
 
     SUB_ITEM_LIST_ID = 400
 
@@ -146,7 +147,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
     def updateProperties(self):
         self.setProperty('title', self.mediaItem.title)
-        self.setProperty('clear.logo', util.clearLogoFrom(self.mediaItem))
+        self.setProperty('clear.logo', util.clearLogoFrom(self.mediaItem, *self.CLEAR_LOGO_DIM))
         self.setProperty('summary', self.mediaItem.summary)
         self.setProperty('thumb', self.mediaItem.defaultThumb.asTranscodedImageURL(*self.THUMB_DIMS[self.mediaItem.type]['main.thumb']))
         self.updateBackgroundFrom(self.mediaItem)

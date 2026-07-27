@@ -82,18 +82,19 @@
             <textcolor>FFFFFFFF</textcolor>
             <label>$INFO[Window.Property(title)]</label>
         </control>
+        <!-- see the pre_play template for why the box is taller than the row and lifted by the same amount -->
         <control type="image">
             <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>466</posx>
             <posy>0</posy>
-            <width>1360</width>
-            <height>{{ vscale(60) }}</height>
-            <aspectratio align="left" aligny="center">keep</aspectratio>
+            <width>380</width>
+            <height>{{ vscale(72) }}</height>
+            <aspectratio align="left" aligny="bottom">keep</aspectratio>
             <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
         </control>
         <control type="grouplist">
             <posx>466</posx>
-            <posy>{{ vscale(70) }}</posy>
+            <posy>{{ vscale(82) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <align>left</align>
@@ -129,7 +130,7 @@
         <control type="grouplist">
             <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
             <posx>1560</posx>
-            <posy>{{ vscale(70) }}</posy>
+            <posy>{{ vscale(82) }}</posy>
             <width>300</width>
             <height>{{ vscale(32) }}</height>
             <align>right</align>
@@ -176,7 +177,7 @@
         <control type="label">
             <visible>!String.IsEmpty(Window.Property(directors))</visible>
             <posx>466</posx>
-            <posy>{{ vscale(130) }}</posy>
+            <posy>{{ vscale(142) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <font>font12</font>
@@ -187,7 +188,7 @@
         <control type="label">
             <visible>!String.IsEmpty(Window.Property(writers))</visible>
             <posx>466</posx>
-            <posy>{{ vscale(165) }}</posy>
+            <posy>{{ vscale(177) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <font>font12</font>
@@ -197,7 +198,7 @@
         </control>
         <!-- <control type="grouplist">
             <posx>466</posx>
-            <posy>{{ vscale(225) }}</posy>
+            <posy>{{ vscale(237) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <align>left</align>
@@ -265,7 +266,7 @@
         {% include "includes/wl_availability.xml.tpl" %}
         <control type="textbox">
             <posx>466</posx>
-            <posy>{{ vscale(274) }}</posy>
+            <posy>{{ vscale(286) }}</posy>
             <width>1360</width>
             <height>{{ vscale(179) }}</height>
             <font>font12</font>

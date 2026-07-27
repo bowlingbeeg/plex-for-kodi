@@ -184,6 +184,7 @@
             <texture>script.plex/stars/$INFO[Container(400).ListItem.Property(rating.stars)].png</texture>
         </control>
         <control type="label">
+            <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>776</posx>
             <posy>{{ vscale(50) }}</posy>
             <width>714</width>
@@ -195,6 +196,17 @@
             <scrollspeed>25</scrollspeed>
             <textcolor>FFFFFFFF</textcolor>
             <label>$INFO[Container(400).ListItem.Property(show.title)]</label>
+        </control>
+        <!-- no upward lift here, unlike pre_play and seasons: the ratings row sits at y=6 and there are only
+             22px of clearance above this label -->
+        <control type="image">
+            <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
+            <posx>776</posx>
+            <posy>{{ vscale(50) }}</posy>
+            <width>380</width>
+            <height>{{ vscale(60) }}</height>
+            <aspectratio align="left" aligny="bottom">keep</aspectratio>
+            <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
         </control>
 
         <control type="grouplist">
@@ -245,7 +257,7 @@
 
         <control type="grouplist">
             <posx>776</posx>
-            <posy>{{ vscale(100) }}</posy>
+            <posy>{{ vscale(112) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <align>left</align>
@@ -278,7 +290,7 @@
         </control>
         <control type="grouplist">
             <posx>776</posx>
-            <posy>{{ vscale(148) }}</posy>
+            <posy>{{ vscale(160) }}</posy>
             <width>1360</width>
             <height>{{ vscale(34) }}</height>
             <align>left</align>
@@ -313,7 +325,7 @@
         <control type="label">
             <visible>!String.IsEmpty(Container(400).ListItem.Property(directors)) | !String.IsEmpty(Container(400).ListItem.Property(writers))</visible>
             <posx>776</posx>
-            <posy>{{ vscale(194) }}</posy>
+            <posy>{{ vscale(206) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <font>font12</font>
@@ -324,7 +336,7 @@
 
         <control type="grouplist">
             <posx>776</posx>
-            <posy>{{ vscale(263) }}</posy>
+            <posy>{{ vscale(275) }}</posy>
             <width>1360</width>
             <height>{{ vscale(34) }}</height>
             <align>left</align>
@@ -384,7 +396,7 @@
         </control>
         <control type="textbox">
             <posx>776</posx>
-            <posy>{{ vscale(340) }}</posy>
+            <posy>{{ vscale(352) }}</posy>
             <width>1084</width>
             <height>{{ vscale(172) }}</height>
             <font>font12</font>

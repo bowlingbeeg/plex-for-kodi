@@ -103,6 +103,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     EXTRA_DIM = util.scaleResolution(329, 185)
     ROLES_DIM = util.scaleResolution(334, 334)
     PREVIEW_DIM = util.scaleResolution(343, 193)
+    CLEAR_LOGO_DIM = util.scaleResolution(380, 72)
 
     ROLES_LIST_ID = 400
     REVIEWS_LIST_ID = 401
@@ -695,7 +696,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         if not skip_bg:
             self.updateBackgroundFrom(self.video)
         self.setProperty('title', self.video.title)
-        self.setProperty('clear.logo', util.clearLogoFrom(self.video))
+        self.setProperty('clear.logo', util.clearLogoFrom(self.video, *self.CLEAR_LOGO_DIM))
         self.setProperty('duration', self.video.duration and util.durationToText(self.video.duration.asInt()))
         self.setProperty('summary', self.video.summary.strip().replace('\t', ' '))
         self.setProperty('unwatched', not self.video.isWatched and '1' or '')

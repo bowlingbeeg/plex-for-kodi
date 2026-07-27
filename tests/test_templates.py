@@ -313,7 +313,7 @@ class ClearLogoTest(KodiTestCase):
     visibility must be exact opposites, or an item without a logo ends up with no title at all.
     """
 
-    WINDOWS = ("pre_play", "pre_play-wl", "seasons")
+    WINDOWS = ("pre_play", "pre_play-wl", "seasons", "episodes")
 
     def setUp(self):
         super(ClearLogoTest, self).setUp()

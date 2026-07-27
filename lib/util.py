@@ -809,18 +809,24 @@ def backgroundFromArt(art, width=1920, height=1080, background=colors.noAlpha.Ba
     )
 
 
-def clearLogoFrom(item):
+def clearLogoFrom(item, width, height):
     """
-    The item's clear logo as a plain server URL, or '' when it has none or the user doesn't want them. Not run
-    through the photo transcoder on purpose: logos are transparent PNGs and small enough that resizing them
-    server-side would only cost us the alpha channel.
+    The item's clear logo scaled to its control, or '' when it has none or the user doesn't want them.
+
+    Kodi loads background textures at screen size and minifies them on the GPU, so handing it the full-size
+    logo gives visibly jagged edges - the server has to do the resizing. png rather than the transcoder's
+    default, so the alpha channel survives.
+
+    minSize is off, unlike everywhere else: it makes the server scale until the box is covered and crop the
+    overflow, which is what you want for a poster and never for a logo - a wide wordmark would be blown up
+    until its height filled the box and then have its sides cut off. Off means fit inside the box instead.
     """
     if not getSetting('clear_logos', True):
         return ''
 
     # anything that isn't a Video (artists, albums) has no clearLogo and yields an empty PlexValue here
     logo = getattr(item, 'clearLogo', None)
-    return logo and logo.asURL(includeToken=True) or ''
+    return logo and logo.asTranscodedImageURL(width, height, format='png', minSize=0) or ''
 
 
 def trackIsPlaying(track):

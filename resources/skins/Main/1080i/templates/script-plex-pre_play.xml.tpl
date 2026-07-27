@@ -133,7 +133,9 @@
                 <posx>466</posx>
                 <posy>0</posy>
                 <width>1226</width>
-                <height>{{ vscale(60) }}</height>
+                <!-- tall enough for the clear logo below: a grouplist hard-clips its children to its own
+                     bounds (GUIControlGroupList sets a clip region), so a 60 here shears the logo's bottom -->
+                <height>{{ vscale(72) }}</height>
                 <align>left</align>
                 <itemgap>0</itemgap>
                 <scroll>true</scroll>
@@ -149,13 +151,17 @@
                     <textcolor>FFFFFFFF</textcolor>
                     <label>$INFO[Window.Property(title)]</label>
                 </control>
-                <!-- fixed box because a grouplist can't size a control to its texture; narrow logos just leave
-                     some air before the remaining-time button -->
+                <!-- Fixed box because a grouplist can't size a control to its texture; narrow logos just leave
+                     some air before the remaining-time button. The box must NOT be lifted above the row: the
+                     content group starts at the window's y=155 and anything drawn above that is clipped, which
+                     shears the top off tall logos. It grows downward instead, into the gap the rows below were
+                     shifted by. With keep, a wide wordmark ends up width-limited and short while a squarish
+                     logo goes full height - which is the whole trick. -->
                 <control type="image">
                     <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
-                    <width>500</width>
-                    <height>{{ vscale(60) }}</height>
-                    <aspectratio align="left" aligny="center">keep</aspectratio>
+                    <width>380</width>
+                    <height>{{ vscale(72) }}</height>
+                    <aspectratio align="left" aligny="bottom">keep</aspectratio>
                     <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
                 </control>
                 <control type="button">
@@ -177,7 +183,7 @@
             </control>
             <control type="grouplist">
                 <posx>466</posx>
-                <posy>{{ vscale(68) }}</posy>
+                <posy>{{ vscale(80) }}</posy>
                 <width>1360</width>
                 <height>{{ vscale(34) }}</height>
                 <align>left</align>
@@ -280,7 +286,7 @@
                 <control type="label">
                     <visible>!String.IsEmpty(Window.Property(directors)) | !String.IsEmpty(Window.Property(writers))</visible>
                     <posx>466</posx>
-                    <posy>{{ vscale(130) }}</posy>
+                    <posy>{{ vscale(142) }}</posy>
                     <width>1360</width>
                     <height>{{ vscale(30) }}</height>
                     <font>font12</font>
@@ -291,7 +297,7 @@
                 <control type="label">
                     <visible>!String.IsEmpty(Window.Property(cast))</visible>
                     <posx>466</posx>
-                    <posy>{{ vscale(165) }}</posy>
+                    <posy>{{ vscale(177) }}</posy>
                     <width>1360</width>
                     <height>{{ vscale(30) }}</height>
                     <font>font12</font>
@@ -302,7 +308,7 @@
                 {% block streams %}
                     <control type="grouplist">
                         <posx>466</posx>
-                        <posy>{{ vscale(223) }}</posy>
+                        <posy>{{ vscale(235) }}</posy>
                         <width>1360</width>
                         <height>{{ vscale(34) }}</height>
                         <align>left</align>
@@ -363,7 +369,7 @@
             {% block summary %}
                 <control type="textbox">
                     <posx>466</posx>
-                    <posy>{{ vscale(290) }}</posy>
+                    <posy>{{ vscale(302) }}</posy>
                     <width>1360</width>
                     <height>{{ vscale(102) }}</height>
                     <font>font12</font>

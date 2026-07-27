@@ -247,6 +247,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     RELATED_DIM = util.scaleResolution(268, 402)
     EXTRA_DIM = util.scaleResolution(329, 185)
     ROLES_DIM = util.scaleResolution(334, 334)
+    CLEAR_LOGO_DIM = util.scaleResolution(380, 60)
 
     LIST_OPTIONS_BUTTON_ID = 111
 
@@ -1386,6 +1387,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
         self.setProperty('season.thumb', (self.season or self.show_).thumb.asTranscodedImageURL(*self.POSTER_DIM))
         self.setProperty('show.title', showTitle)
+        # the heading here is the show's, and the server points an episode's clearLogo at the show anyway
+        self.setProperty('clear.logo', util.clearLogoFrom(self.show_ or self.season, *self.CLEAR_LOGO_DIM))
         self.setProperty('season.title', (self.season or self.show_).title)
 
         if self.season:
